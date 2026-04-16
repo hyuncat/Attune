@@ -21,10 +21,10 @@ class StringEditor:
         """run string editing on the two user and midi strings.
         returns the alignment object as the result of string editing
         """
-        user_string = self.recording.NoteData
-        midi_string = self.recording.score_data.note_data
+        # user_string = self.recording.NoteData
+        # midi_string = self.recording.score_data.note_data
 
-        # print("Starting string editing...")
+        print("Starting string editing...")
         user_notes = list(user_string.data.values())
         user_notes = [n for n in user_notes if n.midi_num[0] != -1]
         
@@ -110,8 +110,8 @@ class StringEditor:
 
         notes = list(reversed(notes))
         mistakes = list(reversed(mistakes))
-        # print("Done!")
-        return Alignment(notes, mistakes)
+        print("Done!")
+        return notes, mistakes
     
     def get_distance(self, user_note: Note, midi_note: Note):
         """return the 'distance' between the user and midi note,

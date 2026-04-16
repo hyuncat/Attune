@@ -303,13 +303,13 @@ class Attune(QMainWindow):
         l = self.active_recording.get_length()
         self.active_recording.resize(new_length = l)
         # string edit
+        self.active_recording.detect_mistakes()
 
         # update scoreplot
         # update guitar hero bounds
         self.guitar_hero.update_view_items()
         self.slider.update_range(score_data=self.score_data, recording=self.active_recording)
-        pass
-
+        
     # --- SIGNAL-RELATED ACTIONS ---
     def update_time_label(self, t: float):
         """Update the time label based on current time t."""

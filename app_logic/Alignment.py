@@ -1,6 +1,7 @@
 from bisect import bisect_left, bisect_right
 import numpy as np
 from app_logic.NoteData import Note
+from algorithms.Config import Config
 
 class Mistake:
     def __init__(self, type: str, user_note: Note, midi_note: Note):
@@ -9,15 +10,26 @@ class Mistake:
         self.midi_note = midi_note
 
 class Alignment:
-    def __init__(self, notes: list[tuple[Note, Note]], mistakes: list[Mistake]):
+    def __init__(self, config: Config, notes: list[tuple[Note, Note]]=None, mistakes: list[Mistake]=None):
+        self.config = config
         # these are crucial
-        self.pairs: list[tuple[Note, Note]] = notes
-        self.mistakes: list[Mistake] = mistakes # ??? might not be super "crucial" lol
-        
+        self.pairs: list[tuple[Note, Note]] = notes if notes else []
+        self.mistakes: list[Mistake] = mistakes if mistakes else []
+
         # our time-indexable {t: (n,m)} dictionary
         # is there any way to make each just store a reference or smth?...
-        self.init_2(notes)
+        if notes and mistakes:
+            self.init_2(notes)
+        else:
+            self.pairs_1, self.pairs_2 = {}, {}
+            self.times_1, self.times_2 = [], []
         self.THRESH = 1 # same as StringEditor.TOLERANCE
+
+    def load_alignment(self, notes: list[tuple[Note, Note]], mistakes: list[Mistake]):
+        """load in the alignment data, and initialize the pairs dictionaries for time indexing"""
+        self.pairs = notes
+        self.mistakes = mistakes
+        self.init_2(notes)
 
     def init_2(self, pairs):
         """initialize the two pairs dictionaries for faster time indexing
@@ -49,7 +61,7 @@ class Alignment:
     def get_alignment(self, t_min: float, t_max: float) -> tuple[list[tuple[Note, Note]], 
                                                                  list[tuple[Note, Note]], 
                                                                  list[Note], list[Note]]:
-        """returns all note pairs found within the time boundaries
+        """returns all note pairs found within the time boundaries (for guitarhero)
         
         Args:
             t_min (float): minimum time (sec)

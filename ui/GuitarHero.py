@@ -166,7 +166,7 @@ class GuitarHero(QWidget):
         # important objects
         self.recording = recording
         self.score_data = recording.score_data if recording else None
-        self.alignment: Alignment = None
+        self.alignment: Alignment = recording.alignment if recording else None
 
         # --- TIMEKEEPING VARIABLES ---
         # windowing variables
@@ -348,12 +348,16 @@ class GuitarHero(QWidget):
         """Load a MidiData object and display its notes."""
         print("Loading MIDI data into ScorePlot...")
         self.score_data = score_data
+        self.recording = None
+        self.alignment = None
         self.update_view_items()
 
     def load_user(self, recording: Recording):
         """Load a Recording object and display its notes and pitches."""
         print("Loading Recording into ScorePlot...")
         self.recording = recording
+        self.score_data = recording.score_data
+        self.alignment = recording.alignment
         self.update_view_items()
 
     def load_alignment(self, alignment: Alignment):
@@ -498,6 +502,7 @@ class GuitarHero(QWidget):
 
         self.match_lines.setData(x=np.asarray(xs, dtype=np.float32),
                                 y=np.asarray(ys, dtype=np.float32))
+        # print("plotted alignment updates")
 
         # ---> USER INSERTIONS OVERLAY --->
         if ins:

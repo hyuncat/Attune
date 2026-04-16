@@ -30,7 +30,7 @@ class Recording:
         self.audio_data = AudioData(config=self.config)
         self.pitch_data = PitchData(config=self.config)
         self.note_data = NoteData()
-        self.alignment: Alignment | None = None # filled in later
+        self.alignment: Alignment = Alignment(config=self.config) # filled in later
 
         # queue data structures for real time pitch + note detection + correction
         self.a2p_queue = Buffer(self.config.sr) #audio-to-pitches
@@ -85,6 +85,11 @@ class Recording:
     def detect_notes(self):
         """run note detection on the current pitch data"""
         self.note_data = self.note_detector.detect_notes(self.pitch_data)
+
+    def detect_mistakes(self):
+        user_notes, midi_notes = self.note_data, self.score_data.note_datas[self.active_instrument]
+        notes, mistakes = self.string_editor.string_edit(user_string=user_notes, midi_string=midi_notes)
+        self.alignment.load_alignment(notes, mistakes)
 
     def write_data(self, indata: np.ndarray, start_time: float):
         """write indata to the audio_data at the given start_time
