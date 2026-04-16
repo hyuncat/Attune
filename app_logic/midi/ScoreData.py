@@ -16,8 +16,9 @@ class ScoreData:
 
         # --- META ---
         # score metadata
-        self.length: float = 0.0 # sec
-        self.bpm: int = 120
+        self.length = 0.0 # sec
+        self.bpm, self.bpm_og = 120, 120
+
         # instrument selection
         self.instruments: dict[int, int] = {} # {channel: program_number}
         self.active_instrument: int = 0 # channel number (TODO: decouple this)
@@ -78,7 +79,7 @@ class ScoreData:
         elif ext in {'.mid', '.midi'}: 
             self.midi_data = MidiData(p)
 
-        self.length = self.midi_data.length
+        self.length = self.midi_data.length_og
         self.bpm = self.score.metronomeMarkBoundaries()[0][2].number if self.score.metronomeMarkBoundaries() else 120
         self.bounds = (0.0, self.length)
 
@@ -122,8 +123,8 @@ class ScoreData:
             2. music21 score (for exporting and viewing)
             3. notedata (for editing and visualization)
         If _factor is supplied, uses that instead of calculating from new_bpm and self.bpm"""
-        factor = _factor if _factor else self.bpm / new_bpm
-        if factor == 1.0 or new_bpm == self.bpm or self.score is None:
+        factor = _factor if _factor else self.bpm_og / new_bpm
+        if new_bpm == self.bpm or self.score is None:
             return # no change needed
         
         # 1. change tempo in midi data
@@ -132,26 +133,27 @@ class ScoreData:
         for mark in self.score.recurse().getElementsByClass(tempo.MetronomeMark):
             mark.number = round(mark.number * factor)
         # 3. remake notedatas
-        new_notedatas = {}
-        for channel, notedata in self.note_datas.items():
-            new_notedata = NoteData()
-            new_notedata.times = [t * factor for t in notedata.times]
-            new_notedata.data = {t * factor: n for t, n in notedata.data.items()}
-            for n in new_notedata.data.values():
-                n.start_time = n.start_time * factor
-                n.end_time = n.end_time * factor
-            new_notedatas[channel] = new_notedata
-        self.note_datas = new_notedatas
+        self.note_datas = self.midi_data.make_notedatas()
+        # new_notedatas = {}
+        # for channel, notedata in self.note_datas.items():
+        #     new_notedata = NoteData()
+        #     new_notedata.times = [t * factor for t in notedata.times]
+        #     new_notedata.data = {t * factor: n for t, n in notedata.data.items()}
+        #     for n in new_notedata.data.values():
+        #         n.start_time = n.start_time * factor
+        #         n.end_time = n.end_time * factor
+        #     new_notedatas[channel] = new_notedata
+        # self.note_datas = new_notedatas
         # 4. update metadata
         self.bpm = new_bpm
-        self.length = self.length * factor
+        self.length = self.midi_data.length_og * factor
         print(f"Tempo changed to {new_bpm} BPM (factor: {factor:.2f}). Score length is now {self.length:.2f} sec.")
 
     def resize(self, new_length: float):
         """Resize the score to a new length in seconds. Calls change_tempo
         under the hood with new BPM."""
-        factor = new_length / self.length
-        new_bpm = round(self.bpm * factor)
+        factor = new_length / self.midi_data.length_og
+        new_bpm = round(self.bpm_og * factor)
         self.change_tempo(new_bpm, _factor=factor)
 
     def get_bpm(self) -> float:

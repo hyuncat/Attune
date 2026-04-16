@@ -5,10 +5,19 @@ from app_logic.NoteData import NoteData, Note
 
 class MidiData:
     def __init__(self, filepath: str | Path):
+        """
+        messages_og = the original times
+        messages = the times after tempo changes
+        (hopefully avoids accumulating errors)
+        """
         self.filepath = Path(filepath)
 
         # --- THE ESSENTIAL STUFF ---
         # store data by {elapsed_time: Message}
+        self.messages_og: dict[float, list[mido.Message]] = {}
+        self.programs_og: dict[float, list[mido.Message]] = {} # stores "turn on instrument" messages
+        self.metas_og: dict[float, list[mido.MetaMessage]] = {}
+
         self.messages: dict[float, list[mido.Message]] = {}
         self.programs: dict[float, list[mido.Message]] = {} # stores "turn on instrument" messages
         self.metas: dict[float, list[mido.MetaMessage]] = {}
@@ -60,10 +69,13 @@ class MidiData:
             programs[0] = [fake_msg]
 
         # update results
-        self.messages = messages
-        self.programs = programs
-        self.metas = metas
+        self.messages_og = messages
+        self.programs_og = programs
+        self.metas_og = metas
+        self.messages, self.programs, self.metas = messages, programs, metas
+
         self.instruments = instruments
+        self.length_og = elapsed_time
         self.length = elapsed_time # total length of the piece in seconds
     
     def make_notedatas(self) -> dict[int, NoteData]:
@@ -163,21 +175,24 @@ class MidiData:
 
 
     def change_tempo(self, factor: float):
+        """Changes all beats by some factor of the original tempo.
+        Updates messages, program changes, meta messages.
+        """
          # update all message timings
         messages = {}
-        for t, msgs in self.messages.items():
+        for t, msgs in self.messages_og.items():
             new_time = t * factor
             messages[new_time] = msgs
         self.messages = messages
 
         metas = {}
-        for t, msgs in self.metas.items():
+        for t, msgs in self.metas_og.items():
             new_time = t * factor
             metas[new_time] = msgs
         self.metas = metas
 
         programs = {}
-        for t, msgs in self.programs.items():
+        for t, msgs in self.programs_og.items():
             new_time = t * factor
             programs[new_time] = msgs
         self.programs = programs
