@@ -13,14 +13,16 @@ class PitchDetector(QObject):
     
     pitch_detected = pyqtSignal(float)
     
-    def __init__(self, recording: Recording, parent: QObject|None=None):
+    def __init__(self, recording: Recording=None, config: Config=None, parent: QObject|None=None):
         """
         Initialize the pitch detection parameters, like the tuning, frequency range, etc.
         Best to make it as specific as possible to your desired use case to improve accuracy of the detection.
         """
         super().__init__(parent)
+        if not recording and not config:
+            raise ValueError("Must provide either a recording or a config to initialize the PitchDetector.")
         self.recording = recording
-        self.config = self.recording.config
+        self.config = config if config else recording.config
         self.SR = self.config.sr # for sample-to-frequency conversion
 
         # --- pitch config variables ---
@@ -105,14 +107,16 @@ class PitchDetector(QObject):
         # if frame is empty, return unvoiced pitch
         if np.all(x == 0):
             return Pitch(time=start_time, candidates=[], 
-                         volume=0.0, unvoiced_prob=1.0, config=self.config)
+                         volume=0.0, unvoiced_prob=1.0, 
+                         distance=None, config=self.config)
         
         # preprocess audio to center and get rid of low frequency noise
-        x, volume = self.preprocess_audio(x, iir_cutoff_freq=self.config.fmin*0.8)
+        x, volume = self.preprocess_audio(x)
 
         # compute autocorrelation and modify it to avoid 0-lag peak
         acf, _ = self.autocorrelation_fft(x)
-        cdf = self.clamped_diff_fct(x=x, acf=acf)
+        cdf = self.cmndf(x, acf)
+        # cdf = self.clamped_diff_fct(x=x, acf=acf)
 
         # prominence picking + probability assignment to all freq estimates
         acf_peaks = self.find_acf_peaks(acf)
@@ -125,7 +129,8 @@ class PitchDetector(QObject):
         # create + return the final pitch object
         candidates = list(zip(midi_estimates, pitch_probs))
         candidates.sort(key=lambda c: c[1], reverse=True) # sort from most to least probable
-        distance = self.recording.score_data.current_note().midi_num[0] - candidates[0][0]
+        _note = self.recording.score_data.current_note() if self.recording.score_data else None
+        distance = _note.midi_num[0] - candidates[0][0] if _note else None
         # print(f"detected pitch @ {start_time:.2f} sec, midi_num: {candidates[0][0]:.2f}, unvoiced_prob: {unvoiced_prob:.2f}, distance to target: {distance:.2f}")
         pitch = Pitch(time=start_time, candidates=candidates, 
                       volume=volume, unvoiced_prob=unvoiced_prob, 
@@ -224,6 +229,38 @@ class PitchDetector(QObject):
 
         # only return valid overlapping values up to window_size-tau_max
         return autocorrelation, amplitudes
+
+    def cmndf(self, x, acf) -> np.ndarray:
+        """
+        cumulative normalized difference function (CMNDF) for better peak-picking of the fundamental period
+        based directly off original YIN algorithm
+
+        Args:
+            x: needed to compute energy for diff_fct inversion
+            acf: the result of autocorrelation on x
+        """
+        # --- INVERT TO DIFFERENCE FUNCTION ---
+        # compute the energy (r_t(0) and r_{t+\tau}(0)) for each lag
+        r_0 = np.sum(x**2)
+        energy = np.full(acf.shape, r_0)
+
+        diff_fct = energy[0] + energy - 2*acf
+        diff_fct[0] = 0
+        diff_fct = np.abs(diff_fct)
+
+        # --- NORMALIZE + CLAMP
+        diff_fct = diff_fct / (np.max(diff_fct) - np.min(diff_fct))
+
+        cmndf = np.zeros(self.tau_max) 
+        cmndf[0] = 1 # make first value 1
+        total_diff = 1
+
+        for tau in range(1, self.tau_max):
+            total_diff += diff_fct[tau]
+            avg_diff = total_diff / tau 
+            cmndf[tau] = diff_fct[tau] / avg_diff
+
+        return cmndf
 
     # modifying the difference function
     def clamped_diff_fct(self, x, acf) -> np.ndarray:
@@ -373,6 +410,29 @@ class PitchDetector(QObject):
 
 
     # AUDIO PREPROCESSING
+    def bandpass_filter(self, x: np.ndarray, fmin: float=50, fmax: float=4000) -> np.ndarray:
+        """
+        a 2nd order Butterworth bandpass IIR (infinite impulse response) filter to get 
+        rid of noise outside of the typical pitch range
+
+        Args:
+            x: The input audio signal as a 1D NumPy array.
+            fmin: The lower cutoff frequency (in Hz) for the bandpass filter. Frequencies below this value will be attenuated.
+            fmax: The upper cutoff frequency (in Hz) for the bandpass filter. Frequencies above this value will be attenuated.
+
+        Returns:
+            np.ndarray: The filtered audio signal as a 1D NumPy array, with reduced noise outside the typical pitch range.
+        """
+        sos = iirfilter(
+            N=2, Wn=[fmin, fmax],
+            btype='bandpass', 
+            ftype='butter', 
+            output='sos', 
+            fs=self.SR
+        )
+        x = sosfilt(sos, x)
+        return x
+    
     def high_pass_iir_filter(self, x: np.ndarray, cutoff_freq=150, 
                              sr: int=44100) -> np.ndarray:
         """
@@ -407,7 +467,7 @@ class PitchDetector(QObject):
         x = sosfilt(sos, x)
         return x
 
-    def preprocess_audio(self, x: list, iir_cutoff_freq: float=150) -> tuple[np.ndarray, float]:
+    def preprocess_audio(self, x: list) -> tuple[np.ndarray, float]:
         """
         centers the audio around mean, normalizes, 
         and applies high pass iir filter to prepare for pitch detection
@@ -419,10 +479,13 @@ class PitchDetector(QObject):
         Returns:
             tuple: A tuple containing the preprocessed audio signal (as a NumPy array) and the volume (as a float).
         """
+        if len(x) == 0:
+            return np.array([]), 0.0
         x = np.asarray(x, dtype=float)
         # x = x.astype(float)
         x = x - np.mean(x) # center
         volume = np.sqrt(np.mean(x ** 2))  # get volume as mean |amplitude| of the x (before normalizing)
         x = x/np.max(np.abs(x)) # normalize
-        x = self.high_pass_iir_filter(x, iir_cutoff_freq)
+        x = self.bandpass_filter(x, fmin=self.config.fmin*0.8, fmax=self.config.fmax*1.2) # get rid of noise outside of pitch range
+        # x = self.high_pass_iir_filter(x, iir_cutoff_freq)
         return x, volume

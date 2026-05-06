@@ -54,7 +54,8 @@ class Slider(QWidget):
         m0, m1, u1 = 0, 0, 0
         if score_data:
             note_data = score_data.note_datas.get(score_data.active_instrument, None)
-            m0, m1 = note_data.get_bounds()
+            if note_data:
+                m0, m1 = note_data.get_bounds()
         if recording and recording.audio_data:
             u1 = recording.audio_data.get_length()
 

@@ -11,13 +11,13 @@ from algorithms.Config import Config
 class NoteDetector(QObject):
     note_detected = pyqtSignal(float)
     
-    def __init__(self, recording: Recording, parent: QObject|None=None):
+    def __init__(self, recording: Recording=None, config: Config=None, parent: QObject|None=None):
         """initialize the note detection algorithm parameters"""
         super().__init__(parent)
 
         # algorithm params
         self.recording = recording
-        self.config = recording.config
+        self.config = recording.config if recording else config
         self.w = self.config.w2
         self.hop = self.config.h2
         self.PITCH_THRESH = self.config.pitch_thresh

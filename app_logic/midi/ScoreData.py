@@ -52,6 +52,8 @@ class ScoreData:
 
     def current_note(self) -> Note | None:
         """Return the current note based on the current note index."""
+        if self.active_instrument not in self.note_datas:
+            return None
         note_data = self.note_datas[self.active_instrument]
         if self.i < len(note_data.times):
             return note_data.read_note(i=self.i)

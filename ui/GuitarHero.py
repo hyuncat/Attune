@@ -346,15 +346,15 @@ class GuitarHero(QWidget):
     # ---------- DATA LOADING ----------
     def load_score(self, score_data: ScoreData):
         """Load a MidiData object and display its notes."""
-        print("Loading MIDI data into ScorePlot...")
+        print("Loading MIDI data into GuitarHero...")
         self.score_data = score_data
-        self.recording = None
-        self.alignment = None
+        # self.recording = None
+        # self.alignment = None
         self.update_view_items()
 
     def load_user(self, recording: Recording):
         """Load a Recording object and display its notes and pitches."""
-        print("Loading Recording into ScorePlot...")
+        print(f"Loading Recording: {recording} into GuitarHero...")
         self.recording = recording
         self.score_data = recording.score_data
         self.alignment = recording.alignment
@@ -365,7 +365,6 @@ class GuitarHero(QWidget):
         print("Plotting alignment...")
         self.alignment = alignment
         self.update_view_items()
-
 
     # --- THE ESSENTIAL PLOTTING STUFF (called every time we refresh the view) ---
     def update_view_items(self):
@@ -546,8 +545,8 @@ class GuitarHero(QWidget):
 
 
 
-class RunScorePlot:
-    def __init__(self, recording: Recording=None, score_data: ScoreData=None, alignment: Alignment=None, app=None):
+class RunGuitarHero:
+    def __init__(self, recording: Recording=None, app=None):
         import sys
         from PyQt6.QtWidgets import QApplication, QMainWindow
 
@@ -558,7 +557,7 @@ class RunScorePlot:
 
         self.main_window = QMainWindow()
         self.app.setStyleSheet(qdarktheme.load_stylesheet("dark"))
-        self.main_window.setWindowTitle("Score Plot")
+        self.main_window.setWindowTitle("Attune [Guitar Hero]")
         self.main_window.setGeometry(100, 100, 800, 600)
 
         self.central_widget = QWidget()
@@ -570,12 +569,8 @@ class RunScorePlot:
         self.central_layout.addWidget(self.vis)
         self.init_toolbar()
 
-        if score_data is not None:
-            self.vis.load_score(score_data)
         if recording is not None:
             self.vis.load_user(recording)
-        if alignment is not None:
-            self.vis.load_alignment(alignment)
 
         self.main_window.show()
         self.app.exec()

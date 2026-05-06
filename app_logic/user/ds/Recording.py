@@ -20,11 +20,11 @@ class Recording:
 
         # algorithms!!
         from algorithms.PitchDetector import PitchDetector
-        from algorithms.NoteDetector import NoteDetector
+        from algorithms.NoteDetector2 import NoteDetector2
         from algorithms.StringEditor import StringEditor
-        self.pitch_detector = PitchDetector(self)
-        self.note_detector = NoteDetector(self)
-        self.string_editor = StringEditor(self)
+        self.pitch_detector = PitchDetector(recording=self)
+        self.note_detector = NoteDetector2(recording=self)
+        self.string_editor = StringEditor(recording=self)
 
         # essential data variables
         self.audio_data = AudioData(config=self.config)
@@ -106,7 +106,10 @@ class Recording:
         self.p2n_queue.push(indata)
 
     def get_length(self):
-        return self.note_data.get_length()
+        if len(self.note_data.times) > 0:
+            return self.note_data.get_length()
+        else:
+            return self.audio_data.get_length()
     
     def resize(self, new_length: float):
         """Resize the score_data to a new length by changing the BPM of the score data, 

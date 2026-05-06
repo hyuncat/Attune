@@ -218,7 +218,7 @@ class Attune(QMainWindow):
         # load into important ui components
         self.toolbar.populate_instrument_menu()
         self.slider.update_range(score_data=self.score_data)
-        self.recordings_tree.init_score(filepath, self.score_data)
+        self.recordings_tree.init_score(filepath=filepath, score_data=self.score_data)
         self.recordings_tree._add_recording(name="untitled_recording") # dummy init
         self.guitar_hero.load_score(self.score_data)
         self.practice_attune.load_score(self.score_data)
@@ -355,7 +355,7 @@ class Attune(QMainWindow):
             print(f"No recording named '{recording_name}' was found.")
             return
         self.active_recording = self.recordings[recording_name]
-        print(f"Setting active recording to '{recording_name}'")
+        # print(f"Setting active recording to '{recording_name}'")
         self.status_bar.update_name(recording_name)
         self.guitar_hero.load_user(self.active_recording)
         self.audio_player.load_audio(self.active_recording.audio_data)

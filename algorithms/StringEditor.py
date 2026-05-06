@@ -1,12 +1,13 @@
 import numpy as np
+from algorithms.Config import Config
 from app_logic.Alignment import Alignment, Mistake
 from app_logic.NoteData import NoteData, Note
 from app_logic.user.ds import Recording
 
 class StringEditor:
-    def __init__(self, recording: Recording):
+    def __init__(self, recording: Recording=None, config: Config=None):
         self.recording = recording
-        self.config = recording.config
+        self.config = recording.config if recording else config
 
         # string edit costs
         self.INSERTION_COST = self.config.ins_cost
