@@ -19,6 +19,9 @@ class Config:
     slope_thresh: float = 1.5
     unv_ratio: float = 0.5 # proportion of unvoiced pitches in a window to consider the window unvoiced
 
+    # --- SCORE-GUIDED NOTE DETECTION PARAMETERS ---
+    prox_window: float = 1.0 # semitones; max distance from expected MIDI for a candidate to be preferred over top-prob
+
     # --- STRING EDIT PARAMETERS ---
     ins_cost: float = 1.5
     del_cost: float = 2
@@ -42,6 +45,7 @@ class Config:
         self.h2 = config.get("h2", self.h2)
         self.pitch_thresh = config.get("pitch_thresh", self.pitch_thresh)
         self.slope_thresh = config.get("slope_thresh", self.slope_thresh)
+        self.prox_window = config.get("prox_window", self.prox_window)
 
         self.ins_cost = config.get("ins_cost", self.ins_cost)
         self.del_cost = config.get("del_cost", self.del_cost)
