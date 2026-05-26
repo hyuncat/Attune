@@ -8,6 +8,17 @@ class Mistake:
         self.type = type
         self.user_note = user_note
         self.midi_note = midi_note
+        self.overridden = False
+
+    def is_overridden(self) -> bool:
+        return bool(self.overridden)
+    
+    def set_override(self, override_value: bool):
+        self.overridden=override_value
+
+    #switch the override status on the given mistake
+    def toggle_override(self):
+        self.overridden = not self.overridden  
 
 class Alignment:
     def __init__(self, config: Config, notes: list[tuple[Note, Note]]=None, mistakes: list[Mistake]=None):
@@ -94,3 +105,14 @@ class Alignment:
 
         # the end
         return goods, subs, ins, dels
+    
+    def reapply_overrides(self, overridden_indices: set[int]):
+        self.reset_overrides()
+        for index in overridden_indices:
+            if 0 <= index < len(self.mistakes):
+                self.mistakes[index].set_override(True)
+    
+    #removes all overrides
+    def reset_overrides(self):
+        for m in self.mistakes:
+            m.set_override(False)
