@@ -31,7 +31,7 @@ class Recording:
         self.pitch_data = PitchData(config=self.config)
         self.note_data = NoteData()
         self.alignment: Alignment = Alignment(config=self.config) # filled in later
-        self.overridden_mistake_indices: set[int] = set()
+        self.overridden_mistake_indices = set()
 
         # queue data structures for real time pitch + note detection + correction
         self.a2p_queue = Buffer(self.config.sr) #audio-to-pitches
@@ -136,13 +136,20 @@ class Recording:
                 p.distance = note.midi_num[0] - p.candidates[0][0]
     
     def toggle_mistake_override(self, mistake_index: int):
+        #error checking
+        if not (0 <= mistake_index < len(self.alignment.mistakes)):
+            return
         #Toggle persisted override state for one mistake.
+        mistake = self.alignment.mistakes[mistake_index]
+        pair_index = mistake.get_pair_index()
         if mistake_index in self.overridden_mistake_indices:
             self.overridden_mistake_indices.remove(mistake_index)
+            self.alignment.toggle_overridden_pair_indices(pair_index, False)
             overridden = False
         else:
             self.overridden_mistake_indices.add(mistake_index)
+            self.alignment.toggle_overridden_pair_indices(pair_index, True)
             overridden = True
 
         if 0 <= mistake_index < len(self.alignment.mistakes):
-            self.alignment.mistakes[mistake_index].overridden = overridden
+            self.alignment.mistakes[mistake_index].set_override(overridden)

@@ -70,6 +70,7 @@ class StringEditor:
 
         mistakes = []
         notes = []
+        mistakes_to_reverse_position = {}
         while i>0 or j>0:
             mistake_type = backpointer[i, j]
             midi_note = midi_string.read_note(i=i-1) if i > 0 else None
@@ -78,9 +79,9 @@ class StringEditor:
             # 0: deletion
             if mistake_type==0 and i>0:
                 # print(f"--> DELETION at i={i}, j={j}")
-                mistakes.append(
-                    Mistake(type="deletion", user_note=user_note, midi_note=midi_note)
-                )
+                mistake = Mistake(type="deletion", user_note=user_note, midi_note=midi_note)
+                mistakes_to_reverse_position[mistake] = len(notes)
+                mistakes.append(mistake)
                 notes.append((None, midi_note))
                 i -= 1
 
@@ -89,9 +90,9 @@ class StringEditor:
                 note_distance = self.get_distance(user_note, midi_note)
                 if abs(note_distance) >= self.TOLERANCE:
                     # print(f"--> SUBSTITUTION at i={i}, j={j} (distance={note_distance})")
-                    mistakes.append(
-                        Mistake(type="substitution", user_note=user_note, midi_note=midi_note)
-                    )
+                    mistake = Mistake(type="substitution", user_note=user_note, midi_note=midi_note)
+                    mistakes_to_reverse_position[mistake] = len(notes)
+                    mistakes.append(mistake)
                 notes.append((user_note, midi_note))
                 i -= 1
                 j -= 1
@@ -99,9 +100,9 @@ class StringEditor:
             # 2: insertion
             elif mistake_type==2 and j>0:
                 # print(f"--> INSERTION at i={i}, j={j}")
-                mistakes.append(
-                    Mistake(type="insertion", user_note=user_note, midi_note=midi_note)
-                ) 
+                mistake = Mistake(type="insertion", user_note=user_note, midi_note=midi_note)
+                mistakes_to_reverse_position[mistake] = len(notes)
+                mistakes.append(mistake)
                 j -= 1
                 notes.append((user_note, None))
             else:
@@ -112,6 +113,8 @@ class StringEditor:
         notes = list(reversed(notes))
         mistakes = list(reversed(mistakes))
         print("Done!")
+        for mistake in mistakes:
+            mistake.set_pair_index(len(notes) - 1 - mistakes_to_reverse_position[mistake])
         return notes, mistakes
     
     def get_distance(self, user_note: Note, midi_note: Note):

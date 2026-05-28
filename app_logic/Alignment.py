@@ -9,6 +9,7 @@ class Mistake:
         self.user_note = user_note
         self.midi_note = midi_note
         self.overridden = False
+        self.pair_index = -1
 
     def is_overridden(self) -> bool:
         return bool(self.overridden)
@@ -20,12 +21,19 @@ class Mistake:
     def toggle_override(self):
         self.overridden = not self.overridden  
 
+    def set_pair_index(self, pair_index_value: int):
+        self.pair_index = pair_index_value
+    
+    def get_pair_index(self):
+        return(self.pair_index)
+
 class Alignment:
     def __init__(self, config: Config, notes: list[tuple[Note, Note]]=None, mistakes: list[Mistake]=None):
         self.config = config
         # these are crucial
         self.pairs: list[tuple[Note, Note]] = notes if notes else []
         self.mistakes: list[Mistake] = mistakes if mistakes else []
+        self.overridden_pair_indices = set()
 
         # our time-indexable {t: (n,m)} dictionary
         # is there any way to make each just store a reference or smth?...
@@ -40,6 +48,7 @@ class Alignment:
         """load in the alignment data, and initialize the pairs dictionaries for time indexing"""
         self.pairs = notes
         self.mistakes = mistakes
+        self.overridden_pair_indices = set()
         self.init_2(notes)
 
     def init_2(self, pairs):
@@ -47,6 +56,8 @@ class Alignment:
         in self.get_alignment"""
         self.pairs_1 = {}
         self.pairs_2 = {}
+        times_1 = []
+        times_2 = []
 
         for n, m in pairs: # go through and dissect the pairs
             if n is None and m is None:
@@ -61,11 +72,13 @@ class Alignment:
                 tmin = min(n.start_time, m.start_time)
                 tmax = max(n.end_time, m.end_time)
             
+            times_1.append(tmin)
+            times_2.append(tmax)
             self.pairs_1[tmin] = (n, m)
             self.pairs_2[tmax] = (n, m)
 
-        self.times_1 = list(self.pairs_1.keys())
-        self.times_2 = list(self.pairs_2.keys())
+        self.times_1 = sorted(times_1)
+        self.times_2 = sorted(times_2)
 
         # print(f"Initialized with\npairs1\n---\n{self.pairs_1}\npairs2\n---\n{self.pairs_2}")
 
@@ -86,7 +99,11 @@ class Alignment:
 
         pairs = self.pairs[i:j]
         ins, dels, subs, goods, = [], [], [], []
-        for n, m in pairs:
+        for relative_idx, (n, m) in enumerate(pairs):
+            absolute_idx = i + relative_idx
+            if absolute_idx in self.overridden_pair_indices:
+                goods.append((n, m))
+                continue
             if n and not m: # insertion
                 ins.append(n)
             elif not n and m: # deletion
@@ -106,13 +123,23 @@ class Alignment:
         # the end
         return goods, subs, ins, dels
     
-    def reapply_overrides(self, overridden_indices: set[int]):
+    def reapply_overrides(self, overridden_mistake_indices: set[int]):
         self.reset_overrides()
-        for index in overridden_indices:
+        for index in overridden_mistake_indices:
             if 0 <= index < len(self.mistakes):
-                self.mistakes[index].set_override(True)
+                m = self.mistakes[index]
+                m.set_override(True)
+                if m.pair_index is not None and 0 <= m.pair_index < len(self.pairs):
+                    self.overridden_pair_indices.add(m.pair_index)
     
     #removes all overrides
     def reset_overrides(self):
+        self.overridden_pair_indices = set()
         for m in self.mistakes:
             m.set_override(False)
+
+    def toggle_overridden_pair_indices(self, index: int, toggle_to: bool):
+        if toggle_to:
+            self.overridden_pair_indices.add(index)
+        else:
+            self.overridden_pair_indices.discard(index)
