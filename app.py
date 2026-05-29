@@ -20,6 +20,7 @@ from ui.time.CountdownTimer import CountdownTimer
 from ui.info.Toolbar import Toolbar
 from ui.info.StatusBar import StatusBar
 from ui.info.RecordingTree import RecordingTree
+from ui.info.MistakeWidget import MistakeWidget
 from ui.info.Settings import SettingsDialog
 
 # app logic imports
@@ -111,14 +112,17 @@ class Attune(QMainWindow):
         self.score_viewer.load_finished.connect(lambda ok: stack.setCurrentIndex(1) if ok else 0)
 
         self.guitar_hero = GuitarHero(self.active_recording)
+        self.mistake_widget = MistakeWidget()
         # add the widgets
         self.splitter.addWidget(self.recordings_tree)
         self.splitter.addWidget(self.score_viewer_container)
         self.splitter.addWidget(self.guitar_hero)
+        self.splitter.addWidget(self.mistake_widget)
         # set behavior controls
-        self.splitter.setStretchFactor(0, 0)  # left widget is fixed-ish
-        self.splitter.setStretchFactor(1, 1)  # right widget grows
-        self.splitter.setStretchFactor(2, 1)  # right widget grows too
+        self.splitter.setStretchFactor(0, 0)  # recordings tree is fixed-ish
+        self.splitter.setStretchFactor(1, 1)  # score viewer grows
+        self.splitter.setStretchFactor(2, 1)  # guitar hero grows
+        self.splitter.setStretchFactor(3, 0)  # mistake widget is fixed-ish
         
         self._layout.addWidget(self.splitter)
 
@@ -204,6 +208,8 @@ class Attune(QMainWindow):
 
         self.recordings_tree.selected.connect(self.on_recording_selected)
         self.score_viewer.load_finished.connect(self.on_score_viewer_loaded)
+        self.mistake_widget.selected.connect(self.on_mistake_selected)
+        self.mistake_widget.override_toggled.connect(self.on_mistake_override_toggled)
 
         # settings dialog signals
 
@@ -309,6 +315,7 @@ class Attune(QMainWindow):
         # update guitar hero bounds
         self.guitar_hero.update_view_items()
         self.slider.update_range(score_data=self.score_data, recording=self.active_recording)
+        self.mistake_widget.load_mistakes(self.active_recording.alignment.mistakes)
         
     # --- SIGNAL-RELATED ACTIONS ---
     def update_time_label(self, t: float):
@@ -357,6 +364,7 @@ class Attune(QMainWindow):
         self.active_recording = self.recordings[recording_name]
         # print(f"Setting active recording to '{recording_name}'")
         self.status_bar.update_name(recording_name)
+        self.mistake_widget.clear()
         self.guitar_hero.load_user(self.active_recording)
         self.audio_player.load_audio(self.active_recording.audio_data)
         self.audio_recorder.load_recording(self.active_recording)
@@ -383,6 +391,22 @@ class Attune(QMainWindow):
         self.guitar_hero.update_view_items()
         self.score_viewer.load_score(self.score_data) # reload score to update tempo changes
         self.slider.update_range(score_data=self.score_data, recording=self.active_recording)
+
+    def on_mistake_override_toggled(self, idx: int):
+        if self.active_recording is None:
+            return
+        self.active_recording.toggle_mistake_override(idx)
+        mistake = self.active_recording.alignment.mistakes[idx]
+        self.mistake_widget.refresh_override(idx)
+        self.guitar_hero.update_highlight_override(mistake.is_overridden())
+        self.guitar_hero.update_view_items()
+
+    def on_mistake_selected(self, idx: int):
+        if self.active_recording is None:
+            return
+        mistakes = self.active_recording.alignment.mistakes
+        if 0 <= idx < len(mistakes):
+            self.guitar_hero.highlight_mistake(mistakes[idx])
 
     def on_practice_toggled(self):
         """Called when user clicks the practice mode button in the toolbar."""
