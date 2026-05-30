@@ -278,12 +278,20 @@ class GuitarHero(QWidget):
         self.timeline.setZValue(4) # above everything
 
         # add foreground after bg
+        self.highlight_bar = pg.BarGraphItem(
+            x=[], height=self.NOTE_HEIGHT * 2, y0=[], width=[],
+            brush=pg.mkBrush(255, 80, 80, 130),
+            pen=pg.mkPen(255, 80, 80, 255, width=2)
+        )
+        self.highlight_bar.setZValue(5)
+
         self.plot.addItem(self.midi_notes)
         self.plot.addItem(self.midi_notes_del)
         self.plot.addItem(self.user_notes)
         self.plot.addItem(self.user_notes_ins)
         self.plot.addItem(self.user_pitches)
         self.plot.addItem(self.timeline)
+        self.plot.addItem(self.highlight_bar)
 
     def init_view(self):
         """initialize the viewbox settings"""
@@ -358,6 +366,7 @@ class GuitarHero(QWidget):
         self.recording = recording
         self.score_data = recording.score_data
         self.alignment = recording.alignment
+        self.clear_highlight()
         self.update_view_items()
 
     def load_alignment(self, alignment: Alignment):
@@ -489,6 +498,8 @@ class GuitarHero(QWidget):
         matches = goods + subs
         xs, ys = [], []
         for n, m in matches:
+            if n is None or m is None:
+                continue
             # compute midpoints for USER and MIDI notes
             ux = 0.5 * (n.start_time + n.end_time)
             uy = float(n.midi_num[0])
@@ -531,6 +542,35 @@ class GuitarHero(QWidget):
             self.midi_notes_del.setOpts(
                 x=x, width=width, y0=y0, height=height
             )
+
+    def highlight_mistake(self, mistake):
+        """Pan to and highlight the note(s) involved in a mistake."""
+        note = mistake.user_note or mistake.midi_note
+        if note is None:
+            return
+        self.move_plot(0.5 * (note.start_time + note.end_time))
+        notes = [n for n in (mistake.user_note, mistake.midi_note) if n is not None]
+        starts = np.array([n.start_time for n in notes], dtype=np.float64)
+        ends   = np.array([n.end_time   for n in notes], dtype=np.float64)
+        midis  = np.array([n.midi_num[0] for n in notes], dtype=np.float64)
+        self.highlight_bar.setOpts(
+            x=0.5*(starts+ends), width=ends-starts,
+            y0=midis - self.NOTE_HEIGHT, height=np.full_like(midis, self.NOTE_HEIGHT * 2)
+        )
+        self.update_highlight_override(mistake.is_overridden())
+
+    def update_highlight_override(self, overridden: bool):
+        """Swap the highlight color: green if overridden, red if not."""
+        if overridden:
+            self.highlight_bar.setOpts(brush=pg.mkBrush(80, 255, 80, 130),
+                                       pen=pg.mkPen(80, 255, 80, 255, width=2))
+        else:
+            self.highlight_bar.setOpts(brush=pg.mkBrush(255, 80, 80, 130),
+                                       pen=pg.mkPen(255, 80, 80, 255, width=2))
+
+    def clear_highlight(self):
+        self.highlight_bar.setOpts(x=[], width=[], y0=[], height=[])
+        self.update_highlight_override(False)  # reset color for next use
 
     def get_distance_brush(self, d: float | None):
         if d is None:

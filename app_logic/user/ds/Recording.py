@@ -31,6 +31,7 @@ class Recording:
         self.pitch_data = PitchData(config=self.config)
         self.note_data = NoteData()
         self.alignment: Alignment = Alignment(config=self.config) # filled in later
+        self.overridden_mistake_indices = set()
 
         # queue data structures for real time pitch + note detection + correction
         self.a2p_queue = Buffer(self.config.sr) #audio-to-pitches
@@ -90,6 +91,7 @@ class Recording:
         user_notes, midi_notes = self.note_data, self.score_data.note_datas[self.active_instrument]
         notes, mistakes = self.string_editor.string_edit(user_string=user_notes, midi_string=midi_notes)
         self.alignment.load_alignment(notes, mistakes)
+        self.alignment.reapply_overrides(self.overridden_mistake_indices)
 
     def write_data(self, indata: np.ndarray, start_time: float):
         """write indata to the audio_data at the given start_time
@@ -132,3 +134,22 @@ class Recording:
             pitches = self.pitch_data.read(start_time=note.start_time, end_time=note.end_time, clean=True)
             for p in pitches:
                 p.distance = note.midi_num[0] - p.candidates[0][0]
+    
+    def toggle_mistake_override(self, mistake_index: int):
+        #error checking
+        if not (0 <= mistake_index < len(self.alignment.mistakes)):
+            return
+        #Toggle persisted override state for one mistake.
+        mistake = self.alignment.mistakes[mistake_index]
+        pair_index = mistake.get_pair_index()
+        if mistake_index in self.overridden_mistake_indices:
+            self.overridden_mistake_indices.remove(mistake_index)
+            self.alignment.toggle_overridden_pair_indices(pair_index, False)
+            overridden = False
+        else:
+            self.overridden_mistake_indices.add(mistake_index)
+            self.alignment.toggle_overridden_pair_indices(pair_index, True)
+            overridden = True
+
+        if 0 <= mistake_index < len(self.alignment.mistakes):
+            self.alignment.mistakes[mistake_index].set_override(overridden)
