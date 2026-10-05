@@ -2,33 +2,37 @@ import os as _os
 import warnings as _warnings
 from importlib import import_module as _import_module
 
-# Quiet third-party import-time deprecation noise (e.g. resampy -> pkg_resources,
-# numba/librosa deprecations) so it doesn't clutter benchmark output. Installed
-# BEFORE the submodule imports below, which transitively pull in librosa/resampy/
-# crepe -- so the filters are in effect by the time those emit at import time.
-_warnings.filterwarnings("ignore", message=r".*pkg_resources is deprecated.*")
+_warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 _warnings.filterwarnings("ignore", category=DeprecationWarning)
 _warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-
-# TensorFlow (SPICE / crepe) logs a flood through C++ + Python logging, NOT the
-# warnings module. The C++ side is gated by this env var, which TF only reads at
-# import time -- so set it here, before anything pulls TF in. The Python-side
-# logger flood is silenced per-tracker via _quiet_tensorflow() in the benchmarker.
-_os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")  # 0=all .. 3=errors only
-
+_os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 _EXPORTS = {
-    "PitchBenchmarker": ("benchmarks.modules.pitch.PitchBenchmarker", "PitchBenchmarker"),
-    "CocoChoralesBenchmarker": (
-        "benchmarks.modules.CocoChoralesBenchmarker",
-        "CocoChoralesBenchmarker",
+    "NoteDetectorBase": (
+        "benchmarks.modules.note.NoteDetectorBase",
+        "NoteDetectorBase",
     ),
+    "PitchBenchmarker": (
+        "benchmarks.modules.pitch.PitchBenchmarker",
+        "PitchBenchmarker",
+    ),
+    "PitchDetectorBase": (
+        "benchmarks.modules.pitch.PitchDetectorBase",
+        "PitchDetectorBase",
+    ),
+    "CocoChorales": ("benchmarks.modules.pitch.datasets.CocoChorales", "CocoChorales"),
     "NoteBenchmarker": ("benchmarks.modules.note.NoteBenchmarker", "NoteBenchmarker"),
     "BenchmarkNoteDetector": (
-        "benchmarks.modules.note.NoteDetectionBaselines",
-        "BenchmarkNoteDetector",
+        "benchmarks.modules.note.NoteDetectorBase",
+        "NoteDetectorBase",
     ),
-    "MistakeBenchmarker": ("benchmarks.modules.mistake.MistakeBenchmarker", "MistakeBenchmarker"),
-    "MistakeInjector": ("benchmarks.modules.mistake.MistakeInjector", "MistakeInjector"),
+    "MistakeBenchmarker": (
+        "benchmarks.modules.mistake.MistakeBenchmarker",
+        "MistakeBenchmarker",
+    ),
+    "MistakeInjector": (
+        "benchmarks.modules.mistake.datasets.MistakeInjector",
+        "MistakeInjector",
+    ),
 }
 
 
@@ -40,9 +44,12 @@ def __getattr__(name: str):
     globals()[name] = value
     return value
 
+
 __all__ = [
+    "NoteDetectorBase",
     "PitchBenchmarker",
-    "CocoChoralesBenchmarker",
+    "PitchDetectorBase",
+    "CocoChorales",
     "NoteBenchmarker",
     "BenchmarkNoteDetector",
     "MistakeBenchmarker",

@@ -1,0 +1,1 @@
+"""Vibrato detector implementations."""

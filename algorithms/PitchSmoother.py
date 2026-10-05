@@ -1,335 +1,464 @@
-"""
-PitchSmoother — Stage 2 of the pYIN algorithm (HMM-based pitch tracking).
-
-This module implements the second stage of probabilistic YIN (Mauch & Dixon,
-"pYIN: A Fundamental Frequency Estimator Using Probabilistic Threshold
-Distributions", ICASSP 2014). Stage 1 (the probabilistic YIN frontend that
-emits, per frame, a set of pitch candidates each with a probability plus an
-unvoiced probability) already lives in `algorithms/PitchDetector.py` and
-produces `app_logic.user.ds.PitchData.Pitch` objects.
-
-Here we take that per-frame candidate distribution and decode a single smooth
-pitch track through it with a hidden Markov model, exactly as described in
-section 2.2 of the paper and realised in the reference implementation
-(MonoPitch / MonoPitchHMM in https://github.com/aguai/pyin):
-
-  * Pitch space: the four-octave (configurable) range is quantised into bins of
-    10 cents (0.1 semitone). Following [9] in the paper, every pitch bin is
-    split into a voiced and an unvoiced state -> 2 * M states total.
-
-  * Observation probabilities (paper eq. 6 / MonoPitchHMM::calculateObsProb):
-        voiced bin m : yin_trust * p*_m      (p*_m = candidate prob in bin m)
-        unvoiced     : (1 - yin_trust * sum_k p*_k) / M    (uniform over bins)
-
-  * Transition probabilities:
-        - voicing: Attune defaults to 0.9975 to stay, 0.0025 to switch;
-                   the paper uses 0.99 / 0.01 (eq. 7)
-        - pitch:   triangular kernel, Attune default max jump 9 bins =
-                   90 cents/frame, peak at 0, normalised to sum to 1 (eq. 8)
-        - assumed independent, so the full transition is their product.
-
-  * Initial distribution: uniform over the unvoiced states.
-
-The decoding itself is delegated to hmmlearn's C-accelerated Viterbi. hmmlearn
-expects parametric emissions, but pYIN's emissions are precomputed per frame,
-so we subclass `hmmlearn.base.BaseHMM` and override `_compute_log_likelihood`
-to hand back our own log-observation matrix. scipy.sparse is used to assemble
-the band-diagonal transition matrix compactly before densifying it for
-hmmlearn.
-"""
+"""Pitch tracking, production candidate support, and final voicing."""
 
 from __future__ import annotations
 
+import copy
 import time
+from typing import TYPE_CHECKING
+
 import numpy as np
-from scipy.sparse import diags
-from hmmlearn.base import BaseHMM
+import numpy.typing as npt
+from scipy.signal import get_window
 from tqdm import tqdm
 
-from algorithms.Config import Config
+from algorithms.Config import Config, PYIN_GLOBAL_VOLUME_PERCENTILE
 from app_logic.user.ds.PitchData import Pitch
-from app_logic.user.ds.Recording import Recording
+
+if TYPE_CHECKING:
+    from app_logic.user.ds.Recording import Recording
 
 
-class _PrecomputedHMM(BaseHMM):
-    """A thin hmmlearn HMM whose 'emissions' are supplied directly.
+FloatArray = npt.NDArray[np.float64]
+BoolArray = npt.NDArray[np.bool_]
 
-    We never fit this model. We set `startprob_` and `transmat_` by hand and
-    feed the per-frame log-observation matrix straight through, so that
-    hmmlearn's Viterbi implementation does the heavy lifting.
-    """
 
-    def __init__(self, n_components: int, startprob: np.ndarray, transmat: np.ndarray):
-        # params="" / init_params="" => don't try to learn or initialise anything
-        super().__init__(
-            n_components=n_components,
-            params="",
-            init_params="",
-            implementation="log",
-        )
-        self.startprob_ = startprob
-        self.transmat_ = transmat
-        # hmmlearn validates against this when checking the input width
-        self.n_features = n_components
+try:
+    from numba import njit
+except ImportError:  # pragma: no cover -- librosa currently installs numba
+    def njit(*_args, **_kwargs):
+        def decorate(function):
+            return function
 
-    def _compute_log_likelihood(self, X: np.ndarray) -> np.ndarray:
-        # X is already the (n_frames, n_states) log-observation matrix.
-        return X
+        return decorate
 
-    # The base class is abstract about sampling; we never sample, but provide
-    # stubs so instantiation doesn't complain.
-    def _init(self, X, lengths=None):
-        pass
 
-    def _generate_sample_from_state(self, state, random_state=None):
-        raise NotImplementedError("PitchSmoother HMM is decode-only.")
+@njit(cache=True)
+def _viterbi_0110(
+    log_probability: FloatArray,
+    log_transition: FloatArray,
+    log_initial: FloatArray,
+) -> npt.NDArray[np.uint16]:
+    """Librosa 0.11's Viterbi recurrence, retained for exact pYIN parity."""
+    frame_count, state_count = log_probability.shape
+    states = np.zeros(frame_count, dtype=np.uint16)
+    if frame_count == 0:
+        return states
+    pointers = np.zeros((frame_count, state_count), dtype=np.uint16)
+
+    previous = log_probability[0] + log_initial
+    current = np.empty(state_count, dtype=np.float64)
+    for frame in range(1, frame_count):
+        transition_out = previous + log_transition.T
+        for destination in range(state_count):
+            pointers[frame, destination] = np.argmax(
+                transition_out[destination]
+            )
+            current[destination] = (
+                log_probability[frame, destination]
+                + transition_out[
+                    destination,
+                    pointers[frame, destination],
+                ]
+            )
+        previous, current = current, previous
+
+    states[-1] = np.argmax(previous)
+    for frame in range(frame_count - 2, -1, -1):
+        states[frame] = pointers[frame + 1, states[frame + 1]]
+    return states
 
 
 class PitchSmoother:
-    """HMM smoothing of a pYIN candidate pitch track.
+    """Production pitch tracking; joint and pitch_only modes support benchmarks."""
 
-    Typical use:
-        smoother = PitchSmoother(config)
-        smoothed = smoother.smooth(recording.pitch_data.data)   # list[Pitch]
+    METHOD_VERSION = 'pitch_only_confidence_gap_50ms_support_v2'
+    RESOLUTION = 0.1
+    MAX_TRANSITION_RATE = 35.92
+    SWITCH_PROB = 0.01
 
-    The output is a new list of `Pitch` objects (one per input frame) in which
-    each frame holds a single decoded candidate (voiced) or no candidate with
-    `unvoiced_prob = 1.0` (unvoiced). Time / volume / distance are preserved.
-    """
-
-    def __init__(self, recording: Recording=None, config: Config=None):
-        """
-        Args:
-            recording: optional Recording to pull config from (if not supplied
-                directly). If both are supplied, the explicit config takes precedence.
-            config: app Config (used for tuning + the freq<->midi conversion,
-                and as the default pitch range via fmin/fmax).
-        """
+    def __init__(
+        self,
+        recording: Recording | None = None,
+        config: Config | None = None,
+        *,
+        mode: str = "production",
+        max_gap_seconds: float | None = None,
+        confidence_emissions: bool | None = None,
+        resolution: float = RESOLUTION,
+        max_transition_rate: float = MAX_TRANSITION_RATE,
+        switch_prob: float = SWITCH_PROB,
+    ) -> None:
+        if recording is None and config is None:
+            raise ValueError("PitchSmoother requires a recording or config")
+        if mode not in ("production", "pitch_only", "joint"):
+            raise ValueError(f"Unknown pitch smoothing mode: {mode}")
+        self.mode = mode
+        self.max_gap_seconds = float(
+            (0.050 if mode == "production" else 0.0)
+            if max_gap_seconds is None else max_gap_seconds
+        )
+        self.confidence_emissions = (
+            mode == "production" if confidence_emissions is None
+            else bool(confidence_emissions)
+        )
+        if not np.isfinite(self.max_gap_seconds) or self.max_gap_seconds < 0:
+            raise ValueError("max_gap_seconds must be finite and nonnegative")
         self.recording = recording
-        self.config = config if config else recording.config
-        if self.config:
-            self.update_config(self.config)
+        self.resolution = float(resolution)
+        self.max_transition_rate = float(max_transition_rate)
+        self.switch_prob = float(switch_prob)
+        self.update_config(config if config is not None else recording.config)
 
-    def update_config(self, config: Config):
-        """update the config and all relevant parameters. importantly, this sets
-        the following attributes on self to be used in the algorithm
-            fmin / fmax: pitch-range bounds in Hz. Default to config.fmin/fmax
-            resolution_cents: bin width in cents; paper uses 10 (= 0.1 semitone)
-            max_jump_cents: maximum frame-to-frame pitch jump. Attune uses 90
-                cents (9 bins of 10 cents); the paper uses 250 cents.
-            switch_prob: probability of switching voiced<->unvoiced (eq. 7).
-            yin_trust: weight on the YIN candidate mass when voiced. Attune
-                uses 0.65; eq. 6 / MonoPitchHMM uses 0.5.
-        """
+    def update_config(self, config: Config) -> None:
         self.config = config
-        RESOLUTION_CENTS = 10.0
-        self.resolution = RESOLUTION_CENTS / 100.0  # in semitones
-        self.switch_prob = 0.0025
-        self.yin_trust = 0.65
-        MAX_JUMP_CENTS = 90.0
+        self.fmin = float(config.fmin)
+        self.fmax = float(config.fmax)
+        self.sr = int(config.sr)
+        self.hop_length = int(config.h1)
+        self.n_bins_per_semitone = int(np.ceil(1.0 / self.resolution))
+        self.n_pitch_bins = (
+            int(np.floor(
+                12
+                * self.n_bins_per_semitone
+                * np.log2(self.fmax / self.fmin)
+            ))
+            + 1
+        )
+        self.bin_freqs = self.fmin * 2.0 ** (
+            np.arange(self.n_pitch_bins, dtype=np.float64)
+            / (12 * self.n_bins_per_semitone)
+        )
+        self.bin_midis = np.asarray(
+            [config.freq_to_midi(freq) for freq in self.bin_freqs],
+            dtype=np.float64,
+        )
+        self.midi_min = float(self.bin_midis[0])
+        self.midi_max = float(self.bin_midis[-1])
+        self.transition = self._transition_matrix()
+        state_count = self.transition.shape[0]
+        self.initial = np.ones(state_count, dtype=np.float64)
+        self.initial /= state_count
 
-        # --- build the pitch grid (bin index <-> midi number) ---
-        fmin = config.fmin
-        fmax = config.fmax
-        midi_lo = config.freq_to_midi(fmin)
-        midi_hi = config.freq_to_midi(fmax)
-        # snap to the resolution grid so bin centres land on nice values
-        self.midi_min = np.floor(midi_lo / self.resolution) * self.resolution
-        midi_max = np.ceil(midi_hi / self.resolution) * self.resolution
-        self.n_bins = int(round((midi_max - self.midi_min) / self.resolution)) + 1
-        self.bin_midis = self.midi_min + self.resolution * np.arange(self.n_bins)
+    def smooth(
+        self, pitches: list[Pitch | None],
+        show_progress: bool = False, verbose: bool = False,
+    ) -> list[Pitch | None]:
+        tracked = self._smooth_pitch_path(pitches, show_progress, verbose)
+        if self.mode == "joint":
+            return tracked
+        if self.mode == "pitch_only":
+            return VoicingSmoother(config=self.config).smooth(tracked)
+        # Unsupported bins may connect the path, but cannot become measured pitches.
+        for pitch in tracked:
+            if pitch is None:
+                continue
+            if not self._has_candidate_support(pitch):
+                pitch.value = -1.0
+                # Prevent the final voicing controller from reviving this frame.
+                pitch.unvoiced_prob = 1.0
+        return tracked
 
-        # max jump in bins (each side of the diagonal)
-        self.max_jump = int(round(MAX_JUMP_CENTS / RESOLUTION_CENTS))
-
-        self.n_states = 2 * self.n_bins  # voiced bins, then unvoiced bins
-
-        # precompute the (expensive, input-independent) model pieces
-        self._startprob = self._build_startprob()
-        self._transmat = self._build_transition()
-
-    # ------------------------------------------------------------------ #
-    # model construction
-    # ------------------------------------------------------------------ #
-    def _build_startprob(self) -> np.ndarray:
-        """Uniform over the unvoiced states (paper: "uniformly distributed
-        over the unvoiced states")."""
-        p = np.zeros(self.n_states, dtype=np.float64)
-        p[self.n_bins:] = 1.0 / self.n_bins
-        return p
-
-    def _triangular_pitch_block(self) -> np.ndarray:
-        """The M x M pitch-transition block: a band-diagonal triangular kernel,
-        each row renormalised to sum to 1 (handles truncation at the edges).
-        Built with scipy.sparse.diags, then densified."""
-        M, K = self.n_bins, self.max_jump
-        offsets = np.arange(-K, K + 1)
-        # triangular weights: peak (K+1) at offset 0, falling to 1 at +/-K
-        weights = (K + 1) - np.abs(offsets)
-        diagonals = [
-            np.full(M - abs(o), w, dtype=np.float64)
-            for o, w in zip(offsets, weights)
-        ]
-        block = diags(diagonals, offsets, shape=(M, M)).toarray()
-        # row-normalise so each source bin's outgoing pitch distribution sums to 1
-        block /= block.sum(axis=1, keepdims=True)
-        return block
-
-    def _build_transition(self) -> np.ndarray:
-        """Full (2M x 2M) transition matrix = pitch transition (x) voicing
-        transition, assuming independence (paper section 2.2)."""
-        P = self._triangular_pitch_block()
-        stay = 1.0 - self.switch_prob
-        switch = self.switch_prob
-        # rows/cols ordered [voiced bins ... , unvoiced bins ...]
-        transmat = np.block([
-            [stay * P,   switch * P],
-            [switch * P, stay * P],
+    def smooth_to_arrays(
+        self,
+        pitches: list[Pitch | None],
+    ) -> tuple[FloatArray, FloatArray, BoolArray]:
+        states = self.decode(pitches)
+        times = np.asarray([
+            float(pitch.time) if pitch is not None else np.nan
+            for pitch in pitches
         ])
-        return transmat
+        midi = self.bin_midis[states % self.n_pitch_bins]
+        voiced = states < self.n_pitch_bins
+        return times, np.asarray(midi), np.asarray(voiced)
 
-    # ------------------------------------------------------------------ #
-    # observations
-    # ------------------------------------------------------------------ #
-    def _midi_to_bin(self, midi: float) -> int | None:
-        """Nearest pitch bin for a midi value, or None if out of range."""
-        idx = int(round((midi - self.midi_min) / self.resolution))
-        if idx < 0 or idx >= self.n_bins:
-            return None
-        return idx
+    def smooth_pitch_data(self, pitch_data):
+        from app_logic.user.ds.PitchData import PitchData
 
-    def _observation_logprobs(self, pitches: list[Pitch]) -> np.ndarray:
-        """Build the (n_frames, 2M) log-observation matrix from the per-frame
-        candidate distributions (paper eq. 6 / MonoPitchHMM::calculateObsProb).
-        """
-        T = len(pitches)
-        obs = np.zeros((T, self.n_states), dtype=np.float64)
+        output = PitchData(config=pitch_data.config)
+        output.load(self.smooth(list(pitch_data.data)))
+        output.t_origin = pitch_data.t_origin
+        return output
 
-        for t, pitch in enumerate(pitches):
-            voiced = np.zeros(self.n_bins, dtype=np.float64)
-            if pitch is not None:
-                for midi, prob in pitch.candidate_pitches:
-                    b = self._midi_to_bin(midi)
-                    if b is not None:
-                        voiced[b] += prob
-
-            voiced_mass = voiced.sum()                  # sum_k p*_k
-            prob_pitched = self.yin_trust * voiced_mass  # really-voiced mass
-            if voiced_mass > 0:
-                # scale candidate distribution down to prob_pitched total
-                voiced *= prob_pitched / voiced_mass
-            # unvoiced mass spread uniformly across the M unvoiced states
-            unvoiced_val = (1.0 - prob_pitched) / self.n_bins
-
-            obs[t, : self.n_bins] = voiced
-            obs[t, self.n_bins:] = unvoiced_val
-
-        # log with a floor to keep -inf out of the Viterbi recursion
-        np.maximum(obs, 1e-12, out=obs)
-        return np.log(obs)
-
-    # ------------------------------------------------------------------ #
-    # public API
-    # ------------------------------------------------------------------ #
-    def decode(self, pitches: list[Pitch]) -> np.ndarray:
-        """Run Viterbi and return the decoded state index per frame.
-
-        State s < n_bins  -> voiced,   pitch bin = s
-        State s >= n_bins -> unvoiced, pitch bin = s - n_bins
-        """
-        if not pitches:
-            return np.empty(0, dtype=int)
-
-
-
-        log_obs = self._observation_logprobs(pitches)
-        hmm = _PrecomputedHMM(self.n_states, self._startprob, self._transmat)
-        _logprob, states = hmm.decode(log_obs, algorithm="viterbi")
-
+    def decode(self, pitches: list[Pitch | None]) -> npt.NDArray[np.uint16]:
+        if self.mode == "joint":
+            return self._decode_joint(pitches)
+        # States encode unvoiced frames as n_pitch_bins + pitch_bin.
+        states = np.full(len(pitches), self.n_pitch_bins, dtype=np.uint16)
+        voiced = VoicingSmoother(config=self.config).decode(pitches)
+        tracking = self._tracking_mask(voiced)
+        edges = np.diff(np.r_[False, tracking, False].astype(np.int8))
+        tiny = np.finfo(np.float64).tiny
+        log_transition = np.log(self.transition + tiny)
+        log_initial = np.log(self.initial + tiny)
+        for start, stop in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)):
+            observations, _ = self.observation_probabilities(pitches[start:stop])
+            # Gap frames retain their time steps without favoring a pitch.
+            observations[:, ~voiced[start:stop]] = 1.0 / self.n_pitch_bins
+            states[start:stop] = _viterbi_0110(
+                np.log(observations.T + tiny), log_transition, log_initial
+            )
+        states[tracking & ~voiced] += self.n_pitch_bins
         return states
 
-    def smooth_to_arrays(self, pitches: list[Pitch]):
-        """Decode and return plain arrays, handy for plotting / debugging.
+    def observation_probabilities(
+        self, pitches: list[Pitch | None],
+    ) -> tuple[FloatArray, FloatArray]:
+        if self.mode == "joint":
+            return self._joint_observation_probabilities(pitches)
+        observations = np.zeros((self.n_pitch_bins, len(pitches)))
+        for frame, pitch in enumerate(pitches):
+            if pitch is None:
+                continue
+            for midi, probability in pitch.candidate_pitches:
+                observations[self._midi_to_bin(midi), frame] = probability
+        mass = observations.sum(axis=0)
+        np.divide(observations, mass, out=observations, where=mass[None, :] > 0)
+        observations[:, mass == 0] = 1.0 / self.n_pitch_bins
+        if self.confidence_emissions:
+            confidence = np.asarray([
+                np.clip(1.0 - pitch.unvoiced_prob, 0.0, 1.0)
+                if pitch is not None else 0.0
+                for pitch in pitches
+            ])
+            observations *= confidence[None, :]
+            observations += (1.0 - confidence[None, :]) / self.n_pitch_bins
+        return observations, mass
 
-        Returns:
-            times   (np.ndarray): frame times in seconds (NaN where unknown).
-            midi    (np.ndarray): decoded midi number per frame (NaN if unvoiced).
-            voiced  (np.ndarray): bool mask, True where the frame is voiced.
-        """
-        states = self.decode(pitches)
-        T = len(pitches)
-        times = np.full(T, np.nan)
-        midi = np.full(T, np.nan)
-        voiced = np.zeros(T, dtype=bool)
-
-        for t, (p, s) in enumerate(zip(pitches, states)):
-            if p is not None:
-                times[t] = p.time
-            is_voiced = s < self.n_bins
-            voiced[t] = is_voiced
-            if is_voiced:
-                midi[t] = self.bin_midis[s]
-        return times, midi, voiced
-
-    def smooth(self, pitches: list[Pitch], show_progress: bool=False, verbose: bool = False) -> list[Pitch]:
-        """Decode the track and return a new list of `Pitch` objects.
-
-        Each voiced frame keeps a single candidate (the decoded midi at 10-cent
-        resolution) with probability 1.0 and unvoiced_prob 0.0; each unvoiced
-        frame has no candidates and unvoiced_prob 1.0. Frame time, volume and
-        distance are copied from the corresponding input pitch.
-        """
+    def _smooth_pitch_path(
+        self,
+        pitches: list[Pitch | None],
+        show_progress: bool = False,
+        verbose: bool = False,
+    ) -> list[Pitch | None]:
         if verbose:
-            print("Starting pitch smoothing... ", end="", flush=True)
-        start = time.time()
-
+            print("Tracking pitch... ", end="", flush=True)
+        started = time.perf_counter()
         states = self.decode(pitches)
-        out: list[Pitch] = []
-        frame_states = zip(pitches, states)
+        output: list[Pitch | None] = []
+        frames = zip(pitches, states)
         if show_progress:
-            frame_states = tqdm(
-                frame_states,
+            frames = tqdm(
+                frames,
                 total=len(pitches),
-                desc="Converting smoothed pitches",
+                desc="Tracking pitch",
                 leave=False,
                 mininterval=0.25,
             )
-
-        for p, s in frame_states:
-            is_voiced = s < self.n_bins
-            if p is None:
-                # keep the time grid intact even if the frame was empty
-                out.append(None)
+        for pitch, state in frames:
+            if pitch is None:
+                output.append(None)
                 continue
-
-            if is_voiced:
-                midi = float(self.bin_midis[s])
-                candidates = [(midi, 1.0)]
-                unvoiced_prob = 0.0
-            else:
-                candidates = []
-                unvoiced_prob = 1.0
-
-            out.append(Pitch(
-                time=p.time,
-                value=midi if is_voiced else -1,
-                candidates=candidates,
-                volume=p.volume,
-                unvoiced_prob=unvoiced_prob,
-                live_distance=p.live_distance,
-                config=p.config,
-            ))
-        
+            smoothed = copy.copy(pitch)
+            smoothed.candidate_pitches = list(pitch.candidate_pitches)
+            pitch_bin = int(state % self.n_pitch_bins)
+            # Keep the hidden pitch bin; final voicing is a separate stage.
+            smoothed.value = float(self.bin_midis[pitch_bin])
+            smoothed.unvoiced_prob = float(pitch.unvoiced_prob)
+            output.append(smoothed)
         if verbose:
-            print(f"Done! Took {time.time() - start:.2f} sec.")
-        return out
+            print(f"Done! Took {time.perf_counter() - started:.2f} sec.")
+        return output
 
-    # convenience: operate directly on a PitchData container
-    def smooth_pitch_data(self, pitch_data):
-        """Smooth a `PitchData` in place-ish: returns a new PitchData with the
-        same time indexing but the smoothed pitch track."""
-        from app_logic.user.ds.PitchData import PitchData
-        smoothed = self.smooth(list(pitch_data.data))
-        out = PitchData(config=pitch_data.config)
-        out.load(smoothed)
-        return out
+    def _tracking_mask(self, voiced: BoolArray) -> BoolArray:
+        tracking = voiced.copy()
+        edges = np.diff(np.r_[False, ~voiced, False].astype(np.int8))
+        for start, stop in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)):
+            if (start > 0 and stop < len(voiced)
+                    and (stop - start) * self.hop_length / self.sr
+                    <= self.max_gap_seconds):
+                tracking[start:stop] = True
+        return tracking
+
+    def _has_candidate_support(self, pitch: Pitch) -> bool:
+        decoded_bin = self._midi_to_bin(pitch.value)
+        return any(
+            np.isfinite(probability) and probability > 0
+            and self._midi_to_bin(midi) == decoded_bin
+            for midi, probability in pitch.candidate_pitches
+        )
+
+    def _midi_to_bin(self, midi: float) -> int:
+        index = int(np.round(
+            (float(midi) - float(self.bin_midis[0]))
+            * self.n_bins_per_semitone
+        ))
+        return int(np.clip(index, 0, self.n_pitch_bins - 1))
+
+    def _transition_matrix(self) -> np.ndarray:
+        pitch_transition = self._pitch_transition_matrix()
+        if self.mode != "joint":
+            return pitch_transition
+        voicing_transition = np.asarray([
+            [1.0 - self.switch_prob, self.switch_prob],
+            [self.switch_prob, 1.0 - self.switch_prob],
+        ])
+        return np.kron(voicing_transition, pitch_transition)
+
+    def _pitch_transition_matrix(self) -> np.ndarray:
+        max_semitones_per_frame = round(
+            self.max_transition_rate
+            * 12
+            * self.hop_length
+            / self.sr
+        )
+        width = (
+            max_semitones_per_frame * self.n_bins_per_semitone + 1
+        )
+        if width > self.n_pitch_bins:
+            raise ValueError(
+                f"transition width {width} exceeds pitch-bin count "
+                f"{self.n_pitch_bins}"
+            )
+
+        pitch_transition = np.zeros(
+            (self.n_pitch_bins, self.n_pitch_bins),
+            dtype=np.float64,
+        )
+        window = get_window("triangle", width, fftbins=False)
+        left_padding = (self.n_pitch_bins - width) // 2
+        padded = np.pad(
+            window,
+            (left_padding, self.n_pitch_bins - width - left_padding),
+        )
+        for source in range(self.n_pitch_bins):
+            row = np.roll(
+                padded,
+                self.n_pitch_bins // 2 + source + 1,
+            )
+            row[min(
+                self.n_pitch_bins,
+                source + width // 2 + 1,
+            ):] = 0
+            row[:max(0, source - width // 2)] = 0
+            pitch_transition[source] = row
+        pitch_transition /= pitch_transition.sum(axis=1, keepdims=True)
+
+        return pitch_transition
+
+    def _decode_joint(self, pitches: list[Pitch | None]) -> npt.NDArray[np.uint16]:
+        if not pitches:
+            return np.empty(0, dtype=np.uint16)
+        observations, _ = self.observation_probabilities(pitches)
+        tiny = np.finfo(observations.dtype).tiny
+        return _viterbi_0110(
+            np.log(observations.T + tiny),
+            np.log(self.transition + tiny),
+            np.log(self.initial + tiny),
+        )
+
+    def _joint_observation_probabilities(
+        self,
+        pitches: list[Pitch | None],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Rebuild the joint HMM emissions from canonical pYIN observations."""
+        observations = np.zeros(
+            (2 * self.n_pitch_bins, len(pitches)),
+            dtype=np.float64,
+        )
+        for frame, pitch in enumerate(pitches):
+            if pitch is None:
+                continue
+            pitch.ensure_compatible(self.config)
+            for midi, probability in pitch.candidate_pitches:
+                observations[self._midi_to_bin(midi), frame] = float(probability)
+
+        voiced_probability = np.clip(
+            np.sum(observations[:self.n_pitch_bins], axis=0),
+            0,
+            1,
+        )
+        observations[self.n_pitch_bins:, :] = (
+            1.0 - voiced_probability
+        ) / self.n_pitch_bins
+        return observations, voiced_probability
+
+
+class VoicingSmoother:
+    """Apply the promoted whole-track pYIN-confidence and p95 RMS controller."""
+
+    def __init__(
+        self,
+        recording: Recording | None = None,
+        config: Config | None = None,
+    ) -> None:
+        if recording is None and config is None:
+            raise ValueError("VoicingSmoother requires a recording or config")
+        self.recording = recording
+        self.update_config(config if config is not None else recording.config)
+
+    def update_config(self, config: Config) -> None:
+        self.config = config
+
+    def smooth(
+        self,
+        pitches: list[Pitch | None],
+        show_progress: bool = False,
+        verbose: bool = False,
+    ) -> list[Pitch | None]:
+        if verbose:
+            print("Applying post-hoc voicing controller... ", end="", flush=True)
+        started = time.perf_counter()
+        voiced = self.decode(pitches)
+        output: list[Pitch | None] = []
+        frames = pitches
+        if show_progress:
+            frames = tqdm(
+                frames,
+                total=len(pitches),
+                desc="Applying post-hoc voicing controller",
+                leave=False,
+                mininterval=0.25,
+            )
+        for pitch, is_voiced in zip(frames, voiced):
+            if pitch is None:
+                output.append(None)
+                continue
+            gated = copy.copy(pitch)
+            if not is_voiced:
+                gated.value = -1.0
+                gated.unvoiced_prob = 1.0
+            else:
+                gated.unvoiced_prob = 0.0
+            output.append(gated)
+        if verbose:
+            print(f"Done! Took {time.perf_counter() - started:.2f} sec.")
+        return output
+
+    def decode(self, pitches: list[Pitch | None]) -> BoolArray:
+        """Return the global controller's voiced mask."""
+        if not pitches:
+            return np.empty(0, dtype=bool)
+        volumes = np.asarray([
+            max(0.0, float(pitch.volume))
+            for pitch in pitches
+            if pitch is not None
+        ])
+        threshold = self.volume_floor(volumes)
+        eligible = np.asarray([
+            bool(
+                pitch is not None
+                and pitch.candidate_pitches
+                and max(0.0, float(pitch.volume)) >= threshold
+            )
+            for pitch in pitches
+        ])
+        allowed_by_confidence = np.asarray([
+            bool(
+                pitch is not None
+                and float(pitch.unvoiced_prob)
+                < float(self.config.posthoc_unv_thresh)
+            )
+            for pitch in pitches
+        ])
+        return allowed_by_confidence & eligible
+
+    def volume_floor(self, volumes: npt.ArrayLike) -> float:
+        """Return ``posthoc_min_volume * p95(RMS)`` for the recording."""
+        values = np.asarray(volumes, dtype=np.float64)
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            return 0.0
+        reference = float(
+            np.percentile(values, PYIN_GLOBAL_VOLUME_PERCENTILE)
+        )
+        return reference * max(0.0, float(self.config.posthoc_min_volume))

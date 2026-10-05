@@ -1,12 +1,36 @@
+# Local Python environments and generated caches
 at-venv*/
 /venv/
+.venv/
 .DS_Store
 *__pycache__/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Downloaded benchmark inputs and generated results (keep source/notebooks)
 benchmarks/datasets/*
 !benchmarks/datasets/.gitkeep
 benchmarks/results/*
 !benchmarks/results/.gitkeep
+# Legacy output locations; current runs belong under benchmarks/results/.
+/benchmarks/sweeps/results/
+/benchmarks/notebooks/sweeps/results/
+
+# Machine-local configuration
+.env
+.env.*
+!.env.example
+!.env.template
 CLAUDE.md
 AGENTS.md
 .claude/
+.vscode*
+
+# Local archives, papers, and downloaded soundfont libraries
+docs/archive*
+paper*
+benchmarks/archive*
+resources/soundfonts*

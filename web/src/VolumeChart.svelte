@@ -1,24 +1,23 @@
 <script>
-  // Ports ui/note/VolumeWidget.py: the cursor-note's loudness curve in dBFS,
+  // Ports ui/note/VolumeWidget.py: the cursor-note's level relative to the take's average,
   // with the pitch contour underlaid for context, windowed to the note's own
   // [startTime, endTime] span. NotePanel.svelte owns picking which note/tab
   // is active; this only draws.
   import { volumeCurveDb, pitchContour, contourToBand, paddedRange } from "./noteCurve.js";
 
-  let { note, pitchFrames, volumeRange, currentTime } = $props();
+  let { note, pitchFrames, volumeStats, currentTime } = $props();
 
   const WIDTH = 380;
   const HEIGHT = 140;
-  const VOL_LIVE_FLOOR_DB = -42.0; // ui.Colors.VOL_LIVE_FLOOR_DB - review fallback only
   const Y_PADDING = 0.15;
 
-  // set_default_y_range, ported: take's own [quietest, loudest] dBFS padded
-  // 15% each side; falls back to the live window only when the whole take
-  // has no measurable volume at all (this app is always "review" mode).
+  // One reference and scale for all notes in the take; leave breathing room
+  // around zero even when the performance is nearly constant in level.
   let yDomain = $derived.by(() => {
-    let [y0, y1] = volumeRange ?? [null, null];
-    if (y0 == null || y1 == null) [y0, y1] = [VOL_LIVE_FLOOR_DB, 0];
-    return paddedRange(y0, y1, Y_PADDING);
+    if (!volumeStats) return [-24, 24];
+    const { referenceDb, min, max } = volumeStats;
+    return paddedRange(Math.min(-6, min - referenceDb),
+                       Math.max(6, max - referenceDb), Y_PADDING);
   });
 
   let window = $derived(note ? [note.startTime, note.endTime] : null);
@@ -29,8 +28,10 @@
   });
 
   let curvePoints = $derived.by(() => {
-    if (!window) return [];
-    return volumeCurveDb(pitchFrames, window[0], window[1], yDomain[0]);
+    if (!window || !volumeStats) return [];
+    const ref = volumeStats.referenceDb;
+    return volumeCurveDb(pitchFrames, window[0], window[1], yDomain[0] + ref)
+      .map((point) => ({ ...point, db: point.db - ref }));
   });
 
   function xPos(t) {
@@ -75,13 +76,20 @@
       {#if contourPath}
         <path d={contourPath} class="contour-line" />
       {/if}
+      {#if volumeStats}
+        <line x1="0" y1={yPos(0)} x2={WIDTH} y2={yPos(0)} class="average-line" />
+        <text x={WIDTH - 4} y={yPos(0) - 4} class="axis-label" text-anchor="end">0 · Average</text>
+        {#each [yDomain[0], yDomain[1]] as level}
+          <text x="4" y={level < 0 ? HEIGHT - 5 : 25} class="axis-label">{level > 0 ? "+" : ""}{level.toFixed(0)}</text>
+        {/each}
+      {/if}
       {#if curvePath}
         <path d={curvePath} class="volume-line" />
       {/if}
       {#if timelineX != null}
         <line x1={timelineX} y1="0" x2={timelineX} y2={HEIGHT} class="timeline" />
       {/if}
-      <text x="4" y="12" class="axis-label">dBFS</text>
+      <text x="4" y="12" class="axis-label">Relative level (dB)</text>
       <text x={WIDTH - 4} y={HEIGHT - 4} class="axis-label" text-anchor="end">Time (s)</text>
     </svg>
   {/if}
@@ -118,6 +126,11 @@
     stroke-width: 1.5;
   }
   /* ui.Colors.NOTE_VOLUME_RGB = (94,201,98) */
+  .average-line {
+    stroke: rgb(230, 230, 235);
+    stroke-opacity: 0.45;
+    stroke-dasharray: 5 4;
+  }
   .volume-line {
     fill: none;
     stroke: rgb(94, 201, 98);

@@ -82,9 +82,7 @@ class Colors:
 
     # --- pitch-distance ramps (bucketed brushes along PLASMA_ANCHORS) ---
     DISTANCE_STEP = 0.05        # semitones per bucket
-    LIVE_CORRECT_THRESH = 0.5   # live coloring: yellow within this many semitones
-    LIVE_MAX_DIST = 5.0         # ...ramping to solid indigo out here
-    ALIGN_MAX_MULT = 4.0        # post-analysis ramp ends at this multiple of the tolerance
+    ALIGN_MAX_MULT = 4.0        # live/review ramp ends at this multiple of the tolerance
 
     # --- volume ramp ---
     VOLUME_BUCKETS = 48
@@ -284,8 +282,8 @@ class Colors:
 
     @staticmethod
     def pitch_brushes(correct_thresh: float, max_dist: float) -> list:
-        """Bucketed plasma ramp: solid yellow within `correct_thresh` semitones,
-        then walking the palette to indigo at `max_dist`."""
+        """Bucketed plasma ramp: solid green within `correct_thresh` semitones,
+        then walking the palette to red at `max_dist`."""
         step = Colors.DISTANCE_STEP
         brushes = []
         for i in range(int(max_dist / step) + 1):
@@ -297,9 +295,9 @@ class Colors:
 
     @staticmethod
     def align_pitch_brushes(tolerance: float) -> tuple[list, float]:
-        """The adaptive post-analysis ramp: yellow within the recording's
-        pitch-mistake `tolerance`, ramping to indigo at ALIGN_MAX_MULT *
-        tolerance (insertions clamp to the last bucket => solid indigo). Returns
+        """The adaptive live/review ramp: green within the recording's
+        pitch-mistake `tolerance`, ramping to red at ALIGN_MAX_MULT *
+        tolerance (insertions clamp to the last bucket => solid red). Returns
         (brushes, max_dist) so lookups can clamp consistently."""
         correct_thresh = max(float(tolerance), 0.0)
         # keep at least one bucket of ramp even if tolerance is ~0

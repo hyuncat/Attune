@@ -1,6 +1,6 @@
 <script>
   // Ports ui/note/VibratoWidget.py: vibrato speed/width over the note under
-  // the cursor. The selected metric (Width=extent cents, Speed=rate Hz) is
+  // the cursor. Width is the full peak-to-peak excursion in cents.
   // the y value; dot color encodes the OTHER metric, ramped against the
   // whole take's own range for note-to-note comparison. The pitch contour is
   // underlaid, matching VolumeChart. NotePanel.svelte owns picking which
@@ -16,7 +16,7 @@
   const WIDTH = 380;
   const HEIGHT = 140;
   const Y_PADDING = 0.15;
-  const DEFAULT_RANGES = { Width: [0, 100], Speed: [0, 10] };
+  const DEFAULT_RANGES = { Width: [0, 200], Speed: [0, 10] };
 
   let metric = $state("Width");
   let widthMode = $derived(metric === "Width");
@@ -32,11 +32,11 @@
 
   // dot color = the metric NOT currently on the y-axis, ramped against the
   // take's own range - mirrors _render's colors/color_range selection.
-  let colorMetric = $derived(widthMode ? "rate" : "extent");
+  let colorMetric = $derived(widthMode ? "rate" : "width");
   let colorRange = $derived(vibratoGlobalRange(vibratoPoints, colorMetric));
 
-  function colorFor(rate, extent) {
-    const value = widthMode ? rate : extent;
+  function colorFor(rate, width) {
+    const value = widthMode ? rate : width;
     if (!colorRange || colorRange[1] <= colorRange[0]) return cssRgb(viridis(0.5));
     const frac = Math.max(0, Math.min(1, (value - colorRange[0]) / (colorRange[1] - colorRange[0])));
     return cssRgb(viridis(frac));
@@ -80,8 +80,8 @@
     return curve
       .map((p) => ({
         time: p.time,
-        value: widthMode ? p.extent : p.rate,
-        color: colorFor(p.rate, p.extent),
+        value: widthMode ? p.width : p.rate,
+        color: colorFor(p.rate, p.width),
       }))
       .filter((p) => Number.isFinite(p.value));
   });

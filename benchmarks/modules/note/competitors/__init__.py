@@ -1,0 +1,1 @@
+"""Note benchmark competitors package."""

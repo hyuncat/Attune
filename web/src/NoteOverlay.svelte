@@ -417,7 +417,7 @@
     <p><b>Onset:</b> {noteInfo.onset.toFixed(2)}s{noteInfo.onsetMistake ? ` (${TIMING_LABELS[noteInfo.onsetMistake]})` : ""}</p>
     <p><b>Duration:</b> {noteInfo.duration.toFixed(2)}s{noteInfo.durationMistake ? ` (${TIMING_LABELS[noteInfo.durationMistake]})` : ""}</p>
     {#if noteInfo.vibrato}
-      <p><b>Vibrato:</b> f={noteInfo.vibrato.rate.toFixed(1)}Hz, A={noteInfo.vibrato.extent.toFixed(0)}¢</p>
+      <p><b>Vibrato:</b> f={noteInfo.vibrato.rate.toFixed(1)}Hz, W={noteInfo.vibrato.width.toFixed(0)}¢ peak-to-peak</p>
     {:else}
       <p><b>Vibrato:</b> —</p>
     {/if}

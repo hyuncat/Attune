@@ -202,7 +202,7 @@ class ScoreData:
     def clipped_note_data(self, channel: int | None = None) -> NoteData:
         """The active instrument's notes WITHIN the clip (exactly indices i0..i1),
         or the full NoteData when unclipped. This is what the MistakeDetector /
-        MistakeChecker / alignment consume so they only ever see the clip."""
+        RepeatSplitter / alignment consume so they only ever see the clip."""
         channel = self.active_instrument if channel is None else channel
         nd = self.note_datas[channel]
         if self.clip is None:

@@ -12,24 +12,23 @@ from ui.note.NoteCurveWidget import NoteCurveWidget
 class VibratoWidget(NoteCurveWidget):
     """Vibrato speed/width over the note under the cursor.
 
-    The selected metric is the y value; pooled viridis brushes encode the
+    Width is always the full peak-to-peak pitch excursion. The selected
+    metric is the y value; viridis brushes encode the
     other metric. All signal analysis lives in VibratoDetector, so repainting
     only slices VibratoData and updates one ScatterPlotItem.
     """
 
     CONTOUR_ROLE = "vibrato"
     DEFAULT_RANGES = {
-        "Width": (0.0, 100.0),
+        "Width": (0.0, 200.0),
         "Speed": (0.0, 10.0),
     }
     Y_PADDING = 0.15
     HELP = ("Vibrato over the note under the cursor. Speed is the oscillation "
-            "rate in Hz; Width is the pitch excursion on either side of the "
-            "note center (± cents). Each credible estimate is shown across "
-            "the pitch span used to infer it, so full wave periods share their "
-            "detected characteristics. Dot colors use the minimum and maximum "
+            "rate in Hz; Width is the full peak-to-peak pitch excursion in "
+            "cents. Dot colors use the minimum and maximum "
             "across the whole recording for direct note-to-note comparison. "
-            "The grey line is the pitch contour.")
+            "The grey line is the measured pitch contour.")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -101,16 +100,16 @@ class VibratoWidget(NoteCurveWidget):
         if data is None:
             self._render_blank()
             return
-        times, rates, extents = data.curve(t0, t1)
+        times, rates, widths = data.curve(t0, t1)
         width_mode = self.metric_combo.currentText() == "Width"
-        values = extents if width_mode else rates
-        colors = rates if width_mode else extents
+        values = widths if width_mode else rates
+        colors = rates if width_mode else widths
         mask = np.isfinite(times) & np.isfinite(values) & np.isfinite(colors)
         if not mask.any():
             self._render_blank()
             return
         visible_colors = colors[mask]
-        color_metric = "rate" if width_mode else "extent"
+        color_metric = "rate" if width_mode else "width"
         color_range = data.global_characteristic_range(color_metric)
         if color_range is not None and color_range[1] > color_range[0]:
             color_min, color_max = color_range

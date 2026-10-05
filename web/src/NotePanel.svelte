@@ -4,8 +4,7 @@
   // MistakeWidget+ToleranceWidget on top, NotePanel below). A combo picks
   // which graph shows the note under the playback cursor; orchestration
   // only - each graph (VolumeChart, VibratoChart) owns its own rendering.
-  import { volumeRangeDb } from "./colors.js";
-  import { noteContaining } from "./noteCurve.js";
+  import { noteContaining, volumeLevelStats } from "./noteCurve.js";
   import VolumeChart from "./VolumeChart.svelte";
   import VibratoChart from "./VibratoChart.svelte";
 
@@ -13,19 +12,19 @@
 
   const TABS = ["Volume", "Vibrato"];
   const HELP = {
-    Volume: "How loud the note under the cursor was over its duration, in "
-      + "dBFS (decibels below the microphone's digital full scale - 0 is as "
-      + "loud as the mic can record). The grey line is the pitch contour, "
-      + "for reading loudness against what was being played.",
+    Volume: "Shows how the recorded level changes during the note, relative to "
+      + "the average played level in this take. 0 dB is average; positive "
+      + "values are louder and negative values softer. The average excludes "
+      + "unvoiced frames and silence. The grey line is the pitch contour.",
     Vibrato: "Vibrato over the note under the cursor. Speed is the "
-      + "oscillation rate in Hz; Width is the pitch excursion on either side "
-      + "of the note center (± cents). Dot colors use the minimum and "
+      + "oscillation rate in Hz; Width is the full peak-to-peak pitch "
+      + "excursion in cents. Dot colors use the minimum and "
       + "maximum across the whole recording for direct note-to-note "
       + "comparison. The grey line is the pitch contour.",
   };
 
   let activeTab = $state("Volume");
-  let volumeRange = $derived(pitchFrames ? volumeRangeDb(pitchFrames) : [null, null]);
+  let volumeStats = $derived(volumeLevelStats(pitchFrames));
   let currentNote = $derived(noteContaining(userNotesActive, currentTime));
 </script>
 
@@ -40,7 +39,7 @@
   </div>
 
   {#if activeTab === "Volume"}
-    <VolumeChart note={currentNote} {pitchFrames} {volumeRange} {currentTime} />
+    <VolumeChart note={currentNote} {pitchFrames} {volumeStats} {currentTime} />
   {:else}
     <VibratoChart note={currentNote} {vibratoPoints} {pitchFrames} {currentTime} />
   {/if}

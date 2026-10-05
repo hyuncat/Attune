@@ -141,10 +141,7 @@ async def analyze(
             # mirrors perform.py analyze method's call sequence
             rec.reset_analysis()
             rec.detect_notes()
-            rec.resize_score(to_span="onset")
-            rec.detect_mistakes()
-            rec.stabilize_score_alignment()
-            rec.reindex_mistakes()
+            rec.align_score_and_refine()
             rec.update_alignment_distances()
             rec.trim_end()
 

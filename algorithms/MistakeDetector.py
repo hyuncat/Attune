@@ -139,113 +139,114 @@ class MistakeDetector:
     def build_mistakes(self, backpointer: np.ndarray, user_string: Sequence[Note],
                        midi_string: Sequence[Note]) -> Alignment:
         """Trace an edit path and return a complete pitch/timing alignment."""
-        # init variables
         user_index, score_index = len(user_string), len(midi_string)
-        reversed_pairs: list[tuple[Note | None, Note | None]] = []
-        indexed_pitch_mistakes: list[tuple[int, Mistake]] = []
-        indexed_timing_mistakes: list[tuple[int, Mistake]] = []
-        pitch_tolerance = max(0.0, float(self.config.pitch_tolerance))
-        timing_tolerance = max(0.0, float(self.config.timing_tolerance))
-
-        # retrace backwards
+        reversed_pairs = []
         while score_index > 0 or user_index > 0:
-            # when we hit the top or left edge, must insert/delete
-            if score_index == 0:
-                operation = self.INSERTION
-            elif user_index == 0:
-                operation = self.DELETION
-            else: # else take operation denoted by DP backpointer
-                operation = int(backpointer[score_index, user_index])
-
-            reverse_pair_index = len(reversed_pairs)
+            operation = (self.INSERTION if score_index == 0 else
+                         self.DELETION if user_index == 0 else
+                         int(backpointer[score_index, user_index]))
             if operation == self.DELETION:
-                score_note = midi_string[score_index - 1]
-                reversed_pairs.append((None, score_note))
-                indexed_pitch_mistakes.append(
-                    (
-                        reverse_pair_index,
-                        Mistake(
-                            type="deletion",
-                            user_note=None,
-                            midi_note=score_note,
-                        ),
-                    )
-                )
                 score_index -= 1
-                continue
-
-            if operation == self.INSERTION:
-                user_note = user_string[user_index - 1]
-                reversed_pairs.append((user_note, None))
-                indexed_pitch_mistakes.append(
-                    (
-                        reverse_pair_index,
-                        Mistake(
-                            type="insertion",
-                            user_note=user_note,
-                            midi_note=None,
-                        ),
-                    )
-                )
+                reversed_pairs.append((None, midi_string[score_index]))
+            elif operation == self.INSERTION:
                 user_index -= 1
+                reversed_pairs.append((user_string[user_index], None))
+            else:
+                user_index -= 1
+                score_index -= 1
+                reversed_pairs.append((user_string[user_index], midi_string[score_index]))
+        return self.alignment_from_pairs(list(reversed(reversed_pairs)))
+
+    def alignment_from_pairs(self, pairs) -> Alignment:
+        """Classify an existing path without running another sequence alignment."""
+        pitch_mistakes, timing_mistakes = [], []
+        timing_tolerance = max(0.0, float(self.config.timing_tolerance))
+        for user, score in pairs:
+            if user is None:
+                pitch_mistakes.append(Mistake('deletion', None, score))
+            elif score is None:
+                pitch_mistakes.append(Mistake('insertion', user, None))
+            else:
+                if self.is_pitch_substitution(user, score):
+                    pitch_mistakes.append(Mistake('substitution', user, score))
+                for offset, positive, negative in (
+                    (user.start_time - score.start_time, 'late', 'early'),
+                    (user.duration() - score.duration(), 'long', 'short'),
+                ):
+                    if abs(offset) > timing_tolerance:
+                        mistake = Mistake(positive if offset > 0 else negative, user, score)
+                        mistake.info = f"{offset:+.2f}s"
+                        timing_mistakes.append(mistake)
+        return Alignment(self.config, notes=list(pairs), pitch_mistakes=pitch_mistakes,
+                         timing_mistakes=timing_mistakes)
+
+    def reconcile_gap_pairs(self, alignment: Alignment) -> Alignment:
+        """Report isolated, time-compatible extra/missed pairs as substitutions.
+
+        Run only after fitting/refinement: this is a final interpretation of an
+        edit path, not a new minimum-cost path or permission to change notes.
+        Matched anchors, ambiguous larger gap blocks and overrides are preserved.
+        """
+        pairs = alignment.pairs
+        output, replacements = [], []
+        overridden = set(alignment.overridden_pair_indices)
+        overridden.update(m.pair_index for m in alignment.pitch_mistakes if m.overridden)
+        i = 0
+        while i < len(pairs):
+            if all(note is not None for note in pairs[i]):
+                output.append(pairs[i])
+                i += 1
                 continue
-
-            user_note = user_string[user_index - 1]
-            score_note = midi_string[score_index - 1]
-            reversed_pairs.append((user_note, score_note))
-
-            if self.get_pitch_distance(user_note, score_note) >= pitch_tolerance:
-                indexed_pitch_mistakes.append(
-                    (
-                        reverse_pair_index,
-                        Mistake(
-                            type="substitution",
-                            user_note=user_note,
-                            midi_note=score_note,
-                        ),
-                    )
+            end = i
+            while end < len(pairs) and any(note is None for note in pairs[end]):
+                end += 1
+            block = pairs[i:end]
+            users = [u for u, _ in block if u is not None]
+            scores = [s for _, s in block if s is not None]
+            merge = False
+            if len(block) == 2 and len(users) == len(scores) == 1 and not overridden.intersection(range(i, end)):
+                user, score = users[0], scores[0]
+                short, long = sorted((user.duration(), score.duration()))
+                overlap = min(user.end_time, score.end_time) - max(user.start_time, score.start_time)
+                tolerance = max(0., float(self.config.timing_tolerance))
+                merge = (
+                    short > 0 and short >= .5 * long
+                    and abs(user.start_time - score.start_time) <= min(tolerance, .5 * long)
+                    and abs(user.duration() - score.duration()) <= tolerance
+                    and overlap >= .5 * short
+                    and self.get_pitch_distance(user, score) >= self.config.pitch_tolerance
                 )
+            if merge:
+                output.append((user, score))
+                replacements.append((user, score))
+            else:
+                output.extend(block)
+            i = end
+        if not replacements:
+            return alignment
 
-            onset_offset = user_note.start_time - score_note.start_time
-            if abs(onset_offset) > timing_tolerance:
-                mistake = Mistake(
-                    type="late" if onset_offset > 0 else "early",
-                    user_note=user_note,
-                    midi_note=score_note,
-                )
-                mistake.info = f"{onset_offset:+.2f}s"
-                indexed_timing_mistakes.append((reverse_pair_index, mistake))
-
-            duration_offset = user_note.duration() - score_note.duration()
-            if abs(duration_offset) > timing_tolerance:
-                mistake = Mistake(
-                    type="long" if duration_offset > 0 else "short",
-                    user_note=user_note,
-                    midi_note=score_note,
-                )
-                mistake.info = f"{duration_offset:+.2f}s"
-                indexed_timing_mistakes.append((reverse_pair_index, mistake))
-
-            user_index -= 1
-            score_index -= 1
-
-        pairs = list(reversed(reversed_pairs))
-
-        def finish(
-            indexed_mistakes: list[tuple[int, Mistake]],
-        ) -> list[Mistake]:
-            for reverse_pair_index, mistake in indexed_mistakes:
-                mistake.set_pair_index(len(pairs) - 1 - reverse_pair_index)
-            indexed_mistakes.sort(key=lambda item: item[1].pair_index)
-            return [mistake for _, mistake in indexed_mistakes]
-
-        # create alignment object and return
-        alignment = Alignment(config=self.config, notes=pairs)
-        alignment.pitch_mistakes = finish(indexed_pitch_mistakes)
-        alignment.timing_mistakes = finish(indexed_timing_mistakes)
-        return alignment
+        replaced_users = {id(u) for u, _ in replacements}
+        replaced_scores = {id(s) for _, s in replacements}
+        mistakes = [m for m in alignment.pitch_mistakes
+                    if not (m.type == 'insertion' and id(m.user_note) in replaced_users)
+                    and not (m.type == 'deletion' and id(m.midi_note) in replaced_scores)]
+        mistakes += [Mistake('substitution', u, s) for u, s in replacements]
+        # Eligibility bounds onset and duration error by the timing tolerance,
+        # so these new pairs introduce no timing flags.
+        result = Alignment(self.config, notes=output, pitch_mistakes=mistakes,
+                           timing_mistakes=list(alignment.timing_mistakes))
+        keys = {(id(pairs[j][0]), id(pairs[j][1])) for j in overridden if 0 <= j < len(pairs)}
+        result.pitch_mistakes.sort(key=lambda m: m.pair_index)
+        result.timing_mistakes.sort(key=lambda m: m.pair_index)
+        result.reapply_overrides({j for j, m in enumerate(result.pitch_mistakes)
+                                  if (id(m.user_note), id(m.midi_note)) in keys})
+        return result
 
     # --- distance / cost functions ---
+    def is_pitch_substitution(self, user_note: Note, score_note: Note) -> bool:
+        """Shared boundary for mistake labels and repeat-recovery eligibility."""
+        return self.get_pitch_distance(user_note, score_note) >= max(0.0, float(self.config.pitch_tolerance))
+
     def get_pitch_distance(self, user_note: Note, score_note: Note) -> float:
         """Monophonic pitch distance in semitones."""
         return float(abs(user_note.midi_num[0] - score_note.midi_num[0]))

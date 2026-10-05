@@ -403,8 +403,8 @@ class GuitarHero(QWidget):
     def _rebuild_legend(self):
         """Repopulate the legend for the current color mode: pitch gets the
         correct->way-off plasma strip plus a transition-grey swatch; volume gets
-        the quiet->loud strip (transitions are only grey in pitch mode — volume
-        mode colors every frame by its volume)."""
+        the quiet->loud strip (transitions are only grey in pitch mode; volume
+        mode colors every plotted frame above the display volume threshold)."""
         while self._legend_items.count():
             w = self._legend_items.takeAt(0).widget()
             if w is not None:

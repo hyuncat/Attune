@@ -3,27 +3,31 @@ from math import ceil, floor
 
 import numpy as np
 
-from algorithms.CQT import CQT
+from algorithms.SpectrumDetector import SpectrumDetector
 from algorithms.Config import Config
 
 
 class TimbreData:
-    """Uniform, stride-decimated semitone spectrum owned by one Recording.
+    """Frame-dense FFT spectrum owned by one Recording.
 
-    Column i corresponds to pitch frame i*stride and therefore to app-time
-    t_origin + (i*stride*h1 + w1/2)/sr. Missing/uncomputed columns read at the
-    display floor. Unlike VibratoData, this raw-audio-derived stream is cached.
+    Column i corresponds to pitch frame i and therefore to app-time
+    t_origin + (i*h1 + w1/2)/sr. Missing/uncomputed columns read at the
+    display floor. Stored rows retain every native FFT bin across the configured
+    frequency range; the widget requests a compact semitone projection. Unlike
+    VibratoData, this raw-audio-derived stream is cached.
     """
 
     GROW = 1024
 
     def __init__(self, config: Config):
         self.config = config
-        self.stride = max(1, int(config.cqt_stride or 1))
+        self.stride = int(config.spectrum_stride)
         self.t_origin = 0.0
         self.midi_min = int(config.cqt_midi_min)
         self.midi_max = int(config.cqt_midi_max)
-        self.floor_db = CQT.FLOOR_DB
+        self.representation = SpectrumDetector.REPRESENTATION
+        self.floor_db = SpectrumDetector.FLOOR_DB
+        self.spectrum = SpectrumDetector(config=config)
         self.lock = threading.Lock()
         self.values = np.full(
             (self.n_bins, self.GROW), self.floor_db, dtype=np.float32)
@@ -32,7 +36,40 @@ class TimbreData:
 
     @property
     def n_bins(self) -> int:
-        return self.midi_max - self.midi_min + 1
+        return self.spectrum.bin_stop - self.spectrum.bin_start
+
+    def update_config(self, config: Config):
+        """Refresh musical projection metadata, preserving compatible FFT data.
+
+        A tuning change only rebuilds the semitone display filters. Sample-rate,
+        frame-size, stride, or FFT-bin-bound changes invalidate stored columns
+        because they change the source time/frequency grid.
+        """
+        replacement = SpectrumDetector(config=config)
+        new_stride = int(config.spectrum_stride)
+        compatible = (
+            self.stride == new_stride
+            and self.spectrum.sr == replacement.sr
+            and self.spectrum.n_fft == replacement.n_fft
+            and self.spectrum.bin_start == replacement.bin_start
+            and self.spectrum.bin_stop == replacement.bin_stop
+        )
+        self.config = config
+        self.stride = new_stride
+        self.midi_min = int(config.cqt_midi_min)
+        self.midi_max = int(config.cqt_midi_max)
+        self.spectrum = replacement
+        if compatible:
+            return
+        with self.lock:
+            self.values = np.full(
+                (self.n_bins, self.GROW), self.floor_db, dtype=np.float32)
+            self.written = np.zeros(self.GROW, dtype=bool)
+            self.computed_until = 0
+
+    def midi_bounds(self) -> tuple[float, float]:
+        """Outer cell edges for the integer-semitone display rows."""
+        return self.midi_min - 0.5, self.midi_max + 0.5
 
     def grid_dt(self) -> float:
         return self.stride * self.config.h1 / self.config.sr
@@ -71,7 +108,7 @@ class TimbreData:
             self.computed_until = max(self.computed_until, i + 1)
 
     def matrix(self, t0: float, t1: float):
-        """(column-center times, bins x columns matrix) for [t0, t1]."""
+        """Full-resolution (times, FFT bins x columns) for [t0, t1]."""
         i0, i1 = self.index_range(t0, t1)
         with self.lock:
             matrix = self.values[:, i0:i1].astype(float, copy=True)
@@ -81,15 +118,23 @@ class TimbreData:
         times = self.index_time(np.arange(i0, i1, dtype=float))
         return times, matrix
 
+    def display_matrix(self, t0: float, t1: float):
+        """(times, integer-semitone bands x columns) for the live widget."""
+        times, raw = self.matrix(t0, t1)
+        if raw.shape[1] == 0:
+            return times, np.empty((self.spectrum.display_bin_count, 0))
+        return times, self.spectrum.semitone_power_db(raw)
+
     def range_db(self) -> tuple[float, float]:
-        """Robust visible range over written columns (fallback [-80, 0])."""
+        """Robust range over the displayed semitone bands (fallback [-80, 0])."""
         with self.lock:
             mask = self.written[:self.computed_until]
             if not mask.any():
                 return -80.0, 0.0
             vals = self.values[:, :self.computed_until][:, mask]
-            low = float(np.percentile(vals, 5))
-            high = float(np.max(vals))
+        display = self.spectrum.semitone_power_db(vals)
+        low = float(np.percentile(display, 5))
+        high = float(np.max(display))
         if high <= low:
             low = max(self.floor_db, high - 20.0)
         return low, high

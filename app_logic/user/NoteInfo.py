@@ -23,14 +23,14 @@ class NoteInfo:
     onset_mistake: str | None = None        # "early" / "late" / None
     duration_mistake: str | None = None     # "long" / "short" / None
     vibrato_rate_hz: float | None = None
-    vibrato_extent_cents: float | None = None  # sinusoid amplitude (± around center)
+    vibrato_width_cents: float | None = None  # full peak-to-peak sinusoid width
     volume_frac: float | None = None        # 0..1 bar position in the take's dBFS range; None = no data
 
     @classmethod
     def analyze(cls, recording, note) -> "NoteInfo":
         midi = float(note.midi_num[0])
         onset_mistake, duration_mistake = cls._timing_mistakes(recording, note)
-        rate, extent = cls._vibrato(recording, note)
+        rate, width = cls._vibrato(recording, note)
         return cls(
             note_name=note.get_note_name(),
             cents=(midi - round(midi)) * 100.0,
@@ -39,7 +39,7 @@ class NoteInfo:
             onset_mistake=onset_mistake,
             duration_mistake=duration_mistake,
             vibrato_rate_hz=rate,
-            vibrato_extent_cents=extent,
+            vibrato_width_cents=width,
             volume_frac=cls._volume(recording, note),
         )
 

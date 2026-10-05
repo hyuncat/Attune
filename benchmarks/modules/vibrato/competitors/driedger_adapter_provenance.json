@@ -1,0 +1,53 @@
+{
+  "method": "driedger_template",
+  "port": "independent reproduction",
+  "source": "Driedger, Balke, Ewert, and Mueller, ISMIR 2016",
+  "resource_page": "https://www.audiolabs-erlangen.de/resources/MIR/2016-ISMIR-Vibrato",
+  "dataset_archive": "VibratoDetection_Dataset.zip",
+  "frozen_on": "2026-08-20",
+  "tuning_data": "authors' released detection dataset only",
+  "attune_corpora_used_for_tuning": false,
+  "unspecified_adapter_settings": {
+    "analysis_frame_rate": 150.0,
+    "bins_per_semitone": 10,
+    "stft_samples": 2048,
+    "minimum_hz": 196.0,
+    "maximum_hz": 3000.0,
+    "positive_radius_bins": 0.5,
+    "negative_inner_bins": 7.0,
+    "negative_outer_bins": 9.0,
+    "reassignment_power_floor_relative_to_frame_peak": 0.05,
+    "frequency_maximum": "whole configured log-frequency axis",
+    "frequency_range_provenance": "score pitches padded -2/+24 semitones using Attune's production policy; 196--3000 Hz global fallback for scoreless corpora; independent of detected pitch and audio",
+    "benchmark_template_bank": "published 30-template detection bank",
+    "benchmark_range_ablation_bank": "165-template strict superset spanning 3--10 Hz and one-sided extent e=5--100 cents (10--200 cents full peak-to-peak); benchmark-informed and not a published Driedger configuration",
+    "salience_reduction": "edge-exact per-frame reduction of Equation 5 dilation"
+  },
+  "acceptance": {
+    "allowed_absolute_mean_f1_gap": 0.05,
+    "published_macro_f1": {
+      "0dB": 0.80,
+      "-5dB": 0.77,
+      "-10dB": 0.76
+    },
+    "observed_macro_f1": {
+      "0dB": 0.800067,
+      "-5dB": 0.729913,
+      "-10dB": 0.642299
+    },
+    "passed": {
+      "0dB": true,
+      "-5dB": true,
+      "-10dB": false
+    },
+    "default_enabled": false
+  },
+  "runtime_validation": {
+    "released_corpus_audio_per_compute": {
+      "0dB": 14.710026,
+      "-5dB": 17.250114,
+      "-10dB": 16.773978
+    },
+    "representative_score_backed_coco_stem_audio_per_compute": 18.5933
+  }
+}

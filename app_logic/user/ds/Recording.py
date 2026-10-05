@@ -36,25 +36,29 @@ class Recording:
 
         # algorithms!!
         from algorithms.PitchDetector import PitchDetector
-        from algorithms.PitchSmoother import PitchSmoother
+        from algorithms.PitchSmoother import VoicingSmoother, PitchSmoother
         from algorithms.NoteDetector import NoteDetector, TransitionDetector
         from algorithms.MistakeDetector import MistakeDetector
-        from algorithms.MistakeChecker import MistakeChecker
+        from algorithms.RepeatSplitter import RepeatSplitter
         from algorithms.VibratoDetector import VibratoDetector
+        from algorithms.SpectrumDetector import SpectrumDetector
 
         self.pitch_detector = PitchDetector(recording=self)
         self.pitch_smoother = PitchSmoother(recording=self)
+        self.voicing_smoother = VoicingSmoother(recording=self)
         self.note_detector = NoteDetector(recording=self)
         self.transition_detector = TransitionDetector(recording=self)
         self.mistake_detector = MistakeDetector(recording=self)
-        self.mistake_checker = MistakeChecker(recording=self)
+        self.repeat_splitter = RepeatSplitter(recording=self)
         self.vibrato_detector = VibratoDetector(recording=self)
 
         # essential data variables
         self.audio_data = AudioData(config=self.config)
         self.pitch_data = PitchData(config=self.config)
+        self.pitches_smoothed = False
         self.vibrato_data = VibratoData(config=self.config)
         self.timbre_data = TimbreData(config=self.config)
+        self.spectrum_detector = SpectrumDetector(recording=self)
         self.note_data = NoteData()
         self.alignment: Alignment = Alignment(config=self.config) # filled in later
         self.overridden_mistake_indices = set()
@@ -68,15 +72,13 @@ class Recording:
 
         # queue data structures for real time pitch detection
         self.a2p_queue = Buffer(self.config.sr) #audio-to-pitches
-        self._timbre_thread: threading.Thread | None = None
-        self._timbre_thread_lock = threading.Lock()
 
     def _default_config_from_score(self) -> Config:
         """Build the no-sidecar defaults shown by the left Settings panel."""
         config = Config()
         midi_range = self.score_data.note_midi_range(self.active_instrument)
         if midi_range is not None:
-            low_midi, high_midi = midi_range
+            low_midi, high_midi = config.padded_midi_range(*midi_range)
             config.fmin = config.midi_to_freq(low_midi)
             config.fmax = config.midi_to_freq(high_midi)
         return config
@@ -100,14 +102,20 @@ class Recording:
             self.pitch_detector.load_config(self.config)
         if hasattr(self, 'pitch_smoother'):
             self.pitch_smoother.update_config(self.config)
+        if hasattr(self, 'voicing_smoother'):
+            self.voicing_smoother.update_config(self.config)
         if hasattr(self, 'note_detector'):
             self.note_detector.update_config(self.config)
         if hasattr(self, 'mistake_detector'):
             self.mistake_detector.update_config(self.config)
-        if hasattr(self, 'mistake_checker'):
-            self.mistake_checker.update_config(self.config)
+        if hasattr(self, 'repeat_splitter'):
+            self.repeat_splitter.update_config(self.config)
         if hasattr(self, 'vibrato_detector'):
             self.vibrato_detector.update_config(self.config)
+        if hasattr(self, 'spectrum_detector'):
+            self.spectrum_detector.load_config(self.config)
+        if hasattr(self, 'timbre_data'):
+            self.timbre_data.update_config(self.config)
         if segmentation_changed and hasattr(self, 'note_data'):
             changed = [
                 name for (name, old), (_, new) in zip(previous_signature, signature)
@@ -146,6 +154,7 @@ class Recording:
         self.unsaved_changes = False
         self.loaded_from_cache = False
         self.pitch_data = PitchData(config=self.config)
+        self.pitches_smoothed = False
         self.vibrato_data = VibratoData(config=self.config)
         self.timbre_data = TimbreData(config=self.config)
         self.reset_analysis()
@@ -187,10 +196,10 @@ class Recording:
         # A cache saved after loading a pre-timbre sidecar should be upgraded in
         # place even when the user never opened the Timbre panel.
         if self.timbre_data.is_empty() and self.audio_data.end_index >= self.config.w1:
-            self.ensure_timbre()
-            thread = self._timbre_thread
-            if thread is not None and thread.is_alive():
-                thread.join()
+            if self.ensure_timbre():
+                thread = self.spectrum_detector.thread
+                if thread is not None and thread.is_alive():
+                    thread.join()
         return JsonHandler(self).save_cache(
             score_filepath=score_filepath,
             recording_name=recording_name,
@@ -216,6 +225,7 @@ class Recording:
         """Re-init essential data structures. Called before load_score() in app."""
         self.audio_data = AudioData(config=self.config)
         self.pitch_data = PitchData(config=self.config)
+        self.pitches_smoothed = False
         self.vibrato_data = VibratoData(config=self.config)
         self.timbre_data = TimbreData(config=self.config)
         self.reset_analysis()
@@ -225,6 +235,7 @@ class Recording:
         self.note_data = NoteData()
         self.alignment = Alignment(config=self.config)
         self.overridden_mistake_indices = set()
+        self._pending_override_pairs = set()
 
     def detect_pitches(self, on_phase=None, verbose: bool = False):
         """run pitch detection, then smoothing, on the current audio data.
@@ -241,13 +252,16 @@ class Recording:
                 show_progress=verbose,
                 verbose=verbose,
             )
+            self.pitches_smoothed = False
         finally:
             stop_status()
 
-        # pYIN emits candidate distributions that need the HMM stage; trackers
-        # like Praat can opt out when they already return a final f0 track.
+        # Attune's completed-audio method tracks the ordinary pYIN pitch-bin
+        # path, then applies the promoted confidence + global RMS controller.
+        # Trackers like Praat can opt out when they already return a final f0
+        # contour.
         if getattr(self.pitch_detector, "requires_smoothing", True):
-            stop_status = self._phase_status_timer(on_phase, "Smoothing pitches")
+            stop_status = self._phase_status_timer(on_phase, "Tracking pitches")
             try:
                 self.pitch_data.data = self.pitch_smoother.smooth(
                     self.pitch_data.data,
@@ -255,6 +269,17 @@ class Recording:
                 )
             finally:
                 stop_status()
+            stop_status = self._phase_status_timer(on_phase, "Smoothing voicing")
+            try:
+                self.pitch_data.data = self.voicing_smoother.smooth(
+                    self.pitch_data.data,
+                    verbose=verbose,
+                )
+                self.pitches_smoothed = True
+            finally:
+                stop_status()
+        else:
+            self.pitches_smoothed = True
         # the offline pass stamps frame times relative to buffer index 0, which
         # represents app-time `t_origin` (NEGATIVE for a Perform runway recorded
         # before the head). Mirror the audio buffer's origin onto the pitch data
@@ -271,6 +296,26 @@ class Recording:
             self.recompute_vibrato(note_aware=False)
         finally:
             stop_status()
+
+    def smooth_pitches(self):
+        """Smooth the written live pitch track once before offline analysis."""
+        if self.pitches_smoothed:
+            return
+        if not getattr(self.pitch_detector, "requires_smoothing", True):
+            self.pitches_smoothed = True
+            return
+
+        n_frames = self.pitch_data.frames_available()
+        if n_frames <= 0:
+            return
+        smoothed = self.pitch_smoother.smooth(
+            list(self.pitch_data.data[:n_frames]),
+        )
+        smoothed = self.voicing_smoother.smooth(smoothed)
+        with self.pitch_data.lock:
+            self.pitch_data.data[:n_frames] = smoothed
+            self.pitch_data.end_index = max(self.pitch_data.end_index, n_frames)
+        self.pitches_smoothed = True
 
     @staticmethod
     def _phase_status_timer(on_phase, label: str):
@@ -335,6 +380,15 @@ class Recording:
 
 
     def detect_mistakes(self, verbose: bool = False):
+        # Final gap reconciliation can change pair indices. Carry overrides by
+        # stable note IDs across a redraw/re-alignment, including a substitution
+        # that temporarily becomes two raw gaps before final reconciliation.
+        pending = set(getattr(self, '_pending_override_pairs', set()))
+        for i in self.overridden_mistake_indices:
+            if 0 <= i < len(self.alignment.pitch_mistakes):
+                m = self.alignment.pitch_mistakes[i]
+                pending.add(self._alignment_pair_key((m.user_note, m.midi_note)))
+        self._pending_override_pairs = pending
         # The MistakeDetector only ever sees the clip's score notes (the full
         # NoteData when unclipped) — see ScoreData.clipped_note_data.
         user_notes = self.note_data
@@ -346,13 +400,32 @@ class Recording:
             score_notes=score_notes,
             verbose=verbose,
         )
+        self.overridden_mistake_indices = {
+            i for i, m in enumerate(self.alignment.pitch_mistakes)
+            if self._alignment_pair_key((m.user_note, m.midi_note)) in pending
+        }
         self.alignment.reapply_overrides(self.overridden_mistake_indices)
 
+    @staticmethod
+    def _alignment_pair_key(pair):
+        return tuple(note.id if note is not None else None for note in pair)
+
     def reindex_mistakes(self):
-        """Refresh mistake -> alignment-pair indices after note correction
-        """
+        """Finalize compatible gap pairs and refresh mistake/override indices."""
         if self.alignment is None:
             return
+        finalized = self.mistake_detector.reconcile_gap_pairs(self.alignment)
+        if finalized is not self.alignment:
+            self.alignment = finalized
+            self.overridden_mistake_indices = {
+                i for i, m in enumerate(finalized.pitch_mistakes) if m.overridden
+            }
+        pending = getattr(self, '_pending_override_pairs', set())
+        self.overridden_mistake_indices.update(
+            i for i, m in enumerate(self.alignment.pitch_mistakes)
+            if self._alignment_pair_key((m.user_note, m.midi_note)) in pending
+        )
+        self._pending_override_pairs = set()
         self.alignment.reindex_mistakes()
         self.alignment.reapply_overrides(self.overridden_mistake_indices)
 
@@ -367,8 +440,9 @@ class Recording:
     def write_pitch_data(self, indata: list[Pitch], start_time: float):
         """Write detected pitches to pitch_data at the given start_time."""
         self.pitch_data.write(indata, start_time)
+        self.pitches_smoothed = False
         # Vibrato is fit on its own worker (VibratoDetector.run): only wake it so
-        # the live pitch loop never blocks on an LS-Prony fit. Repeated wakeups
+        # the live pitch loop never blocks on an AM/FM fit. Repeated wakeups
         # coalesce naturally when that lower-priority worker is still busy.
         self.vibrato_detector.notify()
 
@@ -414,8 +488,9 @@ class Recording:
                 continue
             if dx:
                 p.time += dx
-            if dy and p.value != -1:
-                p.value += dy
+            if dy:
+                if p.value != -1:
+                    p.value += dy
                 p.candidate_pitches = [(m + dy, prob) for m, prob in p.candidate_pitches]
         self.note_data.transpose(dx=dx, dy=dy)
         self.alignment.refresh()
@@ -599,16 +674,44 @@ class Recording:
         self._update_pitch_distances()
         return True
 
-    def stabilize_score_alignment(self, verbose: bool = False) -> None:
-        """Converge score-time fitting, string editing, and boundary correction.
+    def refit_score_alignment_once(self, verbose: bool = False) -> bool:
+        """Replace the bootstrap tempo with one matched-onset fit and realign.
 
-        The raw first/last detected onsets can include an insertion or miss a
+        Call after initial alignment, before repeat correction. Keep the
+        provisional timeline when too few pitch-consistent anchors exist.
+        This never changes detected note boundaries or invokes legacy refiners.
+        """
+        if not self.resize_score_to_aligned_onsets():
+            return False
+        self.detect_mistakes(verbose=verbose)
+        return True
+
+    def align_score_and_refine(self, verbose: bool = False):
+        """Align original notes, fit score timing, then recover missing repeats locally."""
+        self.resize_score(to_span="onset")
+        self.detect_mistakes(verbose=verbose)
+        self.refit_score_alignment_once(verbose=verbose)
+        self.stabilize_score_alignment(verbose=verbose)
+        self.reindex_mistakes()
+
+    def stabilize_score_alignment(self, verbose: bool = False) -> None:
+        """Run the selected refinement strategy after the initial score fit.
+
+        The production repeat-only pass preserves the already robust-fitted timeline and checks
+        local alternatives using deletion-neutral split fees, preserving missing notes. Legacy checkers
+        retain their iterative score-fitting protocol for explicit comparisons.
+
+        For legacy checkers, raw first/last detected onsets can include an insertion or miss a
         deletion, biasing the provisional tempo fit. Once an alignment exists,
         refit from matched note onsets, then re-run the same time-aware edit and
         correction algorithms on that corrected timeline. Repeat only while the
         note boundaries or pairing structure change; a seen-state guard prevents
         oscillation without introducing another tuning parameter.
         """
+        if not getattr(self.repeat_splitter, 'refit_score_alignment', True):
+            self.repeat_splitter.check_mistakes(verbose=verbose)
+            return
+
         def state() -> tuple:
             note_state = tuple(
                 (
@@ -640,7 +743,7 @@ class Recording:
             # the exact edge sensitivity this stabilization pass avoids.
             self.resize_score_to_aligned_onsets()
             self.detect_mistakes(verbose=verbose)
-            self.mistake_checker.check_mistakes(verbose=verbose)
+            self.repeat_splitter.check_mistakes(verbose=verbose)
 
             after = state()
             if after == before:
@@ -779,7 +882,10 @@ class Recording:
         Returns True when work was started. Old caches omit the additive
         timbre payload; this path restores it without rerunning pYIN.
         """
-        if int(getattr(self.config, "cqt_stride", 0) or 0) <= 0:
+        # A newly started live/offline spectrum worker may not have published
+        # its first column yet. Do not replace its captured TimbreData target
+        # with a competing lazy-backfill object during that brief empty state.
+        if self.spectrum_detector.is_running():
             if on_done is not None:
                 on_done()
             return False
@@ -791,37 +897,25 @@ class Recording:
             if on_done is not None:
                 on_done()
             return False
-        with self._timbre_thread_lock:
-            if self._timbre_thread is not None and self._timbre_thread.is_alive():
-                return False
-
-            def worker():
-                from algorithms.CQT import CQT
-
-                try:
-                    audio = self.audio_data.read_all()
-                    cfg = self.config
-                    target = TimbreData(config=cfg)
-                    target.t_origin = self.audio_data.t_origin
-                    # Publish the target before filling it so TimbreWidget can
-                    # show columns progressively while an old cache backfills.
-                    self.timbre_data = target
-                    if len(audio) >= cfg.w1:
-                        cqt = CQT(cfg)
-                        frames = np.lib.stride_tricks.sliding_window_view(
-                            audio, cfg.w1)[::cfg.h1]
-                        stride = max(1, int(cfg.cqt_stride))
-                        for frame_i in range(0, len(frames), stride):
-                            target.write(frame_i // stride, cqt.power_db(frames[frame_i]))
-                except Exception as e:
-                    print(f"[CQT] timbre backfill failed: {e}")
-                finally:
-                    if on_done is not None:
-                        on_done()
-
-            self._timbre_thread = threading.Thread(target=worker, daemon=True)
-            self._timbre_thread.start()
-            return True
+        audio = self.audio_data.read_all()
+        cfg = self.config
+        target = TimbreData(config=cfg)
+        target.t_origin = self.audio_data.t_origin
+        # Publish the target before filling it so TimbreWidget can show columns
+        # progressively while an old cache backfills.
+        self.timbre_data = target
+        available = 1 + (len(audio) - cfg.w1) // cfg.h1
+        pitch_frames = self.pitch_data.frames_available()
+        n_frames = min(
+            available,
+            pitch_frames if pitch_frames > 0 else available,
+        )
+        return self.spectrum_detector.detect_frames_async(
+            audio,
+            target,
+            n_frames=n_frames,
+            on_done=on_done,
+        )
 
 
     # --- JSON LOADING / SAVING WRAPPERS ---

@@ -1,687 +1,675 @@
-import numpy as np
-from scipy.signal import find_peaks, iirfilter, sosfilt
-from scipy.stats import beta
+"""Production ordinary-candidate pYIN detector.
+
+The promoted live and completed-audio paths share ordinary pYIN CMNDF troughs.
+The live decision is causal and applies the selected raw unvoiced-probability
+and running-peak RMS gates. Completed-audio decoding retains the same evidence
+for its whole-recording controller. No band-pass filter is applied.
+"""
+
+from __future__ import annotations
+
 import threading
 import time
+import warnings
+from collections.abc import Callable
+
+import numpy as np
+import numpy.typing as npt
 from PyQt6.QtCore import QObject, pyqtSignal
+from scipy import fft as scipy_fft
+from scipy.stats import beta as beta_distribution
+from scipy.stats import boltzmann
 from tqdm import tqdm
 
+from algorithms.Config import Config
 from app_logic.user.ds.PitchData import Pitch
 from app_logic.user.ds.Recording import Recording
-from algorithms.Config import Config
-from algorithms.CQT import CQT
+
+
+FloatArray = npt.NDArray[np.float64]
+
 
 class PitchDetector(QObject):
+    """Faithful pYIN frontend shared by live and post-hoc processing."""
 
     pitch_detected = pyqtSignal(float)
-    # offline (whole-file) detection: per-phase status text + a done signal
     status_changed = pyqtSignal(str)
     detection_finished = pyqtSignal()
 
-    def __init__(self, recording: Recording=None, config: Config=None, parent: QObject|None=None):
-        """
-        Initialize the pitch detection parameters, like the tuning, frequency range, etc.
-        Best to make it as specific as possible to your desired use case to improve accuracy of the detection.
-        """
+    N_THRESHOLDS = 100
+    BETA_PARAMETERS = (2.0, 18.0)
+    BOLTZMANN_PARAMETER = 2.0
+    RESOLUTION = 0.1
+    NO_TROUGH_PROB = 0.01
+    BATCH_FRAMES = 512
+
+    def __init__(
+        self,
+        recording: Recording | None = None,
+        config: Config | None = None,
+        parent: QObject | None = None,
+        *,
+        center: bool = True,
+        pad_mode: str | Callable = "constant",
+    ) -> None:
         super().__init__(parent)
-        if not recording and not config:
-            raise ValueError("Must provide either a recording or a config to initialize the PitchDetector.")
+        if recording is None and config is None:
+            raise ValueError(
+                "Must provide either a recording or a config to initialize "
+                "the PitchDetector."
+            )
         self.recording = recording
-        self.config = config if config else recording.config
-        self.SR = self.config.sr # for sample-to-frequency conversion
+        self.center = bool(center)
+        self.pad_mode = pad_mode
+        self.load_config(config if config is not None else recording.config)
 
-        # --- pitch config variables ---
-        # ensure max lag is big enough to detect lowest f0 (largest period)
-        # defaults to score's min/max pitch range, can be overridden
-        self.PADDING = 4.0 # in semitones
-        padded_fmin = self.config.midi_to_freq(self.config.freq_to_midi(self.config.fmin) - self.PADDING)
-        padded_fmax = self.config.midi_to_freq(self.config.freq_to_midi(self.config.fmax) + self.PADDING)
-        self.tau_max = int(self.config.sr / padded_fmin)
-        self.tau_min = int(self.config.sr / padded_fmax)
-
-        # initialize beta distribution parameters
-        self.UNVOICED_PROB = 0.01
-        self.N_THRESHOLDS = 100
-        self.beta_pdf, self.thresholds = self.threshold_prior(n_thresholds=self.N_THRESHOLDS)
-
-        # rolling window variables (for detect_pitches)
-        self.FRAME_SIZE = self.config.w1
-        self.HOP_SIZE = self.config.h1
-
-        # threading variables
-        self.pda_thread: threading.Thread = None
-        self.offline_thread: threading.Thread = None  # for detect_pitches_async
+        self.pda_thread: threading.Thread | None = None
+        self.offline_thread: threading.Thread | None = None
         self.stop_event = threading.Event()
         self._drain_on_stop = False
-        self._stream_volume_peak = 0.0
-        self._last_volume_gate_stats: dict[str, float | int] = {}
-        self.cqt = CQT(self.config)
-        self._cqt_frame_index = 0
-        self._cqt_offline = False
-
-        # block variable for stalling buffer
+        self._owns_spectrum_worker = False
         self.block = False
 
-        # Cached preprocessing SOS (see pitch_bandpass_filter): the Butterworth
-        # design is constant per Config, but preprocess_audio filters every
-        # frame.
-        self._preprocess_sos = None
-        self._preprocess_filter_key = None
-
-    # might not be necessary anymore :)
-    def load_config(self, config: Config):
-        """re-initialize the tuning parameters"""
+    # ---------------------------------------------------------------- config
+    def load_config(self, config: Config) -> None:
+        """Rebuild the exact pYIN period, threshold, and pitch-bin geometry."""
         self.config = config
-        self.SR = config.sr
-        padded_fmin = self.config.midi_to_freq(self.config.freq_to_midi(self.config.fmin) - self.PADDING)
-        padded_fmax = self.config.midi_to_freq(self.config.freq_to_midi(self.config.fmax) + self.PADDING)
-        self.tau_max = int(self.SR / padded_fmin)
-        self.tau_min = int(self.SR / padded_fmax)
+        self.SR = int(config.sr)
+        self.frame_length = int(config.w1)
+        self.INTEGRATION_SIZE = self.frame_length
+        self.FRAME_SIZE = self.frame_length
+        self.HOP_SIZE = int(config.h1)
+        self.fmin = float(config.fmin)
+        self.fmax = float(config.fmax)
+        # Historical diagnostics use these names; pYIN+ now deliberately has
+        # no extra search guard, so they equal the configured bounds.
+        self.guarded_fmin = self.fmin
+        self.guarded_fmax = self.fmax
+        self._check_parameters()
 
-        # rolling window variables (for detect_pitches)
-        self.FRAME_SIZE = config.w1
-        self.HOP_SIZE = config.h1
-        self._stream_volume_peak = 0.0
-        self._last_volume_gate_stats = {}
-        self.cqt = CQT(config)
-        self._cqt_frame_index = 0
-        self._cqt_offline = False
+        self.min_period = int(np.floor(self.SR / self.fmax))
+        self.max_period = min(
+            int(np.ceil(self.SR / self.fmin)),
+            self.frame_length - 1,
+        )
+        # Compatibility names used by diagnostics and the streaming harness.
+        self.tau_min = self.min_period
+        self.tau_max = self.max_period
 
-    def run(self, start_time: float=None):
-        """keep trying to detect pitches while we can"""
+        self.n_bins_per_semitone = int(np.ceil(1.0 / self.RESOLUTION))
+        self.n_pitch_bins = (
+            int(np.floor(
+                12
+                * self.n_bins_per_semitone
+                * np.log2(self.fmax / self.fmin)
+            ))
+            + 1
+        )
+        self.bin_freqs = self.fmin * 2.0 ** (
+            np.arange(self.n_pitch_bins, dtype=np.float64)
+            / (12 * self.n_bins_per_semitone)
+        )
+        self.bin_midis = np.asarray(
+            [config.freq_to_midi(freq) for freq in self.bin_freqs],
+            dtype=np.float64,
+        )
+
+        self.thresholds = np.linspace(0.0, 1.0, self.N_THRESHOLDS + 1)
+        beta_cdf = beta_distribution.cdf(
+            self.thresholds,
+            self.BETA_PARAMETERS[0],
+            self.BETA_PARAMETERS[1],
+        )
+        self.beta_probs = np.diff(beta_cdf)
+        self.max_volume = 0.0
+
+    def re_init(self, config: Config | None = None) -> None:
+        if config is not None:
+            self.load_config(config)
+
+    def _check_parameters(self) -> None:
+        if self.fmax > self.SR / 2:
+            raise ValueError(
+                f"fmax={self.fmax:.3f} cannot exceed Nyquist frequency "
+                f"{self.SR / 2}"
+            )
+        if self.fmin >= self.fmax:
+            raise ValueError(
+                f"fmin={self.fmin:.3f} must be less than "
+                f"fmax={self.fmax:.3f}"
+            )
+        if self.fmin <= 0:
+            raise ValueError(
+                f"fmin={self.fmin:.3f} must be strictly positive"
+            )
+        if self.SR / self.fmin >= self.frame_length - 1:
+            feasible_fmin = self.SR / (self.frame_length - 1)
+            feasible_frame_length = int(np.ceil(self.SR / self.fmin) + 1)
+            raise ValueError(
+                f"fmin={self.fmin:.3f} is too small for "
+                f"frame_length={self.frame_length} and sr={self.SR}. "
+                f"Either increase to fmin={feasible_fmin:.3f} "
+                f"or frame_length={feasible_frame_length}"
+            )
+        if self.SR / self.fmin >= self.frame_length // 2:
+            optimal_fmin = self.SR / (self.frame_length / 2)
+            optimal_frame_length = int(np.ceil(self.SR / self.fmin) * 2 + 1)
+            warnings.warn(
+                f"With fmin={self.fmin:.3f}, sr={self.SR} and "
+                f"frame_length={self.frame_length}, less than two periods of "
+                "fmin fit into the frame, which can cause inaccurate pitch "
+                f"detection. Consider increasing to fmin={optimal_fmin:.3f} "
+                f"or frame_length={optimal_frame_length}.",
+                stacklevel=3,
+            )
+
+    # --------------------------------------------------------------- live API
+    def run(self, start_time: float | None = None) -> None:
+        """Start causal frame detection on the recording's audio queue."""
         self.stop()
         self.stop_event.clear()
         self._drain_on_stop = False
-        self._stream_volume_peak = 0.0
-        self._cqt_frame_index = 0
+        self.max_volume = 0.0
         self.recording.a2p_queue.init_start_time(start_time)
-        self.pda_thread = threading.Thread(
-            target=self._run, daemon=True
-        )
+        self.recording.spectrum_detector.start()
+        self._owns_spectrum_worker = True
+        self.pda_thread = threading.Thread(target=self._run, daemon=True)
         self.pda_thread.start()
-    
+
     def _run(self) -> None:
         while True:
             try:
                 stopping = self.stop_event.is_set()
                 if stopping and not self._drain_on_stop:
                     break
-                # if self.block:
-                    # self.recording.a2p_queue.stall(self.HOP_SIZE) # occurs when in practice mode and you fuck up
-                x, t = self.recording.a2p_queue.pop(self.FRAME_SIZE, self.HOP_SIZE, stall=self.block)
-
-                if x is None: # returns none if not enough to detect
+                samples, frame_start = self.recording.a2p_queue.pop(
+                    self.FRAME_SIZE,
+                    self.HOP_SIZE,
+                    stall=self.block,
+                )
+                if samples is None:
                     if stopping:
                         break
                     self.stop_event.wait(0.002)
                     continue
-                # x, t = x[0], x[1]
-                pitch = self.detect_pitch(x, t)
-                # Buffer addresses frames by their start so it can advance on
-                # the h1 grid, but a pitch describes the center of its analysis
-                # window (the convention already used by offline detection).
-                pitch.time = t + 0.5 * self.FRAME_SIZE / self.SR
-                self.recording.write_pitch_data([pitch], t)
-                # print(f'detected pitch @ {pitch.time}, midi_num: {pitch.candidate_pitches[0][0]}, unvoiced_prob: {pitch.unvoiced_prob}')
-                # Practice reads the just-written storage slot, so retain the
-                # frame-start address on the signal even though Pitch.time is
-                # now correctly center-stamped for plotting and analysis.
-                self.pitch_detected.emit(t)
 
-            except Exception as e:
-                print(f"[PitchDetector] frame skipped due to error: {e}")
-                continue
+                self.recording.spectrum_detector.submit(
+                    samples[:self.INTEGRATION_SIZE],
+                    frame_start,
+                )
+                pitch = self.detect_pitch(samples, frame_start)
+                pitch.time = (
+                    frame_start
+                    + 0.5 * self.INTEGRATION_SIZE / self.SR
+                )
+                self.recording.write_pitch_data([pitch], frame_start)
+                # PitchData is addressed on the frame-start grid even though
+                # the plotted/analysed Pitch carries the window-centre time.
+                self.pitch_detected.emit(frame_start)
+            except Exception as exc:  # noqa: BLE001 -- keep the live worker up
+                print(f"[PitchDetector] frame skipped due to error: {exc}")
 
-    def stop(self, drain: bool = False):
-        """Stop live detection, optionally processing all complete queued frames."""
+    def stop(self, drain: bool = False) -> None:
         if self.pda_thread and self.pda_thread.is_alive():
             self._drain_on_stop = drain
             self.stop_event.set()
-            self.pda_thread.join() # pause the main thread until recording thread recognizes the stop event
+            self.pda_thread.join()
+        if self.recording is not None and self._owns_spectrum_worker:
+            self.recording.spectrum_detector.stop(drain=True)
+            self._owns_spectrum_worker = False
         self._drain_on_stop = False
 
-    # OFFLINE (whole-file) detection, run on a background thread so the Qt event
-    # loop stays free (e.g. to animate a loading spinner while we wait).
-    def detect_pitches_async(self):
-        """Run the recording's full offline pitch pipeline (detect + smooth) on a
-        background daemon thread. Emits `status_changed(text)` as each phase
-        begins and `detection_finished` when the recording's pitch_data is ready.
-        Both fire from the worker thread, so Qt queues the connected slots onto
-        the main thread automatically."""
+    def detect_pitches_async(self) -> None:
         if self.offline_thread and self.offline_thread.is_alive():
-            return  # a detection is already in flight
-        self.offline_thread = threading.Thread(target=self._detect_pitches_offline, daemon=True)
+            return
+        self.offline_thread = threading.Thread(
+            target=self._detect_pitches_offline,
+            daemon=True,
+        )
         self.offline_thread.start()
 
-    def _detect_pitches_offline(self):
-        """Worker body: detect + smooth the whole recording, then signal done.
-        Phase changes are surfaced via `status_changed` (see detect_pitches)."""
+    def _detect_pitches_offline(self) -> None:
         try:
             self.recording.detect_pitches(on_phase=self.status_changed.emit)
-        except Exception as e:
-            print(f"[PitchDetector] offline detection failed: {e}")
+        except Exception as exc:  # noqa: BLE001 -- surface worker failures
+            print(f"[PitchDetector] offline detection failed: {exc}")
         finally:
             self.detection_finished.emit()
 
+    # ----------------------------------------------------------- pYIN frontend
+    @staticmethod
+    def _frame_audio(
+        audio: npt.ArrayLike,
+        frame_length: int,
+        hop_length: int,
+        *,
+        center: bool,
+        pad_mode: str | Callable,
+    ) -> np.ndarray:
+        samples = np.asarray(audio)
+        if samples.ndim != 1:
+            raise ValueError("PitchDetector currently supports mono audio only")
+        if not np.issubdtype(samples.dtype, np.floating):
+            raise ValueError("audio data must be floating-point")
+        if not np.all(np.isfinite(samples)):
+            raise ValueError("audio data must be finite")
+        if center:
+            samples = np.pad(
+                samples,
+                (frame_length // 2, frame_length // 2),
+                mode=pad_mode,
+            )
+        if samples.size < frame_length:
+            raise ValueError(
+                f"input is too short ({samples.size}) for "
+                f"frame_length={frame_length}"
+            )
+        return np.lib.stride_tricks.sliding_window_view(
+            samples,
+            frame_length,
+        )[::hop_length].T
 
-    # THE DETECTION ALGORITHM
-    def detect_pitch(self, x: np.ndarray, start_time: float=None) -> Pitch:
-        """a method to call pitch detection on a single frame
-        requires an explicit reference to the start time
+    @staticmethod
+    def _cumulative_mean_normalized_difference(
+        frames: np.ndarray,
+        min_period: int,
+        max_period: int,
+    ) -> np.ndarray:
+        """Librosa 0.11-compatible YIN equation-8 implementation."""
+        frame_length = frames.shape[-2]
+        fft_size = scipy_fft.next_fast_len(2 * frame_length - 1, real=True)
+        spectrum = scipy_fft.rfft(frames, n=fft_size, axis=-2)
+        power_spectrum = spectrum.real**2 + spectrum.imag**2
+        acf_frames = scipy_fft.irfft(
+            power_spectrum,
+            n=fft_size,
+            axis=-2,
+        )[..., :max_period + 1, :]
 
-        Args:
-            x: the array of audio to perform pitch detection on
-            start_time: median time of frame (in sec)
-        """
-        # Timbre must see the RAW frame (including silence), before centering,
-        # filtering, peak normalization, or the pitch detector's volume gate.
-        self._write_timbre_frame(x, start_time)
-
-        unvoiced_pitch = Pitch(
-            time=start_time, candidates=[],
-            volume=0.0, unvoiced_prob=1.0,
-            live_distance=None, config=self.config
+        yin_frames = np.square(frames)
+        np.cumsum(yin_frames, out=yin_frames, axis=-2)
+        periods = slice(1, max_period + 1)
+        yin_frames[..., 0, :] = 0
+        yin_frames[..., periods, :] = (
+            2
+            * (acf_frames[..., 0:1, :] - acf_frames[..., periods, :])
+            - yin_frames[..., :periods.stop - 1, :]
         )
-        # if frame is empty, return unvoiced pitch
-        if np.all(x == 0):
-            return unvoiced_pitch
+        numerator = yin_frames[..., min_period:max_period + 1, :]
+        period_range = np.arange(1, max_period + 1).reshape(
+            (1,) * (yin_frames.ndim - 2) + (max_period, 1)
+        )
+        cumulative_mean = (
+            np.cumsum(yin_frames[..., periods, :], axis=-2)
+            / period_range
+        )
+        denominator = cumulative_mean[
+            ..., min_period - 1:max_period, :
+        ]
+        return numerator / (denominator + np.finfo(denominator.dtype).tiny)
 
-        # preprocess audio to center and get rid of low frequency noise
-        x, volume = self.preprocess_audio(x)
+    @staticmethod
+    def _parabolic_interpolation(values: np.ndarray) -> np.ndarray:
+        shifts = np.zeros_like(values)
+        if values.shape[-2] <= 2:
+            return shifts
+        previous = values[..., :-2, :]
+        current = values[..., 1:-1, :]
+        following = values[..., 2:, :]
+        a = following + previous - 2 * current
+        b = (following - previous) / 2
+        interior = shifts[..., 1:-1, :]
+        np.divide(-b, a, out=interior, where=np.abs(b) < np.abs(a))
+        return shifts
 
-        # VOLUME GATE: if frame quieter than min volume, return unvoiced
-        self._stream_volume_peak = max(self._stream_volume_peak, float(volume))
-        min_volume = self._stream_volume_peak * max(0.0, float(self.config.min_volume))
-        if volume < min_volume or not np.any(x):
-            unvoiced_pitch.volume = volume
-            return unvoiced_pitch
+    @staticmethod
+    def _localmin(values: np.ndarray) -> npt.NDArray[np.bool_]:
+        local = np.zeros_like(values, dtype=bool)
+        if values.shape[-2] == 1:
+            return local
+        local[..., 1:-1, :] = (
+            (values[..., 1:-1, :] < values[..., :-2, :])
+            & (values[..., 1:-1, :] <= values[..., 2:, :])
+        )
+        local[..., -1, :] = values[..., -1, :] < values[..., -2, :]
+        return local
 
-        # compute autocorrelation and modify it to avoid 0-lag peak
-        acf, _ = self.autocorrelation_fft(x)
-        cdf = self.cmndf(x, acf)
-        # cdf = self.clamped_diff_fct(x=x, acf=acf)
+    def _probabilities_for_troughs(
+        self,
+        yin_frames: np.ndarray,
+        parabolic_shifts: np.ndarray,
+        troughs_for_frame: Callable[[int, np.ndarray], np.ndarray],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Build exact pYIN observations for one candidate-selection rule."""
+        yin_probs = np.zeros_like(yin_frames)
+        for frame_index, yin_frame in enumerate(yin_frames.T):
+            trough_index = np.asarray(
+                troughs_for_frame(frame_index, yin_frame),
+                dtype=int,
+            )
+            if trough_index.size == 0:
+                continue
+            trough_heights = yin_frame[trough_index]
+            trough_thresholds = np.less.outer(
+                trough_heights,
+                self.thresholds[1:],
+            )
+            trough_positions = np.cumsum(trough_thresholds, axis=0) - 1
+            n_troughs = np.count_nonzero(trough_thresholds, axis=0)
+            trough_prior = boltzmann.pmf(
+                trough_positions,
+                self.BOLTZMANN_PARAMETER,
+                n_troughs,
+            )
+            trough_prior[~trough_thresholds] = 0
+            probabilities = trough_prior.dot(self.beta_probs)
 
-        # prominence picking + probability assignment to all freq estimates
-        acf_peaks = self.find_acf_peaks(acf)
-        pitch_probs, unvoiced_prob = self.pitch_probabilities(acf_peaks, cdf)
+            global_minimum = int(np.argmin(trough_heights))
+            thresholds_below_minimum = np.count_nonzero(
+                ~trough_thresholds[global_minimum, :]
+            )
+            probabilities[global_minimum] += (
+                self.NO_TROUGH_PROB
+                * np.sum(self.beta_probs[:thresholds_below_minimum])
+            )
+            yin_probs[trough_index, frame_index] = probabilities
 
-        # interpolate + compute final freq estimates
-        freq_estimates = [self.SR/self.parabolic_interpolation(acf, t) for t in acf_peaks]
-        midi_estimates = [self.config.freq_to_midi(f) for f in freq_estimates]
+        yin_period, frame_index = np.nonzero(yin_probs)
+        period_candidates = self.min_period + yin_period
+        period_candidates = (
+            period_candidates + parabolic_shifts[yin_period, frame_index]
+        )
+        f0_candidates = self.SR / period_candidates
+        bin_index = (
+            12
+            * self.n_bins_per_semitone
+            * np.log2(f0_candidates / self.fmin)
+        )
+        bin_index = np.clip(
+            np.round(bin_index),
+            0,
+            self.n_pitch_bins,
+        ).astype(int)
 
-        # create + return the final pitch object
-        candidates = list(zip(midi_estimates, pitch_probs))
-        candidates.sort(key=lambda c: c[1], reverse=True) # sort from most to least probable
-        score_note = self.recording.score_data.current_note() if self.recording and self.recording.score_data else None
-        distance = score_note.midi_num[0] - candidates[0][0] if score_note and candidates else None
-        
-        pitch = Pitch(time=start_time, candidates=candidates,
-                      volume=volume, unvoiced_prob=unvoiced_prob,
-                      live_distance=distance, config=self.config)
-        return pitch
+        # Retain librosa's inclusive upper clip and subsequent overwrite of the
+        # first unvoiced row; this edge behaviour is part of the defended port.
+        observations = np.zeros(
+            (2 * self.n_pitch_bins, yin_frames.shape[1]),
+            dtype=np.float64,
+        )
+        observations[bin_index, frame_index] = yin_probs[
+            yin_period,
+            frame_index,
+        ]
+        voiced_probability = np.clip(
+            np.sum(observations[:self.n_pitch_bins], axis=0),
+            0,
+            1,
+        )
+        observations[self.n_pitch_bins:, :] = (
+            1.0 - voiced_probability
+        ) / self.n_pitch_bins
+        return observations[:self.n_pitch_bins], voiced_probability
 
+    def _probabilities_from_frames(
+        self,
+        frames: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        centered = frames - np.mean(frames, axis=-2, keepdims=True)
+        volumes = np.sqrt(np.mean(np.square(centered), axis=-2)).reshape(-1)
+        yin_frames = self._cumulative_mean_normalized_difference(
+            frames,
+            self.min_period,
+            self.max_period,
+        )
+        parabolic_shifts = self._parabolic_interpolation(yin_frames)
 
-    def detect_pitches(self, x: np.ndarray, show_progress: bool = False, 
-                       progress_desc: str = "Detecting pitches", 
-                       verbose: bool = False) -> list[Pitch]:
+        def ordinary(_frame_index: int, yin_frame: np.ndarray) -> np.ndarray:
+            is_trough = self._localmin(yin_frame[:, np.newaxis])[:, 0]
+            if yin_frame.size > 1:
+                is_trough[0] = yin_frame[0] < yin_frame[1]
+            return np.flatnonzero(is_trough)
+
+        observations, voiced_probability = (
+            self._probabilities_for_troughs(
+                yin_frames,
+                parabolic_shifts,
+                ordinary,
+            )
+        )
+        return observations, voiced_probability, volumes
+
+    def probabilities(
+        self,
+        audio: npt.ArrayLike,
+        *,
+        center: bool | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Return the one canonical ordinary-pYIN observation set."""
+        frames = self._frame_audio(
+            audio,
+            self.frame_length,
+            self.HOP_SIZE,
+            center=self.center if center is None else bool(center),
+            pad_mode=self.pad_mode,
+        )
+        observations, voiced_probability, _ = self._probabilities_from_frames(
+            frames
+        )
+        return observations, voiced_probability
+
+    # --------------------------------------------------------- Pitch creation
+    def _candidates(
+        self,
+        observations: np.ndarray,
+        frame_index: int,
+    ) -> list[tuple[float, float]]:
+        nonzero = np.flatnonzero(observations[:, frame_index])
+        candidates = [
+            (
+                float(self.bin_midis[pitch_bin]),
+                float(observations[pitch_bin, frame_index]),
+            )
+            for pitch_bin in nonzero
+        ]
+        candidates.sort(key=lambda candidate: candidate[1], reverse=True)
+        return candidates
+
+    def _live_value(
+        self,
+        candidates: list[tuple[float, float]],
+        voiced_probability: float,
+    ) -> tuple[float, float]:
+        """Exact one-frame joint-HMM pitch decision plus raw unvoiced mass."""
+        unvoiced_probability = 1.0 - float(voiced_probability)
+        unvoiced_bin_probability = (
+            unvoiced_probability
+        ) / self.n_pitch_bins
+        if candidates and candidates[0][1] >= unvoiced_bin_probability:
+            return float(candidates[0][0]), unvoiced_probability
+        return -1.0, unvoiced_probability
+
+    def _pitch_from_observations(
+        self,
+        observations: np.ndarray,
+        voiced_probability: np.ndarray,
+        volumes: np.ndarray,
+        frame_index: int,
+        timestamp: float,
+    ) -> Pitch:
+        candidates = self._candidates(observations, frame_index)
+        value, unvoiced_prob = self._live_value(
+            candidates,
+            float(voiced_probability[frame_index]),
+        )
+        volume = float(volumes[frame_index])
+        self.max_volume = max(self.max_volume, volume)
+        if (
+            unvoiced_prob >= float(self.config.unv_thresh)
+            or volume
+            < self.max_volume * max(0.0, float(self.config.min_volume))
+        ):
+            value = -1.0
+
+        score_note = (
+            self.recording.score_data.current_note()
+            if (
+                self.recording is not None
+                and self.recording.score_data is not None
+            )
+            else None
+        )
+        live_distance = (
+            score_note.midi_num[0] - value
+            if score_note is not None and value != -1
+            else None
+        )
+        return Pitch(
+            time=float(timestamp),
+            candidates=candidates,
+            value=value,
+            volume=volume,
+            unvoiced_prob=unvoiced_prob,
+            live_distance=live_distance,
+            config=self.config,
+        )
+
+    def detect_pitch(
+        self,
+        audio_frame: npt.ArrayLike,
+        start_time: float | None = None,
+    ) -> Pitch:
+        """Detect one causal frame, retaining its evidence for later tracking."""
+        samples = np.asarray(audio_frame)
+        if samples.size != self.frame_length:
+            raise ValueError(
+                f"PitchDetector frame must contain {self.frame_length} samples; "
+                f"received {samples.size}"
+            )
+        frames = self._frame_audio(
+            samples,
+            self.frame_length,
+            self.HOP_SIZE,
+            center=False,
+            pad_mode=self.pad_mode,
+        )
+        observations = self._probabilities_from_frames(frames)
+        return self._pitch_from_observations(
+            *observations,
+            frame_index=0,
+            timestamp=0.0 if start_time is None else float(start_time),
+        )
+
+    def detect_pitches(
+        self,
+        audio: npt.ArrayLike,
+        show_progress: bool = False,
+        progress_desc: str = "Detecting pitches",
+        verbose: bool = False,
+    ) -> list[Pitch]:
+        """Compute canonical ordinary-pYIN observations over completed audio.
+
+        The librosa-compatible frame grid is processed in bounded chunks so
+        long takes do not allocate a multi-gigabyte temporary at the dense
+        production hop.
         """
-        Computes multi-frame pitch detection on an arbitrary length array of audio data.
-        Returns a nested list of pitches, each corresponding to the freq estimates (probabilistic)
-        for each timestep
-        """
-        self._cqt_frame_index = 0
-        self._cqt_offline = True
-        if len(x) < self.FRAME_SIZE:
-            self._cqt_offline = False
+        samples = np.asarray(audio)
+        if samples.ndim != 1:
+            raise ValueError("PitchDetector currently supports mono audio only")
+        if not np.issubdtype(samples.dtype, np.floating):
+            raise ValueError("audio data must be floating-point")
+        if not np.all(np.isfinite(samples)):
+            raise ValueError("audio data must be finite")
+        if self.center:
+            framed_samples = np.pad(
+                samples,
+                (self.frame_length // 2, self.frame_length // 2),
+                mode=self.pad_mode,
+            )
+        else:
+            framed_samples = samples
+        if framed_samples.size < self.frame_length:
             return []
 
-        # get memory efficient frames with np pointer c++ magic
-        frames = np.lib.stride_tricks.sliding_window_view(x, self.FRAME_SIZE)[::self.HOP_SIZE]
-        n_frames = 1 + (len(x) - self.FRAME_SIZE) // self.HOP_SIZE 
-        volumes = self._frame_volumes(x, n_frames)
-        # min_volume is the ratio (fraction of the reference below which a frame is
-        # gated to unvoiced); max_volume is that reference's percentile, stored as a
-        # fraction (0.95 -> the 95th percentile of frame RMS).
-        gate_ratio = max(0.0, float(self.config.min_volume))
-        gate_percentile = np.clip(
-            float(self.config.max_volume) * 100.0,
-            0.0,
-            100.0,
-        )
-        volume_reference = (
-            float(np.percentile(volumes, gate_percentile))
-            if volumes.size and gate_ratio > 0
-            else 0.0
-        )
-        min_volume = volume_reference * gate_ratio
-        silent_frames = int(np.sum(volumes <= 0.0))
-        gated_frames = int(np.sum((volumes > 0.0) & (volumes < min_volume))) if min_volume > 0 else 0
-        self._last_volume_gate_stats = {
-            "pitch_total_frames": int(n_frames),
-            "pitch_silent_frame_count": silent_frames,
-            "pitch_volume_gate_frame_count": gated_frames,
-            "pitch_volume_gate_min_volume": float(min_volume),
-            "pitch_volume_gate_reference": float(volume_reference),
-            "pitch_volume_gate_ratio": float(gate_ratio),
-            "pitch_volume_gate_percentile": float(gate_percentile),
-        }
-
-        pitches = []
-        frames_iter = enumerate(frames)
-        start = time.perf_counter()
+        frames = np.lib.stride_tricks.sliding_window_view(
+            framed_samples,
+            self.frame_length,
+        )[::self.HOP_SIZE]
+        frame_count = len(frames)
+        self.max_volume = 0.0
+        output: list[Pitch] = []
+        started = time.perf_counter()
         if verbose:
-            print(f"[PitchDetector] detecting {n_frames} frame(s)", flush=True)
-            if min_volume > 0:
-                print(
-                    f"[PitchDetector] volume gate: RMS < {min_volume:.6g} "
-                    f"({gate_ratio:.3f} * p{gate_percentile:g} frame RMS "
-                    f"{volume_reference:.6g}) -> unvoiced; "
-                    f"gated {gated_frames}/{n_frames} non-silent frame(s), "
-                    f"{silent_frames} already silent",
-                    flush=True,
-                )
+            print(
+                f"[PitchDetector] detecting {frame_count} frame(s)",
+                flush=True,
+            )
+
+        spectrum = self.recording.spectrum_detector if self.recording else None
+        raw_spectrum_frames = None
+        if spectrum is not None:
+            spectrum.start()
+            if samples.size >= self.frame_length:
+                raw_spectrum_frames = np.lib.stride_tricks.sliding_window_view(
+                    samples,
+                    self.frame_length,
+                )[::self.HOP_SIZE]
+
+        starts = range(0, frame_count, self.BATCH_FRAMES)
         if show_progress:
-            frames_iter = tqdm(
-                frames_iter,
-                total=n_frames,
+            starts = tqdm(
+                starts,
+                total=(frame_count + self.BATCH_FRAMES - 1) // self.BATCH_FRAMES,
                 desc=progress_desc,
                 leave=False,
                 mininterval=0.25,
             )
-
         try:
-            for i, frame in frames_iter:
-                start_time = (i * self.HOP_SIZE + 0.5 * self.FRAME_SIZE) / self.SR
-                pitch = self.detect_pitch(frame, start_time)
-                # offline detection has no live playhead, so detect_pitch's per-frame
-                # distance (to the score's *current* note at a fixed cursor) is
-                # meaningless here. Leave it None so detected-but-unanalyzed pitches
-                # render neutral grey until analyze() assigns alignment distances.
-                pitch.live_distance = None
-                pitches.append(pitch)
+            for batch_start in starts:
+                batch = frames[
+                    batch_start:batch_start + self.BATCH_FRAMES
+                ].T
+                observations = self._probabilities_from_frames(batch)
+                for local_index in range(batch.shape[1]):
+                    global_index = batch_start + local_index
+                    timestamp = global_index * self.HOP_SIZE / self.SR
+                    pitch = self._pitch_from_observations(
+                        *observations,
+                        frame_index=local_index,
+                        timestamp=timestamp,
+                    )
+                    pitch.live_distance = None
+                    output.append(pitch)
+                    if (
+                        spectrum is not None
+                        and raw_spectrum_frames is not None
+                        and global_index < len(raw_spectrum_frames)
+                    ):
+                        spectrum.submit(
+                            raw_spectrum_frames[global_index],
+                            self.recording.timbre_data.t_origin
+                            + global_index * self.HOP_SIZE / self.SR,
+                        )
         finally:
-            self._cqt_offline = False
+            if spectrum is not None:
+                spectrum.stop(drain=True)
 
         if verbose:
             print(
-                f"[PitchDetector] done: {len(pitches)} pitch frame(s) in "
-                f"{time.perf_counter() - start:.2f}s",
+                f"[PitchDetector] done: {len(output)} pitch frame(s) in "
+                f"{time.perf_counter() - started:.2f}s",
                 flush=True,
             )
-        return pitches
+        return output
 
-    def _write_timbre_frame(self, raw_frame: np.ndarray, start_time: float | None):
-        """Write every configured stride-th raw frame to TimbreData."""
-        local_frame_i = self._cqt_frame_index
-        self._cqt_frame_index += 1
-        stride = int(getattr(self.config, "cqt_stride", 0) or 0)
-        if self.recording is None or stride <= 0:
-            return
-        # Offline frames are a dense array beginning at frame zero. Live
-        # streams may begin at a nonzero clip time (and Practice may stall on
-        # one time), so address their global PitchData grid from the emitted
-        # app-time instead of pretending every run begins at column zero.
-        if self._cqt_offline or start_time is None:
-            frame_i = local_frame_i
-        else:
-            frame_i = max(0, self.recording.pitch_data.time_to_index(start_time))
-        if frame_i % stride:
-            return
-        td = getattr(self.recording, "timbre_data", None)
-        if td is None:
-            return
-        if td.computed_until == 0:
-            td.t_origin = self.recording.audio_data.t_origin
-        td.write(frame_i // stride, self.cqt.power_db(raw_frame))
+    def preprocess_audio(self, audio: npt.ArrayLike) -> tuple[np.ndarray, float]:
+        """Return centered samples and centered RMS without filtering.
 
-    def _frame_volumes(self, audio: np.ndarray, n_frames: int) -> np.ndarray:
-        if n_frames <= 0:
-            return np.empty(0, dtype=float)
-
-        audio = np.asarray(audio, dtype=np.float64)
-        starts = np.arange(n_frames, dtype=np.int64) * self.HOP_SIZE
-        ends = starts + self.FRAME_SIZE
-
-        prefix = np.concatenate(([0.0], np.cumsum(audio, dtype=np.float64)))
-        prefix_sq = np.concatenate(([0.0], np.cumsum(audio * audio, dtype=np.float64)))
-
-        sums = prefix[ends] - prefix[starts]
-        sums_sq = prefix_sq[ends] - prefix_sq[starts]
-        mean = sums / self.FRAME_SIZE
-        variance = (sums_sq / self.FRAME_SIZE) - (mean * mean)
-        return np.sqrt(np.maximum(variance, 0.0))
-
-    # METHODS TO IMPLEMENT THE ALGORITHM
-    # ---
-    def re_init(self, config: Config=None):
-        """re-initialize the tuning parameters"""
-        if config:
-            self.config = config
-            self.SR = config.sr
-            self.tau_max = int(self.SR / config.fmin) 
-            self.tau_min = int(self.SR / config.fmax)
-
-    # the probability distribution of thresholds
-    def threshold_prior(self, n_thresholds: int=100, a: float=2, b: float=34/3) -> tuple[np.ndarray, np.ndarray]:
+        pYIN itself consumes the original samples, matching the defended
+        frontend. This helper remains for volume diagnostics and tests.
         """
-        Returns a beta distribution modeling the pdf for YIN thresholds,
-        represented as a numpy array of size N_THRESHOLDS corresponding to the pdf values.
-        Also returns the array of thresholds.
-
-        Possible a,b parameters from paper:
-            - mean=0.1 beta(a=2, b=18)
-            - mean=0.15 beta(a=2, b=11.33)
-            - mean=0.2 beta(a=2, b=8)
-
-        Not yet sure how these parameters are determined but I got them from the paper.
-        """
-        # all thresholds
-        thresholds = np.linspace(0, 1, n_thresholds+1)
-        thresholds = thresholds[1:] # remove the 0 threshold
-        beta_pdf = beta.pdf(thresholds, a, b) / n_thresholds
-        return beta_pdf, thresholds
-
-    # --- frequency parsing functions ---
-    # autocorrelation (base)
-    def autocorrelation_fft(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Fast autocorrelation function implementation using Wiener-Khinchin theorem,
-        which computes autocorrelation as the inverse FFT of the signal's power spectrum.
-
-        Step 1 of Yin algorithm, corresponding to equation (1) in Cheveigne, Kawahara 2002.
-
-        Args:
-            x: The current frame of audio samples in Yin algorithm
-            tau_max: Check for all time lags up to this value for in autocorrelation
-
-        Returns:
-            autocorrelation: The similarity curve.
-            amplitudes: Amplitudes of the frame.
-        """
-        x = np.array(x, dtype=np.float64)
-        w = x.size
-        tau_max = min(self.tau_max, w)
-
-        # zero-pad the audio signal array by the minimum power of 2 which
-        # is larger than the window size + tau_max
-        min_fft_size = w + tau_max  # (pad by >tau_max for frame end)
-
-        p2 = (min_fft_size // 32).bit_length()
-        nice_fft_sizes = (16, 18, 20, 24, 25, 27, 30, 32)
-        size_pad = min(size * (2 ** p2) for size in nice_fft_sizes if size * 2 ** p2 >= min_fft_size)
-
-        # --- AUTOCORRELATION WITH WIENER-KHINCHIN ---
-        # decompose the signal into its frequency components
-        fft_x = np.fft.rfft(x, size_pad)  
-        psd = fft_x * fft_x.conjugate() # power spectrum density
-        autocorrelation = np.fft.irfft(psd)[:tau_max] 
-
-        amplitudes = np.abs(fft_x)
-
-        # only return valid overlapping values up to window_size-tau_max
-        return autocorrelation, amplitudes
-
-    def cmndf(self, x, acf) -> np.ndarray:
-        """
-        Cumulative mean normalized difference function from the original YIN
-        algorithm.
-
-        Args:
-            x: The current analysis frame.
-            acf: Full-frame autocorrelation of ``x``.
-        """
-        tau_limit = min(self.tau_max, len(acf), len(x) - 1)
-        cmndf = np.ones(self.tau_max, dtype=np.float64)
-        if tau_limit <= 1:
-            return cmndf
-
-        # YIN equation (2) compares x[j] with x[j + tau] over one fixed
-        # window. Reserve tau_limit samples as look-ahead so every lag uses the
-        # same number of terms instead of padding the shifted window with zero.
-        window_size = len(x) - tau_limit
-        reference_energy = float(np.dot(x[:window_size], x[:window_size]))
-
-        # acf[tau] contains the desired fixed-window cross term plus the
-        # autocorrelation of the reserved tail. Subtracting that small tail ACF
-        # reuses the full-frame FFT rather than performing a second large FFT.
-        tail = x[window_size:]
-        tail_acf = np.correlate(tail, tail, mode="full")[
-            len(tail) - 1 : len(tail) - 1 + tau_limit
-        ]
-        cross_terms = acf[:tau_limit] - tail_acf
-
-        squared_prefix = np.concatenate(
-            ([0.0], np.cumsum(x * x, dtype=np.float64))
-        )
-        starts = np.arange(tau_limit)
-        shifted_energy = (
-            squared_prefix[starts + window_size] - squared_prefix[starts]
-        )
-        diff_fct = (
-            reference_energy + shifted_energy - 2.0 * cross_terms
-        )
-        # Roundoff can make the theoretically non-negative difference a few
-        # ulps below zero.
-        diff_fct = np.maximum(diff_fct, 0.0)
-        diff_fct[0] = 0.0
-
-        # YIN equation (3): d'(0) = 1 and, for tau > 0, divide by the
-        # cumulative mean from lag 1 through tau. There is deliberately no
-        # additive pseudocount in the cumulative sum.
-        taus = np.arange(1, tau_limit)
-        cumulative_diff = np.cumsum(diff_fct[1:tau_limit])
-        cmndf[1:tau_limit] = np.divide(
-            diff_fct[1:tau_limit] * taus,
-            cumulative_diff,
-            out=np.ones(tau_limit - 1, dtype=np.float64),
-            where=cumulative_diff > 0.0,
-        )
-        return cmndf
-
-    # modifying the difference function
-    def clamped_diff_fct(self, x, acf) -> np.ndarray:
-        """
-        modifies the base autocorrelation by inverting + normalizing it, then
-        clamping all values outside of desired tau_range to be 1
-
-        Args:
-            x: needed to compute energy for diff_fct inversion
-            acf: the result of autocorrelation on x
-        """
-        # --- INVERT TO DIFFERENCE FUNCTION ---
-        # compute the energy (r_t(0) and r_{t+\tau}(0)) for each lag
-        r_0 = np.sum(x**2)
-        energy = np.full(acf.shape, r_0)
-
-        diff_fct = energy[0] + energy - 2*acf
-        diff_fct[0] = 0
-        diff_fct = np.abs(diff_fct)
-
-        # --- NORMALIZE + CLAMP
-        diff_fct = diff_fct / (np.max(diff_fct) - np.min(diff_fct))
-
-        clamp_df = np.zeros(self.tau_max) 
-        clamp_df[:self.tau_min] = 1 # make everything before min f_0 1
-        total_diff = self.tau_min
-
-        for tau in range(self.tau_min, self.tau_max):
-            total_diff += diff_fct[tau]
-            avg_diff = total_diff / tau 
-            clamp_df[tau] = diff_fct[tau] / avg_diff
-
-        return clamp_df
-    
-    # --- peak-picking ---
-    # prominence-based initial peak-finding
-    def find_acf_peaks(self, acf: np.ndarray):
-        """prominence-based peak picking of the autocorrelation curve
-        returns the indices of all possible tau (fundamental period) values
-        """
-        # initial prominence as 1/2 overall acf range
-        prominence = abs((np.max(acf) - np.min(acf))/2)
-
-        n = 5 # how many times to find peaks within the intial prominence range
-        for i in range(0, n):
-            # try the lowest prominence we can that still returns valid
-            p = prominence - prominence*(i/n) 
-            acf_peaks, _ = find_peaks(acf, prominence=p)
-            if len(acf_peaks) > 0:
-                break
-
-        # fallback if still empty
-        if acf_peaks.size == 0:
-            # look for the global ACF max in [tau_min, tau_max)
-            region = acf[self.tau_min : self.tau_max]
-            best = np.argmax(region) + self.tau_min
-            acf_peaks = np.array([best], dtype=int)
-
-        return acf_peaks
-
-    # find the pitch according to YIN thresholding
-    def find_pitch(self, cdf: np.ndarray, acf_peaks: np.ndarray, threshold: float=0.1) -> tuple[int, bool]:
-        """
-        Finds the YIN pitch estimate with their absolute thresholding step by searching for the first cdf trough
-        below a certain 'absolute threshold'. Runs 
-
-        Args:
-            cdf: the difference function for y-values corresponding in the threshold range
-            acf_peaks: indices of the prominent-peaks found from the ACF (to index into the CDF)
-            threshold: take the first trough below this value of d'(tau)
-        
-        Returns:
-            tau_0 (int): The fundamental period estimate. If possible, the first tau st. 
-                         d'(tau) < threshold. Else, the x of the global minima
-            tau_idx (int): index of the chosen peak in the acf_peaks array
-            is_voiced (bool): False if we return the global min
-        """
-        for i, min in np.ndenumerate(acf_peaks):
-            if cdf[min] <= threshold:
-                return min, i[0], True
-        
-        # no min found below threshold, return the global minima
-        i = np.argmin(cdf[acf_peaks])
-        global_min = acf_peaks[i]
-        return global_min, i, False
-    
-    # assign remaining peaks a probability with find_pitch
-    def pitch_probabilities(self, acf_peaks: np.ndarray, cdf: np.ndarray) -> tuple[np.ndarray, float]:
-        """
-        Given all prominent-enough peaks of the original ACF curve, 
-        computes the probability of all possible period (tau) = 1/f_0 estimates.
-        Based off the PYin method of probability assignment.
-
-        Args:
-            acf_peaks: indices of all prominent-enough peaks of the original ACF curve
-            cdf: clamped difference function, to help for threshold-based peak-picking
-
-        Returns:
-            pitch_probs: array of same shape as acf_peaks, where corresponding
-                         indices represent associated probabilities
-            unvoiced_prob: 1 - sum(tau_probs), eg adding up all the times we had to 
-                           take the global min because nothing was below the threshold
-        """
-        pitch_probs = np.zeros_like(acf_peaks, dtype=np.float64)
-
-        for i, threshold in enumerate(self.thresholds):
-            tau_0, j, is_voiced = self.find_pitch(cdf, acf_peaks, threshold)
-            # if returned pitch for a threshold is not within pitch range, call it unvoiced
-            # (trying to minimize harmonic errors)
-            if is_voiced and tau_0 <= self.tau_max and tau_0 >= self.tau_min:
-                pitch_probs[j] += self.beta_pdf[i]
-            else:
-                pitch_probs[j] += self.beta_pdf[i] * self.UNVOICED_PROB
-            
-        unvoiced_prob = 1 - np.sum(pitch_probs)
-        return pitch_probs, unvoiced_prob
-
-    # refine final peak estimates
-    def parabolic_interpolation(self, acf: np.ndarray, acf_peak: int) -> float:
-        """
-        Refines the peak estimates by performing parabolic interpolation around the given index
-        of the AACF. Fits a negative quadratic to the supplied minima.
-        
-        Args:
-            acf: A 1D array of y-values (e.g., diff_fct values).
-            acf_peak: The index of the maximum point in acf to interpolate around.
-
-        Returns:
-            The interpolated x-pos of the supplied acf_peak
-        """
-        x = acf_peak
-
-        # don't interpolate at boundaries - need at least 3 points
-        if x <= 0 or x >= len(acf) - 1:
-            return float(x)
-
-        y_1 = acf[x - 1]
-        y_2 = acf[x]
-        y_3 = acf[x + 1]
-
-        denominator = 2 * (y_1 - 2*y_2 + y_3)
-        if denominator == 0:
-            return float(x)
-        
-        x_interpolated = x + (y_1 - y_3) / denominator
-        return x_interpolated
-
-
-    # AUDIO PREPROCESSING
-    def pitch_bandpass_filter(
-        self,
-        x: np.ndarray,
-    ) -> np.ndarray:
-        """Retain the configured pitch range with asymmetric padding.
-
-        Config.fmin/fmax constrain the YIN lag search and smoother state space;
-        the filter extends two semitones below fmin and two octaves above fmax.
-        The wider upper padding preserves four harmonics at the top of the
-        expected range instead of repeating the old 1.2*fmax cutoff, which
-        removed evidence needed to resolve high violin notes.
-        """
-        padded_fmin = self.config.midi_to_freq(
-            self.config.freq_to_midi(self.config.fmin) - self.PADDING
-        )
-        padded_fmax = self.config.midi_to_freq(
-            self.config.freq_to_midi(self.config.fmax) + 24.0
-        )
-        upper_cutoff = min(
-            padded_fmax,
-            0.5 * self.SR * (1.0 - 1e-6),
-        )
-        key = (padded_fmin, upper_cutoff, self.SR)
-        if self._preprocess_filter_key != key:
-            self._preprocess_sos = iirfilter(
-                N=2,
-                Wn=[padded_fmin, upper_cutoff],
-                btype="bandpass",
-                ftype="butter",
-                output="sos",
-                fs=self.SR,
-            )
-            self._preprocess_filter_key = key
-        return sosfilt(self._preprocess_sos, x)
-
-    def preprocess_audio(self, x: list) -> tuple[np.ndarray, float]:
-        """
-        centers the audio around mean, normalizes, 
-        and applies high pass iir filter to prepare for pitch detection
-
-        Args:
-            x (list): The input audio signal as a list of samples.
-            iir_cutoff_freq (float, optional): The cutoff frequency for the high-pass filter. Defaults to 150 Hz.
-
-        Returns:
-            tuple: A tuple containing the preprocessed audio signal (as a NumPy array) and the volume (as a float).
-        """
-        if len(x) == 0:
-            return np.array([]), 0.0
-        x = np.asarray(x, dtype=float)
-        # x = x.astype(float)
-        x = x - np.mean(x) # center
-        volume = np.sqrt(np.mean(x ** 2))  # get volume as mean |amplitude| of the x (before normalizing)
-        peak = np.max(np.abs(x))
-        if peak == 0:  # constant/silent frame (digital silence, DC) -> no pitch
-            return np.zeros_like(x), 0.0
-        x = x/peak # normalize
-        x = self.pitch_bandpass_filter(x)
-        return x, volume
+        samples = np.asarray(audio, dtype=float)
+        if samples.size == 0:
+            return np.array([], dtype=float), 0.0
+        centered = samples - np.mean(samples)
+        return centered, float(np.sqrt(np.mean(np.square(centered))))

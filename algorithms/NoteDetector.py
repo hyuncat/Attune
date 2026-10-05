@@ -25,9 +25,7 @@ class NoteDetector(QObject):
 
     def get_pitch_runs(self, pitches: list[Pitch]) -> list[list[Pitch]]:
         """Group voiced frames, splitting on majority-confirmed silence gaps."""
-        minimum_run_frames = self.config.min_note_pitch_frames(
-            factor=self.config.min_note_length_factor,
-        )
+        minimum_run_frames = self.config.note_detection_min_frames()
         silence_window_frames = self.silence_window_frames()
         voiced_frames = np.fromiter(
             (
@@ -80,6 +78,7 @@ class NoteDetector(QObject):
             run = [p for p in pitches if p]
             signal = np.asarray([p.value for p in run], dtype=float).reshape(-1, 1)
             breakpoints = self.segment_breakpoints(signal)
+            breakpoints = self._merge_same_pitch_segments(signal, breakpoints)
 
             # retrace the notes from the breakpoints
             prev_idx = 0
@@ -107,21 +106,59 @@ class NoteDetector(QObject):
 
         return nd
 
+    @staticmethod
+    def _merge_same_pitch_segments(signal, breakpoints):
+        """Consolidate contiguous fragments with at most 0.5 semitones of spread.
+
+        A pitch-driven change point alone is not evidence of a new articulation
+        when the original segment medians stay within a half-semitone range.
+        Track the whole group's extrema to prevent gradual pitch drift from
+        chaining arbitrarily far. Groups are built greedily from left to right.
+        Keep the outer boundaries; detect_notes recomputes the median from the
+        original frames, without rounding or averaging segment medians.
+        Runs separated by confirmed silence never pass through this together.
+        Score repetitions are still handled by RepeatSplitter afterwards.
+        """
+        merged = []
+        previous_end = 0
+        group_min = group_max = None
+        for end in breakpoints:
+            pitch = float(np.median(signal[previous_end:end]))
+            if merged and max(group_max, pitch) - min(group_min, pitch) <= 0.5:
+                merged[-1] = end
+                group_min = min(group_min, pitch)
+                group_max = max(group_max, pitch)
+            else:
+                merged.append(end)
+                group_min = group_max = pitch
+            previous_end = end
+        return merged
+
     def segment_breakpoints(
         self,
         signal: np.ndarray,
         segment_count: int | None = None,
+        min_length_seconds: float | None = None,
     ) -> list[int] | None:
         """Segment one pitch run with the production linear KernelCPD model.
 
         Normal note detection lets the configured penalty choose the number of
         segments. Mistake correction supplies ``segment_count`` so the same
         model returns exactly the number of notes required by a candidate split.
+        It may also supply an explicit correction-only minimum duration without
+        changing the production detector's capped score-relative default.
         """
         frame_count = len(signal)
-        min_frames = self.config.min_note_pitch_frames(
-            factor=self.config.min_note_length_factor,
-        )
+        if min_length_seconds is None:
+            min_frames = self.config.note_detection_min_frames()
+        else:
+            frame_rate = self.config.sr / self.config.h1
+            min_frames = max(
+                1,
+                int(np.ceil(
+                    max(0.0, float(min_length_seconds)) * frame_rate
+                )),
+            )
         if segment_count is not None:
             if segment_count < 1 or frame_count < segment_count * min_frames:
                 return None
@@ -159,8 +196,8 @@ class NoteDetector(QObject):
     def silence_window_frames(self) -> int:
         """Convert a decoded-silence duration to an odd majority window.
 
-        At the default 128/44100-second hop, 10 ms rounds to three frames and
-        therefore reproduces the production two-unvoiced-of-three decision.
+        At the default 128/44100-second hop, 40 ms rounds to 13 frames and
+        requires seven unvoiced frames to confirm a silence span.
         """
         frame_rate = self.config.sr / self.config.h1
         target = (

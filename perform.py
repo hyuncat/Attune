@@ -361,6 +361,7 @@ class PerformTab(QWidget):
             return
         self._clear_analysis()  # clear stale analysis but KEEP the loaded audio
         rec.pitch_data = PitchData(config=rec.config)
+        rec.pitches_smoothed = False
         self.guitar_hero.load_user(rec)
         JsonHandler(rec).save_cache()
         self._wire_detector(rec)  # just in case
@@ -546,25 +547,18 @@ class PerformTab(QWidget):
             )
             return
         print("analyzing... ")
+        rec.smooth_pitches()
         rec.reset_analysis()  # clear stale notes/alignment/mistakes before recomputing
         rec.detect_notes()
 
-        # Give the initial alignment an onset-fitted score. Count-in/runway and
-        # the final note's release must never affect the fitted tempo.
-        rec.resize_score(to_span="onset")
-        rec.detect_mistakes()
-
-        # A raw endpoint insertion/deletion can bias the provisional tempo fit.
-        # Refit from matched onsets before the first correction, then alternate
-        # realignment and correction until boundaries and pairs stabilize.
-        rec.stabilize_score_alignment()
-        rec.reindex_mistakes()
+        # Align original notes, then recover missing repeats locally.
+        rec.align_score_and_refine()
         rec.update_alignment_distances() # color the user pitches by the final alignment
         rec.trim_end()
         rec.analysis_notice = ""
 
         # reload every view with the fresh analysis (note/alignment may have been
-        # overwritten by the correction loop)
+        # overwritten by the repeat-refinement pass)
         self.guitar_hero.load_alignment(rec.alignment)
         self.guitar_hero.load_user(rec)
         self.guitar_hero.update_view_items()

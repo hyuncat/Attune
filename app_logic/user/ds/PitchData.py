@@ -7,7 +7,8 @@ from algorithms.Config import Config
 class Pitch:
     def __init__(self, time: float, volume: float, unvoiced_prob: float,
                  live_distance: float, config: Config,
-                 candidates: list[tuple[float, float]] | None=None, value: float=-1):
+                 candidates: list[tuple[float, float]] | None=None,
+                 value: float | None=None):
         """
         The quintessential pitch object for the app. Corresponds to a given [time] in the
         PitchData and stores all possible pitch [candidates] = [(midi_num, prob), ...]
@@ -21,8 +22,15 @@ class Pitch:
         ]
         self.config = config  # tuning / fmin/fmax / note naming
         self.time = time      # center time of the frame when pitch was computed
-        self.value = candidates[0][0] if value == -1 and candidates else value
-        self.volume = volume  # mean |amplitude| of the frame
+        # ``None`` means "select the leading candidate".  ``-1`` is an actual
+        # unvoiced value and must survive cache round-trips even when candidate
+        # evidence is retained for the offline smoother.
+        self.value = (
+            candidates[0][0]
+            if value is None and candidates
+            else (-1 if value is None else value)
+        )
+        self.volume = volume  # centered integration-window RMS
 
         # ---> pre-smoother characteristics
         self.unvoiced_prob = unvoiced_prob # how messy the signal was (no clean periodicity)
@@ -109,6 +117,21 @@ class Pitch:
             self.volume = 0.0
         if not hasattr(self, "unvoiced_prob"):
             self.unvoiced_prob = 1.0
+        # v3/v4 caches carried ordinary post-hoc candidates beside prominent
+        # live candidates. Promotion removed prominence, so legacy objects
+        # collapse to that ordinary list and then discard the duplicate fields.
+        legacy_posthoc = self.__dict__.pop("posthoc_candidate_pitches", None)
+        if legacy_posthoc is not None:
+            self.candidate_pitches = [
+                (float(midi), float(prob))
+                for midi, prob in (legacy_posthoc or [])
+            ]
+        legacy_posthoc_unvoiced = self.__dict__.pop(
+            "posthoc_unvoiced_prob",
+            None,
+        )
+        if legacy_posthoc_unvoiced is not None:
+            self.unvoiced_prob = float(legacy_posthoc_unvoiced)
         if not hasattr(self, "time"):
             self.time = 0.0
         return self
@@ -224,19 +247,39 @@ class PitchData:
         )
 
     def _frame_time(self, i: int) -> float:
-        """App-time of frame i's center (the same convention detect_pitches
-        stamps Pitch.time with)."""
-        return self.t_origin + (i * self.config.h1 + 0.5 * self.config.w1) / self.config.sr
+        """App-time of frame ``i`` on the active live or centered grid."""
+        return (
+            self.t_origin
+            + i * self.config.h1 / self.config.sr
+            + self._frame_time_offset()
+        )
+
+    def _frame_time_offset(self) -> float:
+        """Infer whether this track is causal-live or centered post-hoc.
+
+        Live frames are stored at their capture-window start but carry a
+        ``w1/2`` center timestamp. Whole-file pYIN uses centered padding, so its
+        frame-zero timestamp is exactly ``t_origin``. Keeping the distinction
+        on the data itself lets curve readers serve both without changing the
+        public indexing API.
+        """
+        step = self.config.h1 / self.config.sr
+        for index, pitch in enumerate(self.data):
+            if pitch is not None:
+                return float(pitch.time) - self.t_origin - index * step
+        return 0.5 * self.config.w1 / self.config.sr
 
     def _curve_index_range(self, t0: float, t1: float) -> tuple[int, int]:
         """Half-open frame-index range whose CENTER times fall in [t0, t1].
 
         `time_to_index` addresses streaming writes by their frame-start time;
-        plot curves use frame centers, so they must undo the w1/2 offset.
+        completed-audio frames instead use pYIN's centered grid. Infer and undo
+        the appropriate offset from the stored frame timestamps.
         """
         cfg = self.config
-        pos0 = ((t0 - self.t_origin) * cfg.sr - 0.5 * cfg.w1) / cfg.h1
-        pos1 = ((t1 - self.t_origin) * cfg.sr - 0.5 * cfg.w1) / cfg.h1
+        offset = self._frame_time_offset()
+        pos0 = (t0 - self.t_origin - offset) * cfg.sr / cfg.h1
+        pos1 = (t1 - self.t_origin - offset) * cfg.sr / cfg.h1
         i0 = max(0, int(np.ceil(pos0)))
         i1 = min(len(self.data), max(i0, int(np.floor(pos1)) + 1))
         return i0, i1

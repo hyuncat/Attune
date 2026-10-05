@@ -10,11 +10,10 @@ class PitchDataUI(pg.ScatterPlotItem):
     live/review volume normalization.
 
     Coloring is per update_view `mode`:
-        - "pitch": along the plasma ramp (yellow = on-pitch -> indigo = way
-          off) by pitch distance. Post-analysis frames carry an
-          `aligned_distance` and use the adaptive ramp (yellow within the
-          recording's pitch tolerance — see set_tolerance); otherwise the fixed
-          live ramp on `live_distance`. Transitions are grey.
+        - "pitch": green within the recording's pitch tolerance, ramping to
+          red at four times that tolerance. Both live and post-analysis frames
+          use this adaptive scale; `aligned_distance` takes precedence over
+          `live_distance` when available. Transitions are grey.
         - "volume": along the truncated viridis ramp (purple = quiet ->
           sea-green = loud). Live recording normalizes against a FIXED absolute
           dBFS window (a dot's color locks the moment it's drawn); in review
@@ -29,16 +28,17 @@ class PitchDataUI(pg.ScatterPlotItem):
         self.pitch_data: PitchData | None = None
 
         self.live = False               # recording right now? (see set_live)
+        self.max_volume = 0.0            # loudest centered-RMS frame seen
+        self._volume_frames_seen = 0
         self._vol_range: tuple | None = None  # cached per-take (min, max) dBFS
 
         self.rest_brush = colors['rest']  # transition frames in pitch mode
-        self.distance_brushes = Colors.pitch_brushes(
-            Colors.LIVE_CORRECT_THRESH, Colors.LIVE_MAX_DIST)
+        self.distance_brushes: list = []
         self.volume_brushes = Colors.volume_brushes()
         # knocked-back twins of the pooled brushes, made on demand for the
         # hovered note (see hover_brush)
         self._hover_brushes: dict[int, object] = {}
-        # adaptive post-analysis ramp; rebuilt per-recording (set_tolerance).
+        # Adaptive live/review ramps; rebuilt per-recording (set_tolerance).
         # Mutated in place so palette refs (GuitarHero.colors) never go stale.
         self.align_distance_brushes: list = []
         self.align_max_dist = 0.0
@@ -50,7 +50,10 @@ class PitchDataUI(pg.ScatterPlotItem):
         `tolerance` (the recording's pitch-mistake tolerance) rebuilds the
         adaptive align ramp when given."""
         self.pitch_data = pitch_data
+        self.max_volume = 0.0
+        self._volume_frames_seen = 0
         self._vol_range = None
+        self._sync_max_volume()
         if tolerance is not None:
             self.set_tolerance(tolerance)
 
@@ -62,10 +65,10 @@ class PitchDataUI(pg.ScatterPlotItem):
             self.load_pitchdata(pitch_data)
 
     def set_tolerance(self, tolerance: float):
-        """Rebuild the adaptive ramp: yellow within `tolerance` semitones of the
-        aligned note, ramping to indigo (see Colors.align_pitch_brushes)."""
+        """Rebuild both pitch ramps from the recording's tolerance."""
         brushes, self.align_max_dist = Colors.align_pitch_brushes(tolerance)
         self.align_distance_brushes[:] = brushes
+        self.distance_brushes[:] = brushes
 
     def set_live(self, live: bool):
         """Toggle live-recording mode for volume coloring. Live => normalize
@@ -75,11 +78,50 @@ class PitchDataUI(pg.ScatterPlotItem):
         self.live = live
         self._vol_range = None  # recompute the take's range on the next redraw
 
-    def read(self, start_time: float, end_time: float) -> list[Pitch]:
-        """The voiced pitch frames in view."""
+    def read(self, start_time: float, end_time: float) -> list[Pitch | None]:
+        """The written pitch frames in view.
+
+        Voicing and the display-only volume threshold are applied independently
+        in ``update_view`` so a loud unvoiced frame can still update the plotting
+        reference.
+        """
         if self.pitch_data is None:
             return []
-        return self.pitch_data.read(start_time, end_time, clean=True)
+        return self.pitch_data.read(start_time, end_time)
+
+    def _update_max_volume(self, pitches: list[Pitch | None]) -> None:
+        """Accumulate the loudest centered-RMS frame observed by this view."""
+        self.max_volume = max(
+            self.max_volume,
+            max(
+                (
+                    float(getattr(pitch, "volume", 0.0) or 0.0)
+                    for pitch in pitches
+                    if pitch is not None
+                ),
+                default=0.0,
+            ),
+        )
+
+    def _sync_max_volume(self) -> None:
+        """Consume newly written frames without rescanning the whole take."""
+        if self.pitch_data is None:
+            return
+        n_frames = self.pitch_data.frames_available()
+        if n_frames < self._volume_frames_seen:
+            self.max_volume = 0.0
+            self._volume_frames_seen = 0
+        if n_frames > self._volume_frames_seen:
+            self._update_max_volume(
+                self.pitch_data.data[self._volume_frames_seen:n_frames])
+            self._volume_frames_seen = n_frames
+
+    def _min_plot_volume(self) -> float:
+        """Current display-only cutoff derived from the plotting maximum."""
+        if self.pitch_data is None:
+            return 0.0
+        ratio = max(0.0, float(self.pitch_data.config.min_volume))
+        return self.max_volume * ratio
 
     # --- drawing ---
     def update_view(self, start_time: float, end_time: float, mode: str = "pitch",
@@ -92,9 +134,21 @@ class PitchDataUI(pg.ScatterPlotItem):
         if volume_mode and not self.live:
             vmin_db, vmax_db = self._review_vol_range()
 
+        self._sync_max_volume()
+        pitches = self.read(start_time, end_time)
+        # Practice can overwrite the same stalled time slot, so also observe the
+        # visible frames even when the high-water mark has not advanced.
+        self._update_max_volume(pitches)
+        min_volume = self._min_plot_volume()
+
         xs, ys, brushes = [], [], []
-        for p in self.read(start_time, end_time):
-            if not p.candidate_pitches:
+        for p in pitches:
+            if (
+                p is None
+                or not self.pitch_data.is_voiced_pitch(p)
+                or not p.candidate_pitches
+                or float(getattr(p, "volume", 0.0) or 0.0) < min_volume
+            ):
                 continue
             xs.append(p.time)
             ys.append(p.value)  # primary pitch value
@@ -113,7 +167,7 @@ class PitchDataUI(pg.ScatterPlotItem):
         if getattr(p, "is_transition", False):
             return self.rest_brush
         ad = getattr(p, "aligned_distance", None)
-        if ad:
+        if ad is not None:
             return self.get_align_distance_brush(ad)
         return self.get_distance_brush(getattr(p, "live_distance", None))
 
@@ -131,6 +185,8 @@ class PitchDataUI(pg.ScatterPlotItem):
         empties the points)."""
         if not getattr(self, "_in_set_data", False):
             self.pitch_data = None
+            self.max_volume = 0.0
+            self._volume_frames_seen = 0
             self._vol_range = None
         super().clear()
 
@@ -139,11 +195,11 @@ class PitchDataUI(pg.ScatterPlotItem):
         """Live-ramp brush for a distance-to-target (None => transition grey)."""
         if d is None:
             return self.rest_brush
-        return Colors.ramp_brush(self.distance_brushes, d, Colors.LIVE_MAX_DIST)
+        return Colors.ramp_brush(self.distance_brushes, d, self.align_max_dist)
 
     def get_align_distance_brush(self, d: float):
         """Adaptive-ramp brush for an alignment-based distance. inf (insertions)
-        clamps to the max bucket => solid indigo."""
+        clamps to the max bucket => solid red."""
         return Colors.ramp_brush(self.align_distance_brushes, d, self.align_max_dist)
 
     def get_volume_brush(self, frac: float):

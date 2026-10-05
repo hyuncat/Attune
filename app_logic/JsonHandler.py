@@ -28,7 +28,23 @@ class JsonHandler:
     remains in its original file and score content remains in the score file.
     """
 
-    CACHE_VERSION = 1
+    # v2: quiet pYIN candidates survive PitchDetector and the complete-track
+    # max-volume threshold is applied only during smoothing.
+    # v3: live and completed-audio candidates were stored together.
+    # v4: Stage 1 applies gain-relative voiced decisions (causal live, stable
+    # full-track offline) while retaining candidate evidence for HMM decoding.
+    CACHE_VERSION = 4
+    # v2: completed audio uses separate candidate tracking and Praat-inspired
+    # voicing. v3 stored live and post-hoc observations together so smoothing
+    # never required a second detector pass. v4 ports the
+    # defended librosa-compatible pYIN frontend and joint pitch/voicing HMM into
+    # production, followed only by the selected whole-track RMS gate.
+    # v5 removes prominent candidate selection, promotes the causal 0.985/0.03
+    # gate, and replaces completed-audio HMM voicing with the selected
+    # framewise 0.985/0.04 confidence/RMS controller.
+    # v6 hides decoded pitch bins without positive candidate support post hoc.
+    PITCH_ANALYSIS_VERSION = 6
+    # Note-analysis versions:
     # v2: spectral onsets moved to score-guided deletion correction.
     # v3: unvoiced pitch-run splitting follows min_gap_factor * min_note_length.
     # v4: explicit adaptive spectral-flux candidates plus onset-corroborated
@@ -55,10 +71,14 @@ class JsonHandler:
     # millisecond-valued strict-majority silence window.
     # v16: production selects pitch_thresh=0.75 and removes the obsolete PELT
     # stride from Config.
-    # v17: note segmentation shares the plotted 0.90 voicing cutoff.
+    # v17: note segmentation shares the configured plotted voicing cutoff.
     # v18: correction measures silence from decoded pitch frames and compares it
     # at the note detector's temporal resolution.
-    NOTE_ANALYSIS_VERSION = 18
+    # v19: score-relative minimum segment lengths were temporarily capped by an
+    # absolute duration shared by initial detection and correction.
+    # v20: initial detection returns to the sweep-selected score-relative rule;
+    # only score-guided correction uses an absolute 150 ms cap.
+    NOTE_ANALYSIS_VERSION = 30  # Repeat eligibility shares the configured substitution boundary.
     CACHE_SUFFIX = ".json.xz"
     GZIP_CACHE_SUFFIX = ".json.gz"
     LEGACY_CACHE_SUFFIX = ".json"
@@ -272,7 +292,9 @@ class JsonHandler:
         runtime_config = recording.config
         cached_config = self._config_from_payload(payload.get("config") or {})
         changed_analysis_config = []
+        changed_pitch_config = []
         code_owned_fields = (
+            *Config.PITCH_DETECTION_FIELDS,
             *Config.NOTE_SEGMENTATION_FIELDS,
             *Config.ALIGNMENT_FIELDS,
         )
@@ -281,7 +303,14 @@ class JsonHandler:
             cached = getattr(cached_config, name)
             if cached != effective:
                 changed_analysis_config.append((name, cached, effective))
+                if name in Config.PITCH_DETECTION_FIELDS:
+                    changed_pitch_config.append((name, cached, effective))
                 setattr(cached_config, name, effective)
+        # Vibrato has its own cheap derived-data rebuild after cache loading, so
+        # changed detector defaults neither require stale values to survive nor
+        # invalidate the much more expensive note/alignment analysis.
+        for name in Config.VIBRATO_FIELDS:
+            setattr(cached_config, name, getattr(runtime_config, name))
         recording.update_config(cached_config)
 
         recording.audio_data.t_origin = self._unpack_number(rec_payload.get("audio_t_origin"), default=0.0)
@@ -289,7 +318,20 @@ class JsonHandler:
         if isinstance(end_index, int) and end_index >= 0:
             recording.audio_data.end_index = min(end_index, len(recording.audio_data.data))
 
-        recording.pitch_data = self._pitch_data_from_payload(recording, payload.get("pitch_data") or {})
+        pitch_payload = payload.get("pitch_data") or {}
+        pitch_analysis_changed = (
+            int(pitch_payload.get("version", 0)) != self.PITCH_ANALYSIS_VERSION
+        )
+        recording.pitch_data = self._pitch_data_from_payload(recording, pitch_payload)
+        # Older caches predominantly contain the completed offline track. New
+        # live-take caches persist this explicitly so Perform can smooth the
+        # retained canonical pYIN evidence once before note analysis.
+        recording.pitches_smoothed = bool(pitch_payload.get("smoothed", True))
+        if changed_pitch_config or pitch_analysis_changed:
+            # The completed contour cannot be transformed safely across a
+            # detector or smoother revision. Let the import path re-run it.
+            recording.pitch_data = PitchData(config=recording.config)
+            recording.pitches_smoothed = False
         recording.timbre_data = self._timbre_from_payload(
             recording, payload.get("timbre") or {})
         note_meta = payload.get("note_analysis") or {}
@@ -300,6 +342,7 @@ class JsonHandler:
         )
         invalidate_notes = (
             bool(changed_analysis_config)
+            or pitch_analysis_changed
             or cached_analysis_version != self.NOTE_ANALYSIS_VERSION
         )
         effective = recording.config.note_segmentation_config()
@@ -312,6 +355,8 @@ class JsonHandler:
             )
             if cached_analysis_version != self.NOTE_ANALYSIS_VERSION:
                 details = (details + ", " if details else "") + "analysis version changed"
+            if pitch_analysis_changed:
+                details = (details + ", " if details else "") + "pitch pipeline changed"
             recording.analysis_notice = (
                 f"Cached note analysis is stale ({details}); click Analyze to recompute."
             )
@@ -540,7 +585,9 @@ class JsonHandler:
             self._pitch_to_payload(p) for p in recording.pitch_data.data[:last + 1]
         ]
         return {
+            "version": self.PITCH_ANALYSIS_VERSION,
             "t_origin": self._pack_number(recording.pitch_data.t_origin),
+            "smoothed": bool(recording.pitches_smoothed),
             "pitches": pitches,
         }
 
@@ -555,6 +602,7 @@ class JsonHandler:
     def _pitch_to_payload(self, pitch: Pitch | None):
         if pitch is None:
             return None
+        pitch.ensure_compatible()
         return [
             self._pack_number(pitch.time),
             [[self._pack_number(m), self._pack_number(prob)] for m, prob in pitch.candidate_pitches],
@@ -581,10 +629,16 @@ class JsonHandler:
         quantized = np.rint((np.clip(vals, data.floor_db, 0.0) - data.floor_db) * 2.0)
         quantized = quantized.astype(np.uint8)
         return {
+            "representation": data.representation,
             "stride": int(data.stride),
             "t_origin": JsonHandler._pack_number(data.t_origin),
             "midi_min": int(data.midi_min),
             "midi_max": int(data.midi_max),
+            "sample_rate": int(data.config.sr),
+            "n_fft": int(data.config.w1),
+            "fft_bin_start": int(data.spectrum.bin_start),
+            "fft_bin_stop": int(data.spectrum.bin_stop),
+            "n_bins": int(data.n_bins),
             "n_cols": n_cols,
             "floor_db": data.floor_db,
             "step_db": 0.5,
@@ -595,9 +649,15 @@ class JsonHandler:
         td = TimbreData(config=recording.config)
         if not payload or not payload.get("blob"):
             return td
-        if (int(payload.get("stride", td.stride)) != td.stride
+        if (payload.get("representation") != td.representation
+                or int(payload.get("stride", td.stride)) != td.stride
                 or int(payload.get("midi_min", td.midi_min)) != td.midi_min
                 or int(payload.get("midi_max", td.midi_max)) != td.midi_max
+                or int(payload.get("sample_rate", 0)) != td.config.sr
+                or int(payload.get("n_fft", 0)) != td.config.w1
+                or int(payload.get("fft_bin_start", -1)) != td.spectrum.bin_start
+                or int(payload.get("fft_bin_stop", -1)) != td.spectrum.bin_stop
+                or int(payload.get("n_bins", 0)) != td.n_bins
                 or float(payload.get("step_db", 0.5)) != 0.5):
             return td
         td.t_origin = self._unpack_number(payload.get("t_origin"), default=0.0)
@@ -607,7 +667,8 @@ class JsonHandler:
 
     @staticmethod
     def _vibrato_to_payload(vibrato_data) -> dict:
-        """Per-grid-point [time, rate_hz, extent_cents, quality] rows (see
+        """Per-grid-point [time, speed_hz, peak_to_peak_width_cents, quality]
+        rows (see
         VibratoData's uniform grid) for the web API only - deliberately NOT
         part of to_cache_payload()/load_cache_payload(), since vibrato is
         never persisted to the desktop app's local cache either (cheap to
@@ -630,14 +691,14 @@ class JsonHandler:
         times = vibrato_data.index_time(np.arange(n, dtype=float))
         with vibrato_data.lock:
             rates = vibrato_data.rates[:n]
-            extents = vibrato_data.extents[:n]
+            widths = vibrato_data.widths[:n]
             qualities = vibrato_data.qualities[:n]
         return {
             "points": [
                 [
                     JsonHandler._pack_number(times[i]),
                     JsonHandler._pack_number(rates[i]),
-                    JsonHandler._pack_number(extents[i]),
+                    JsonHandler._pack_number(widths[i]),
                     JsonHandler._pack_number(qualities[i]),
                 ]
                 for i in range(n)
@@ -655,16 +716,35 @@ class JsonHandler:
                 or payload.get("candidates")
                 or []
             )
+            raw_posthoc_candidates = payload.get("posthoc_candidate_pitches")
+            if raw_posthoc_candidates is None:
+                raw_posthoc_candidates = payload.get("posthoc_candidates")
+            # Legacy dual-observation payloads keep ordinary pYIN in their
+            # post-hoc fields. That is now the one canonical observation set.
+            canonical_candidates = (
+                raw_candidates
+                if raw_posthoc_candidates is None
+                else raw_posthoc_candidates
+            )
             candidates = [
                 (self._unpack_number(c[0], default=0.0), self._unpack_number(c[1], default=0.0))
-                for c in raw_candidates
+                for c in canonical_candidates
             ]
+            canonical_unvoiced = payload.get(
+                "posthoc_unvoiced_prob",
+                payload.get("unvoiced_prob"),
+            )
+            raw_value = payload.get("value")
             pitch = Pitch(
                 time=self._unpack_number(payload.get("time"), default=0.0),
                 candidates=candidates,
-                value=self._unpack_number(payload.get("value"), default=-1),
+                value=(
+                    None
+                    if raw_value is None
+                    else self._unpack_number(raw_value, default=-1)
+                ),
                 volume=self._unpack_number(payload.get("volume"), default=0.0),
-                unvoiced_prob=self._unpack_number(payload.get("unvoiced_prob"), default=1.0),
+                unvoiced_prob=self._unpack_number(canonical_unvoiced, default=1.0),
                 live_distance=self._unpack_number(
                     payload.get("live_distance", payload.get("distance")),
                     default=None,
@@ -678,17 +758,29 @@ class JsonHandler:
             pitch.is_transition = payload.get("is_transition")
             return pitch.ensure_compatible(recording.config)
 
+        raw_candidates = (
+            payload[8]
+            if len(payload) > 8
+            else payload[1] if len(payload) > 1 else []
+        )
         candidates = [
             (self._unpack_number(c[0], default=0.0), self._unpack_number(c[1], default=0.0))
-            for c in (payload[1] if len(payload) > 1 else [])
+            for c in raw_candidates
         ]
         pitch = Pitch(
             time=self._unpack_number(payload[0], default=0.0),
             candidates=candidates,
             volume=self._unpack_number(payload[2], default=0.0),
-            unvoiced_prob=self._unpack_number(payload[3], default=1.0),
+            unvoiced_prob=self._unpack_number(
+                payload[9] if len(payload) > 9 else payload[3],
+                default=1.0,
+            ),
             live_distance=self._unpack_number(payload[4] if len(payload) > 4 else None, default=None),
-            value=self._unpack_number(payload[7] if len(payload) > 7 else None, default=-1),
+            value=(
+                None
+                if len(payload) <= 7 or payload[7] is None
+                else self._unpack_number(payload[7], default=-1)
+            ),
             config=recording.config,
         )
         pitch.aligned_distance = self._unpack_number(payload[5] if len(payload) > 5 else None, default=None)

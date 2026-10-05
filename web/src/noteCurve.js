@@ -54,6 +54,24 @@ export function volumeCurveDb(pitchFrames, t0, t1, floorDb) {
   return points;
 }
 
+// Take-wide reference, matching VolumeWidget: arithmetic mean of voiced
+// frame levels in dB. Silence/noise do not pull the playing reference down.
+export function volumeLevelStats(pitchFrames) {
+  let count = 0, sum = 0, min = Infinity, max = -Infinity;
+  for (const frame of pitchFrames ?? []) {
+    if (!frame) continue;
+    const [, , volume, unvoicedProb, , , , value] = frame;
+    if (value == null || value === -1 || !(unvoicedProb < UNVOICED_THRESHOLD)
+        || !Number.isFinite(volume) || volume <= 0) continue;
+    const db = 20 * Math.log10(volume);
+    count++;
+    sum += db;
+    min = Math.min(min, db);
+    max = Math.max(max, db);
+  }
+  return count ? { referenceDb: sum / count, min, max } : null;
+}
+
 // Pads a raw [y0, y1] domain by `padding` fraction of its span on each side
 // (falls back to a scale-aware span when the domain is flat/degenerate) -
 // mirrors NoteCurveWidget.set_default_y_range's padding step.
@@ -116,7 +134,8 @@ function median3(values) {
   return out;
 }
 
-// (time, rate, extent) over [t0, t1] - mirrors VibratoData.curve(): reads one
+// (time, speed, peak-to-peak width) over [t0, t1] - mirrors
+// VibratoData.curve(): reads one
 // extra grid sample past each end so the 3-point median smooths edge values
 // the same way it smooths the interior, then crops back to the window.
 export function vibratoCurve(vibratoPoints, t0, t1) {
@@ -131,17 +150,17 @@ export function vibratoCurve(vibratoPoints, t0, t1) {
   const j1 = Math.min(vibratoPoints.length, i1 + 1);
   const slice = vibratoPoints.slice(j0, j1);
   const rates = median3(slice.map((p) => unpackNumber(p[1])));
-  const extents = median3(slice.map((p) => unpackNumber(p[2])));
+  const widths = median3(slice.map((p) => unpackNumber(p[2])));
   const offset = i0 - j0;
   const count = i1 - i0;
   const out = [];
   for (let k = 0; k < count; k++) {
-    out.push({ time: slice[offset + k][0], rate: rates[offset + k], extent: extents[offset + k] });
+    out.push({ time: slice[offset + k][0], rate: rates[offset + k], width: widths[offset + k] });
   }
   return out;
 }
 
-// Recording-wide (min, max) for "rate" or "extent", over the same
+// Recording-wide (min, max) for "rate" or "width", over the same
 // median-smoothed values curve() uses, only samples with a positive detected
 // rate (the stored 0/0 sentinel means "no measurable vibrato", not silence -
 // including it would make every take's least-vibrato endpoint zero rather
@@ -150,11 +169,11 @@ export function vibratoCurve(vibratoPoints, t0, t1) {
 export function vibratoGlobalRange(vibratoPoints, metric) {
   if (!vibratoPoints?.length) return null;
   const rates = median3(vibratoPoints.map((p) => unpackNumber(p[1])));
-  const extents = median3(vibratoPoints.map((p) => unpackNumber(p[2])));
-  const values = metric === "rate" ? rates : extents;
+  const widths = median3(vibratoPoints.map((p) => unpackNumber(p[2])));
+  const values = metric === "rate" ? rates : widths;
   let lo = Infinity, hi = -Infinity, any = false;
   for (let i = 0; i < rates.length; i++) {
-    if (Number.isFinite(rates[i]) && Number.isFinite(extents[i]) && rates[i] > 0) {
+    if (Number.isFinite(rates[i]) && Number.isFinite(widths[i]) && rates[i] > 0) {
       any = true;
       if (values[i] < lo) lo = values[i];
       if (values[i] > hi) hi = values[i];
@@ -163,27 +182,27 @@ export function vibratoGlobalRange(vibratoPoints, metric) {
   return any ? [lo, hi] : null;
 }
 
-// Per-note median (rate_hz, extent_cents), or null - mirrors
+// Per-note median (speed_hz, peak-to-peak width_cents), or null - mirrors
 // VibratoData.note_summary: RAW (unsmoothed) samples within the note's own
 // span, gated on the note being long enough to contain vibMinCycles at its
 // own median rate (config.vib_min_cycles - see analysisResult.config).
 export function vibratoNoteSummary(vibratoPoints, note, vibMinCycles) {
   if (!vibratoPoints?.length || !note) return null;
   const rates = [];
-  const extents = [];
+  const widths = [];
   for (const p of vibratoPoints) {
     if (p[0] < note.startTime || p[0] > note.endTime) continue;
     const rate = unpackNumber(p[1]);
-    const extent = unpackNumber(p[2]);
-    if (Number.isFinite(rate) && Number.isFinite(extent) && rate > 0) {
+    const width = unpackNumber(p[2]);
+    if (Number.isFinite(rate) && Number.isFinite(width) && rate > 0) {
       rates.push(rate);
-      extents.push(extent);
+      widths.push(width);
     }
   }
   if (!rates.length) return null;
   const rate = median(rates);
-  const extent = median(extents);
+  const width = median(widths);
   const duration = Math.max(0, note.endTime - note.startTime);
   if (duration * rate < Math.max(0, vibMinCycles ?? 0)) return null;
-  return { rate, extent };
+  return { rate, width };
 }

@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QRectF
-from PyQt6.QtGui import QColor, QLinearGradient, QPainter
-from PyQt6.QtWidgets import QLabel, QWidget
+from PyQt6.QtCore import Qt, QRectF, QEvent
+from PyQt6.QtGui import QColor, QLinearGradient, QPainter, QPen
+from PyQt6.QtWidgets import QLabel, QWidget, QToolTip
 
 from ui.Colors import Colors
 from ui.Icons import svg_pixmap
@@ -111,18 +111,61 @@ class VibratoGradient(Gradient):
 
 
 class TimbreGradient(Gradient):
-    """Magma spectrum-level legend with the widget's current dBFS bounds."""
+    """Magma spectrum-level legend relative to the mean played level."""
 
     HELP = ("Color shows energy at each pitch-frequency bin: black/purple is "
-            "quiet and orange/yellow is strong spectral energy.")
+            "quiet and orange/yellow is strong spectral energy. Relative level (dB) "
+            "uses the same mean voiced-frame reference as the Volume plot.")
 
     def __init__(self, low_db: float, high_db: float, parent=None):
         super().__init__(parent=parent)
-        self.low_db = low_db
-        self.high_db = high_db
+        self._low_label, self._high_label = QLabel(), QLabel()
+        self.set_levels(low_db, high_db)
 
     def anchors(self) -> list:
         return Colors.magma_anchors()
 
     def ends(self) -> tuple[QWidget, QWidget]:
-        return QLabel(f"{self.low_db:.0f} dBFS"), QLabel(f"{self.high_db:.0f} dBFS")
+        return self._low_label, self._high_label
+
+    def set_levels(self, low_db: float, high_db: float):
+        self.low_db, self.high_db = low_db, high_db
+        for label, value in ((self._low_label, low_db), (self._high_label, high_db)):
+            rounded = round(value)
+            text = "0 dB" if rounded == 0 else f"{rounded:+d} dB"
+            if label.text() != text:
+                label.setText(text)
+        self.update()
+
+    def _mean_dot_rect(self):
+        if not self.low_db <= 0.0 <= self.high_db or self.high_db <= self.low_db:
+            return QRectF()
+        # The mean is 0 dB, not necessarily the midpoint of the color scale.
+        fraction = -self.low_db / (self.high_db - self.low_db)
+        radius = 4.0
+        x = min(max(fraction * self.width(), radius + 1),
+                self.width() - radius - 1)
+        return QRectF(x - radius, self.height() / 2 - radius,
+                      2 * radius, 2 * radius)
+
+    def event(self, event):
+        if event.type() == QEvent.Type.ToolTip:
+            dot = self._mean_dot_rect()
+            if not dot.isEmpty() and dot.adjusted(-2, -2, 2, 2).contains(event.pos().x(), event.pos().y()):
+                QToolTip.showText(event.globalPos(), "Mean volume", self)
+            else:
+                QToolTip.hideText()
+            return True
+        return super().event(event)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        dot = self._mean_dot_rect()
+        if dot.isEmpty():
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(QPen(QColor("white"), 1.5))
+        painter.setBrush(QColor("black"))
+        painter.drawEllipse(dot)
+        painter.end()

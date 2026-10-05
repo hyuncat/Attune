@@ -1023,7 +1023,9 @@ class Attune(QMainWindow):
             rec.config.timing_tolerance = tolerance
             rec.update_config(rec.config)
             if rec.has_analysis():
-                rec.detect_mistakes()
+                # A tolerance edit changes labels, not the fitted repeat path.
+                rec.alignment = rec.mistake_detector.alignment_from_pairs(rec.alignment.pairs)
+                rec.reindex_mistakes()
                 self.perform_tab.guitar_hero.load_alignment(rec.alignment)
                 self.perform_tab.refresh_mistake_widget(rec)
             self._save_recording_cache(rec, recording_name=self.active_recording_name)
@@ -1033,6 +1035,8 @@ class Attune(QMainWindow):
         rec.update_config(rec.config)
         # mirror into the Practice tab (drives its live pitch match)
         self.practice_tab.set_pitch_tolerance(tolerance)
+        self.perform_tab.guitar_hero.user_pitches.set_tolerance(tolerance)
+        self.perform_tab.guitar_hero.update_view_items()
         self.perform_tab.reanalyze_if_analyzed()
         self._save_recording_cache(rec, recording_name=self.active_recording_name)
 

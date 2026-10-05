@@ -7,19 +7,23 @@ from algorithms.Config import Config
 
 
 class VibratoData:
-    """Time-indexed vibrato-characteristic track: rate (Hz), extent (± cents)
-    and fit quality per point of a uniform pitch-frame grid
+    """Time-indexed vibrato-characteristic track: speed (Hz), peak-to-peak
+    width (cents), and fit quality per point of a uniform pitch-frame grid
     (index i <-> pitch frame i*stride <-> that frame's center time). A computed
     0 Hz / 0 cents sample means no measurable oscillation (including unvoiced
     pitch); NaN is reserved for unwritten/not-yet-computed time. Filled by
-    VibratoDetector; never persisted — it derives purely from the pitch
+    a vibrato detector; never persisted — it derives purely from the pitch
     track, so a cache load just recomputes it.
 
-    Offline note-aware values are source-mapped: every credible centered fit
-    contributes its characteristics to the local note span it describes, and
-    overlapping estimates are combined. Thus edge frames can carry the
-    vibrato characteristics that were inferred using their neighboring
-    periods instead of falsely appearing as isolated zero-vibrato points.
+    ``centers`` is an optional MIDI-pitch track for the estimated
+    vibrato-less note contour. Detector 2 obtains it from the same joint fit as
+    the sinusoid; older detectors leave it NaN. It is kept on the same grid so
+    the note panel can show systematic pitch movement without recomputing
+    analysis.
+
+    Detector 1 source-maps overlapping fixed-window estimates. Detector 2
+    instead stores one smooth whole-note fit offline, or interpolated causal
+    fit anchors live. In either case, speed and width remain frame-dense.
 
     The note association is arithmetic on the uniform grid
     (note_index_range), not a stored map, so it cannot go stale when
@@ -33,8 +37,9 @@ class VibratoData:
         self.t_origin = 0.0
         self.lock = threading.Lock()
         self.rates = np.full(self.GROW, np.nan, dtype=np.float32)
-        self.extents = np.full(self.GROW, np.nan, dtype=np.float32)
+        self.widths = np.full(self.GROW, np.nan, dtype=np.float32)
         self.qualities = np.full(self.GROW, np.nan, dtype=np.float32)
+        self.centers = np.full(self.GROW, np.nan, dtype=np.float32)
         self.computed_until = 0  # grid high-water mark (exclusive)
         # Cached by VibratoDetector after the first real pitch frame appears;
         # avoids rescanning a long leading clip gap on every live callback.
@@ -54,29 +59,39 @@ class VibratoData:
         cfg = self.config
         return ((t - self.t_origin) * cfg.sr - 0.5 * cfg.w1) / cfg.h1 / self.stride
 
+    def _index_range_to(self, t0: float, t1: float,
+                        high_water: int) -> tuple[int, int]:
+        i0 = max(0, ceil(self.grid_pos(t0)))
+        i1 = min(high_water, floor(self.grid_pos(t1)) + 1)
+        return i0, max(i0, i1)
+
     def index_range(self, t0: float, t1: float) -> tuple[int, int]:
         """Half-open computed grid range whose center times lie in [t0, t1]."""
-        i0 = max(0, ceil(self.grid_pos(t0)))
-        i1 = min(self.computed_until, floor(self.grid_pos(t1)) + 1)
-        return i0, max(i0, i1)
+        return self._index_range_to(t0, t1, self.computed_until)
 
     def note_index_range(self, note) -> tuple[int, int]:
         """The note -> vibrato-samples association: half-open grid indices
         covering the note's [start, end]."""
         return self.index_range(note.start_time, note.end_time)
 
-    # --- writing (VibratoDetector) ---
-    def write(self, i: int, rate: float, extent: float, quality: float):
+    # --- writing (vibrato detector) ---
+    def _ensure_capacity_unlocked(self, i: int):
+        if i >= len(self.rates):
+            grow = max(self.GROW, i + 1 - len(self.rates))
+            pad = np.full(grow, np.nan, dtype=np.float32)
+            self.rates = np.concatenate([self.rates, pad])
+            self.widths = np.concatenate([self.widths, pad.copy()])
+            self.qualities = np.concatenate([self.qualities, pad.copy()])
+            self.centers = np.concatenate([self.centers, pad.copy()])
+
+    def write(self, i: int, rate: float, width: float, quality: float,
+              center: float = np.nan):
         with self.lock:
-            if i >= len(self.rates):
-                grow = max(self.GROW, i + 1 - len(self.rates))
-                pad = np.full(grow, np.nan, dtype=np.float32)
-                self.rates = np.concatenate([self.rates, pad])
-                self.extents = np.concatenate([self.extents, pad.copy()])
-                self.qualities = np.concatenate([self.qualities, pad.copy()])
+            self._ensure_capacity_unlocked(i)
             self.rates[i] = rate
-            self.extents[i] = extent
+            self.widths[i] = width
             self.qualities[i] = quality
+            self.centers[i] = center
             self.computed_until = max(self.computed_until, i + 1)
 
     # --- queries ---
@@ -94,18 +109,28 @@ class VibratoData:
         return out
 
     def curve(self, t0: float, t1: float):
-        """(times, rates, extents) over [t0, t1]; NaN where not credible.
+        """(times, speeds, peak-to-peak widths) over [t0, t1].
+
+        Values are NaN where they have not been computed.
         Read-side 3-point median (one extra sample pulled past each end so
         edge values smooth identically) — the stored grid stays raw."""
         i0, i1 = self.index_range(t0, t1)
         j0, j1 = max(0, i0 - 1), min(self.computed_until, i1 + 1)
         with self.lock:
             rates = self.rates[j0:j1].astype(float, copy=True)
-            extents = self.extents[j0:j1].astype(float, copy=True)
+            widths = self.widths[j0:j1].astype(float, copy=True)
         rates = self._median3(rates)[i0 - j0:i1 - j0]
-        extents = self._median3(extents)[i0 - j0:i1 - j0]
+        widths = self._median3(widths)[i0 - j0:i1 - j0]
         times = self.index_time(np.arange(i0, i1, dtype=float))
-        return times, rates, extents
+        return times, rates, widths
+
+    def center_curve(self, t0: float, t1: float):
+        """(times, MIDI centers) for the detector's vibrato-less contour."""
+        i0, i1 = self.index_range(t0, t1)
+        with self.lock:
+            centers = self.centers[i0:i1].astype(float, copy=True)
+        times = self.index_time(np.arange(i0, i1, dtype=float))
+        return times, centers
 
     def global_characteristic_range(
             self, metric: str,
@@ -118,17 +143,17 @@ class VibratoData:
         slow/narrow endpoint zero rather than the least/most subtle vibrato the
         performer actually produced.
         """
-        if metric not in {"rate", "extent"}:
+        if metric not in {"rate", "width"}:
             raise ValueError(f"Unknown vibrato metric: {metric}")
         with self.lock:
             rates = self.rates[:self.computed_until].astype(float, copy=True)
-            extents = self.extents[:self.computed_until].astype(float, copy=True)
+            widths = self.widths[:self.computed_until].astype(float, copy=True)
         rates = self._median3(rates)
-        extents = self._median3(extents)
-        values = rates if metric == "rate" else extents
+        widths = self._median3(widths)
+        values = rates if metric == "rate" else widths
         detected = (
             np.isfinite(rates)
-            & np.isfinite(extents)
+            & np.isfinite(widths)
             & (rates > 0.0)
         )
         if not detected.any():
@@ -136,32 +161,32 @@ class VibratoData:
         return float(np.min(values[detected])), float(np.max(values[detected]))
 
     def at(self, t: float) -> tuple[float, float] | tuple[None, None]:
-        """(rate, extent) at the grid point nearest app-time t (may be NaN)."""
+        """(speed, width) at the nearest grid point (either may be NaN)."""
         i = int(round(self.grid_pos(t)))
         if not (0 <= i < self.computed_until):
             return None, None
         with self.lock:
-            return float(self.rates[i]), float(self.extents[i])
+            return float(self.rates[i]), float(self.widths[i])
 
     def note_summary(self, note) -> tuple[float, float] | tuple[None, None]:
-        """Per-note median (rate_hz, extent_cents), or (None, None). A note
-        must itself be long enough to contain config.vib_min_cycles at its
-        median estimated rate; there are no fixed Hz/cents gates."""
+        """Per-note median (speed_hz, peak_to_peak_width_cents), or None.
+
+        Detector 2 has already converted a fit below its whole-note rate or
+        width floor to the 0/0 sentinel used for no measurable vibrato.
+        """
         i0, i1 = self.note_index_range(note)
         with self.lock:
             rates = self.rates[i0:i1].astype(float, copy=True)
-            extents = self.extents[i0:i1].astype(float, copy=True)
-        mask = np.isfinite(rates) & np.isfinite(extents) & (rates > 0.0)
+            widths = self.widths[i0:i1].astype(float, copy=True)
+        mask = np.isfinite(rates) & np.isfinite(widths) & (rates > 0.0)
         if not mask.any():
             return None, None
         rate = float(np.median(rates[mask]))
-        extent = float(np.median(extents[mask]))
-        note_duration = note.duration()
-        if note_duration * rate < max(0.0, float(self.config.vib_min_cycles)):
-            return None, None
-        return rate, extent
+        width = float(np.median(widths[mask]))
+        return rate, width
 
     def trim_to(self, t: float):
         """Drop samples past app-time t (mirrors the take's trim_end)."""
-        self.computed_until = min(self.computed_until,
-                                  max(0, floor(self.grid_pos(t)) + 1))
+        keep = max(0, floor(self.grid_pos(t)) + 1)
+        with self.lock:
+            self.computed_until = min(self.computed_until, keep)

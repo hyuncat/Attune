@@ -267,7 +267,7 @@ class SettingsWidget(QWidget):
         midi_range = score_data.note_midi_range(channel)
         if midi_range is None:
             return
-        low, high = midi_range
+        low, high = Config.padded_midi_range(*midi_range)
         self.low_input.setText(midi_to_name(low))
         self.high_input.setText(midi_to_name(high))
 
