@@ -28,6 +28,7 @@ class CrepeCacheTest(unittest.TestCase):
                 root / "stage",
             )
             detector = Crepe()
+            detector._inference_threads = 8
             raw = (
                 np.array([0.0, 0.01]),
                 np.array([440.0, 880.0]),
@@ -50,6 +51,15 @@ class CrepeCacheTest(unittest.TestCase):
                 self.assertTrue(result[-1])
                 self.assertEqual(result[3], estimate.compute_seconds)
                 self.assertEqual(predict.call_count, 1)
+                self.assertEqual(estimate.metadata["inference_threads"], 8)
+                cached = Crepe().estimate(example)
+                self.assertTrue(cached.from_cache)
+                self.assertEqual(cached.metadata["inference_threads"], 8)
+                # Raw frontend reuse also preserves the timing provenance when
+                # the thresholded pitch cache needs to be recreated.
+                detector.cache(example).path.unlink()
+                rebuilt = Crepe().estimate(example)
+                self.assertEqual(rebuilt.metadata["inference_threads"], 8)
 
     def test_mismatch_disabled_force_and_corruption_recompute(self):
         with tempfile.TemporaryDirectory() as directory:

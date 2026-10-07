@@ -1,0 +1,11 @@
+{
+  "description": "Unverified candidates from the previous six-recording DTW exploration. This does not assert that all recordings perform Erquan. Add independently sourced scores for other pieces before broadening the cohort. instrument=null uses an event-preserving skyline; set a zero-based instrument index for an identified melody part.",
+  "recordings": {
+    "Huangjiangqin-1": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null},
+    "Huangjiangqin-2": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null},
+    "Huangjiangqin-3": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null},
+    "Yangjian-1": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null},
+    "Yangjian-2": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null},
+    "Yangjian-3": {"midi": "../../../results/yang_score_matching_2026-10-05/erquan_pittstate.mid", "instrument": null}
+  }
+}

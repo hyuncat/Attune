@@ -5,12 +5,13 @@ import math
 import multiprocessing
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, replace, dataclass
 from pathlib import Path
 from typing import Any, Sequence
 import numpy as np
 import pretty_midi
 import soundfile as sf
+from app_logic.midi.ScoreData import ScoreData
 from algorithms.Config import PYIN_RANGE_PADDING_SEMITONES, guarded_pyin_frequency
 from benchmarks.modules.pitch.competitors.Attune import AttuneRealtime
 from benchmarks.modules.pitch.datasets.CocoChorales import CocoChorales
@@ -499,7 +500,11 @@ class CocoDataset:
             raise ValueError(f'sfizz rendered invalid or silent audio: {clean_wav}')
         voiced_mask = CocoDataset._voiced_sample_mask(len(samples), int(sample_rate), truths)
         noise_pool = CocoDataset._load_noise_pool(job.noise_file, pitch_bench.DEFAULT_CONFIG.sr)
-        fmin, fmax = CocoDataset._annotation_pitch_range(analysis_note_bounds, truths)
+        annotated_fmin, annotated_fmax = CocoDataset._annotation_pitch_range(analysis_note_bounds, truths)
+        # Modern pYIN uses exactly Config's bounds. Apply the benchmark margin
+        # explicitly after including every injected peak/trough.
+        fmin = guarded_pyin_frequency(annotated_fmin, lower=True)
+        fmax = guarded_pyin_frequency(annotated_fmax, lower=False)
         score_fmin, _ = AttuneRealtime.range_from_midi((pitch for _, _, pitch in analysis_note_bounds))
         yin_window_padding_semitones: float | None = None
         yin_window_target_fmin_hz: float | None = None
@@ -508,8 +513,8 @@ class CocoDataset:
         yin_window_minimum: int | None = None
         if job.adaptive_yin_window:
             yin_window_padding_semitones = AUTOMATIC_YIN_WINDOW_PADDING_SEMITONES
-            yin_window_target_fmin_hz = guarded_pyin_frequency(score_fmin, lower=True)
-            yin_window_size = CocoDataset.automatic_yin_window_size(score_fmin, sample_rate=pitch_bench.DEFAULT_CONFIG.sr, padding_semitones=yin_window_padding_semitones)
+            yin_window_target_fmin_hz = fmin
+            yin_window_size = CocoDataset.automatic_yin_window_size(fmin, sample_rate=pitch_bench.DEFAULT_CONFIG.sr, padding_semitones=0.)
             config = pitch_bench.config_for(fmin, fmax, w1=yin_window_size)
             cache_variant = f'scorepad{yin_window_padding_semitones:g}_w{yin_window_size}'
             yin_window_policy = 'four_guarded_periods_power_of_two'
@@ -517,7 +522,7 @@ class CocoDataset:
             yin_window_minimum = AUTOMATIC_YIN_WINDOW_MINIMUM
         elif job.fixed_yin_window_size is not None:
             yin_window_padding_semitones = PYIN_RANGE_PADDING_SEMITONES
-            yin_window_target_fmin_hz = guarded_pyin_frequency(score_fmin, lower=True)
+            yin_window_target_fmin_hz = fmin
             required_samples = int(math.ceil(pitch_bench.DEFAULT_CONFIG.sr / yin_window_target_fmin_hz))
             yin_window_size = int(job.fixed_yin_window_size)
             if yin_window_size < required_samples:
@@ -528,6 +533,7 @@ class CocoDataset:
         else:
             config = pitch_bench.config_for(fmin, fmax)
             cache_variant = None
+        cache_variant = f"explicit_pad8_v1_{cache_variant or 'default'}"
         examples: list[VibratoExample] = []
         for snr_index, snr_db in enumerate(job.snrs_db):
             label = CocoDataset._snr_label(float(snr_db))
@@ -539,7 +545,10 @@ class CocoDataset:
                 audio_path = noisy_wav
             else:
                 audio_path = clean_wav
-            recording = pitch_bench.recording_for(config)
+            # Each noise condition owns a fresh score and configuration: alignment
+            # refits score timing and must not mutate another condition's inputs.
+            recording = pitch_bench.recording_for(
+                replace(config), score_data=ScoreData(injected_midi))
             recording.audio_data = coco.load_resampled_audio(audio_path, config.sr)
             cache_name = f'{label}__{cache_variant}.pitch.pkl.xz' if cache_variant is not None else f'{label}.pitch.pkl.xz'
             cache_path = stem_dir / 'pitch_data' / cache_name
@@ -552,7 +561,12 @@ class CocoDataset:
                     pitch_bench.load_or_detect_pitches(recording, cache_path=cache_path, smooth=False, use_cache=True, write_cache=True)
                     raw_pitch_data = recording.pitch_data
                     recording.pitch_data, _ = pitch_bench.load_pitch_data(cache_path, config, smooth=True)
-            examples.extend(CocoDataset._examples_from_pitch_data(truths, recording.pitch_data, config, raw_pitch_data=raw_pitch_data, split=record.split, metadata={'track': record.track, 'stem': record.stem, 'instrument': record.instrument, 'ensemble': record.ensemble, 'snr': label, 'snr_db': float(snr_db), 'track_selection_policy': CocoChorales.BALANCED_SELECTION_POLICY, 'profile_parameter_sampler': PROFILE_PARAMETER_SAMPLER_VERSION, 'profile_parameter_global_seed': job.seed, 'pitch_stage': 'attune_adhoc' if job.smooth_pitch else 'attune_realtime', 'pitch_smoother': 'original' if job.smooth_pitch else 'none', 'pitch_range_source': 'full_midi_notes_plus_injected_bend_annotations', 'pitch_fmin_hz': float(config.fmin), 'pitch_fmax_hz': float(config.fmax), 'pyin_range_padding_semitones': PYIN_RANGE_PADDING_SEMITONES, 'pyin_autocorrelation_fmin_hz': float(recording.pitch_detector.guarded_fmin), 'pyin_autocorrelation_fmax_hz': float(recording.pitch_detector.guarded_fmax), 'hmm_range_padding_semitones': PYIN_RANGE_PADDING_SEMITONES, 'hmm_state_fmin_hz': float(config.midi_to_freq(recording.pitch_smoother.midi_min)), 'hmm_state_fmax_hz': float(config.midi_to_freq(recording.pitch_smoother.midi_max)), 'yin_integration_size': int(config.w1), 'yin_window_policy': yin_window_policy, 'yin_window_periods': yin_window_periods, 'yin_window_minimum': yin_window_minimum, 'yin_window_padding_semitones': yin_window_padding_semitones, 'yin_window_score_fmin_hz': float(score_fmin) if job.adaptive_yin_window or job.fixed_yin_window_size is not None else None, 'yin_window_target_fmin_hz': yin_window_target_fmin_hz, 'injection_range': job.injection_range, 'source_midi': str(source_midi), 'injected_midi': str(injected_midi), 'audio_path': str(audio_path), 'analysis_note_bounds': analysis_note_bounds, 'synthesis_renderer': renderer_manifest}, case_suffix=f'__{label}'))
+            recording.analyze_notes()
+            detected_note_bounds = [
+                (float(note.start_time), float(note.end_time), float(note.midi_num[0]))
+                for note in recording.note_data.data.values()
+            ]
+            examples.extend(CocoDataset._examples_from_pitch_data(truths, recording.pitch_data, config, raw_pitch_data=raw_pitch_data, split=record.split, metadata={'track': record.track, 'stem': record.stem, 'instrument': record.instrument, 'ensemble': record.ensemble, 'snr': label, 'snr_db': float(snr_db), 'track_selection_policy': CocoChorales.BALANCED_SELECTION_POLICY, 'profile_parameter_sampler': PROFILE_PARAMETER_SAMPLER_VERSION, 'profile_parameter_global_seed': job.seed, 'pitch_stage': 'attune_adhoc' if job.smooth_pitch else 'attune_realtime', 'pitch_smoother': 'original' if job.smooth_pitch else 'none', 'pitch_range_source': 'full_midi_notes_plus_injected_bend_annotations', 'pitch_fmin_hz': float(config.fmin), 'pitch_fmax_hz': float(config.fmax), 'pyin_range_padding_semitones': 0., 'benchmark_pitch_margin_semitones': PYIN_RANGE_PADDING_SEMITONES, 'annotated_fmin_hz': annotated_fmin, 'annotated_fmax_hz': annotated_fmax, 'pyin_autocorrelation_fmin_hz': float(recording.pitch_detector.guarded_fmin), 'pyin_autocorrelation_fmax_hz': float(recording.pitch_detector.guarded_fmax), 'hmm_range_padding_semitones': 0., 'hmm_state_fmin_hz': float(config.midi_to_freq(recording.pitch_smoother.midi_min)), 'hmm_state_fmax_hz': float(config.midi_to_freq(recording.pitch_smoother.midi_max)), 'yin_integration_size': int(config.w1), 'yin_window_policy': yin_window_policy, 'yin_window_periods': yin_window_periods, 'yin_window_minimum': yin_window_minimum, 'yin_window_padding_semitones': yin_window_padding_semitones, 'yin_window_score_fmin_hz': float(score_fmin) if job.adaptive_yin_window or job.fixed_yin_window_size is not None else None, 'yin_window_target_fmin_hz': yin_window_target_fmin_hz, 'injection_range': job.injection_range, 'source_midi': str(source_midi), 'injected_midi': str(injected_midi), 'audio_path': str(audio_path), 'analysis_note_bounds': detected_note_bounds, 'note_boundary_source': 'production_detect_align_repeat', 'synthesis_renderer': renderer_manifest}, case_suffix=f'__{label}'))
         return (job.index, record.track_id, examples, None)
 
     @classmethod

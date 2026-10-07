@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
+import itertools
+from dataclasses import replace
+import lzma
 import json
 import math
 import multiprocessing
@@ -9,6 +13,7 @@ import os
 import pickle
 import shutil
 import sys
+import tempfile
 import time
 import warnings
 from collections.abc import Callable, Iterable, Sequence
@@ -17,7 +22,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -41,6 +46,8 @@ for _name in (
 import numpy as np
 import pandas as pd
 
+from scipy.optimize import linear_sum_assignment
+
 from benchmarks.modules.vibrato.VibratoDetectorBase import (
     VibratoDetectorBase,
     VibratoEstimate,
@@ -51,8 +58,400 @@ from benchmarks.modules.vibrato.VibratoDetectorBase import (
 ProgressCallback = Callable[[str, int, int, VibratoExample], None]
 
 
+class YangMetrics:
+    """Yang interval and soft-credit metrics, owned by the benchmark scorer.
+
+    Boundary matching and overlap diagnostics follow the existing adapted
+    protocol; the latter are not a port of Molina's evaluator.
+    """
+
+    @staticmethod
+    def soft_counts(truth, predicted, reference, estimate, eligible=None):
+        truth, predicted = np.asarray(truth, bool), np.asarray(predicted, bool)
+        reference, estimate = np.asarray(reference), np.asarray(estimate)
+        eligible = np.ones(len(truth), bool) if eligible is None else np.asarray(eligible, bool)
+        valid = eligible & (~truth | (np.isfinite(reference) & (reference > 0)))
+        target = valid & truth
+        prediction = valid & predicted & np.isfinite(estimate) & (estimate > 0)
+        matched = target & prediction
+        credit = float(np.maximum(0, 1 - np.abs(estimate[matched] - reference[matched]) / reference[matched]).sum())
+        return credit, float(prediction.sum()), float(target.sum())
+
+    @staticmethod
+    def soft_prf(credit, predictions, references):
+        return (credit / predictions if predictions else 0.,
+                credit / references if references else 0.,
+                2 * credit / (predictions + references) if predictions + references else 0.)
+
+    @staticmethod
+    def intervals(times, mask, minimum_duration=0.28):
+        dt = float(np.median(np.diff(times)))
+        indices = np.flatnonzero(mask)
+        groups = np.split(indices, np.flatnonzero(np.diff(indices) > 1) + 1)
+        return [(float(times[g[0]]), float(times[g[-1]] + dt), g)
+                for g in groups if len(g) and len(g)*dt > minimum_duration]
+
+    @staticmethod
+    def evaluate(times, detected, rates, extents, references):
+        """references: start/end plus optional rate_hz/extent_semitones.
+
+        Notes: maximum-cardinality one-to-one boundary matches; 100 ms onset,
+        max(100 ms, 20% reference duration) offset. Parameters: >=50% of the
+        detected interval inside reference, averaging split detections equally.
+        """
+        runs = YangMetrics.intervals(times, detected)
+        nr, nd = len(references), len(runs)
+        overlap = np.zeros((nr, nd)); onset = np.zeros((nr, nd), bool); offset = onset.copy()
+        for i, ref in enumerate(references):
+            for j, (start, end, _) in enumerate(runs):
+                overlap[i,j] = max(0., min(ref['end'], end) - max(ref['start'], start))
+                onset[i,j] = abs(start-ref['start']) <= .1 + 1e-9
+                offset[i,j] = abs(end-ref['end']) <= max(.1, .2*(ref['end']-ref['start'])) + 1e-9
+        valid = onset & offset & (overlap > 0)
+        ri, pi = linear_sum_assignment(-valid.astype(float))
+        tp = int(valid[ri, pi].sum())
+        edges = overlap > 0
+        rd, pd = edges.sum(axis=1), edges.sum(axis=0)
+        isolated = edges & (rd[:,None] == 1) & (pd[None,:] == 1)
+        result = dict(yang_note_tp=tp, yang_note_fp=nd-tp, yang_note_fn=nr-tp,
+            yang_reference_notes=nr, yang_predicted_notes=nd,
+            yang_only_bad_onset=int((isolated & ~onset & offset).sum()),
+            yang_only_bad_offset=int((isolated & onset & ~offset).sum()),
+            yang_split=int((rd > 1).sum()), yang_merge=int((pd > 1).sum()),
+            yang_spurious=int((pd == 0).sum()), yang_non_detected=int((rd == 0).sum()))
+        scores = []
+        parameter_truth = 0
+        for i, ref in enumerate(references):
+            if not (ref.get('rate_hz', 0) > 0 and ref.get('extent_semitones', 0) > 0):
+                continue
+            parameter_truth += 1
+            selected = [run for j, run in enumerate(runs) if overlap[i,j] >= .5*(run[1]-run[0])]
+            if selected:
+                estimated = [np.mean([np.mean(values[run[2]]) for run in selected]) for values in (rates, extents)]
+                scores.append([max(0., 1-abs(e-r)/r) for e,r in zip(estimated, (ref['rate_hz'],ref['extent_semitones']))])
+        result.update(yang_parameter_truth=parameter_truth, yang_parameter_matched=len(scores),
+            yang_rate_sum=float(sum(s[0] for s in scores)), yang_extent_sum=float(sum(s[1] for s in scores)))
+        return result
+
+    @staticmethod
+    def summary(counts):
+        tp, fp, fn = (counts.get('yang_note_'+k, 0) for k in ('tp','fp','fn'))
+        nr, nd = counts.get('yang_reference_notes', 0), counts.get('yang_predicted_notes', 0)
+        p, r, f = YangMetrics.soft_prf(tp, tp+fp, tp+fn)
+        out = dict(yang_note_precision=p, yang_note_recall=r, yang_note_f1=f,
+                   yang_reference_notes=nr, yang_predicted_notes=nd,
+                   yang_matched_notes=counts.get('yang_parameter_matched', 0),
+                   yang_parameter_notes=counts.get('yang_parameter_truth', 0))
+        for key in ('only_bad_onset','only_bad_offset','split','merge','spurious','non_detected'):
+            denominator = nd if key == 'spurious' else nr
+            out['yang_'+key+'_rate'] = counts.get('yang_'+key, 0) / denominator if denominator else np.nan
+        return out
+
+
 class VibratoBenchmarker:
     """Run, summarize, and report every vibrato detector on shared corpora."""
+
+    PROFILES = ('none', 'constant', 'accelerating', 'decelerating', 'widening', 'narrowing')
+    METRICS = ('frame_f1', 'rate_f1', 'extent_f1', 'aggregate_f1',
+               'rate_soft_f1', 'extent_soft_f1', 'aggregate_soft_f1')
+    COMPETITORS = {'yang': ('yang_br', 'yang_dt'),
+                   'coco': ('mcleod', 'yang_br', 'yang_dt', 'driedger_benchmark_range')}
+    COUNT_NAMES = ('frame', 'rate', 'extent', 'rate_soft', 'extent_soft')
+
+    @staticmethod
+    def _digest(path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    @classmethod
+    def yang_examples(cls, root=REPO_ROOT):
+        """Run current production note analysis on the six prepared candidate scores."""
+        from app_logic.midi.ScoreData import ScoreData
+        from app_logic.user.ds.Recording import Recording
+        from benchmarks.modules.vibrato.datasets.YangFullDataset import YangParameterDataset
+
+        root = Path(root)
+        prepared = root / 'benchmarks/results/yang_score_boundary_v1_inputs'
+        manifest = json.loads((prepared / 'manifest.json').read_text())
+        if cls._digest(prepared / 'inputs.pkl') != manifest['inputs_sha256']:
+            raise ValueError('Prepared inputs changed; rebuild the Yang score inputs.')
+        recordings = YangParameterDataset.discover(root / 'benchmarks/datasets/vibrato')
+        expected = {r.recording_id for r in recordings}
+        # Trusted local benchmark artifact, with the checksum verified above.
+        with (prepared / 'inputs.pkl').open('rb') as handle:
+            examples, inputs = pickle.load(handle)
+        rows = {r['recording']: r for r in manifest['recordings']}
+        if len(examples) != 6 or len(expected) != 6 or {e.case_id for e in examples} != expected:
+            raise ValueError('Expected exactly all six parameter-annotated recordings.')
+        variants = []
+        for example in examples:
+            row = rows[example.case_id]
+            score_path = prepared / example.case_id / 'score.mid'
+            if cls._digest(score_path) != row['score_sha256']:
+                raise ValueError(f'Prepared score changed: {example.case_id}')
+            recording = next(r for r in recordings if r.recording_id == example.case_id)
+            if cls._digest(recording.audio_path) != row['audio_sha256']:
+                raise ValueError(f'Prepared audio changed: {example.case_id}')
+            # Reconstruct event-averaged references from the current annotations
+            # every run, while retaining the paired pitch inputs.
+            import numpy as np
+            from benchmarks.modules.vibrato.datasets.YangDataset import YangDataset
+            from benchmarks.modules.vibrato.datasets.YangFullDataset import YangFullDataset
+            references = [dict(start=a, end=b) for a, b in YangFullDataset.areas(recording)]
+            truth = np.zeros(len(example.times), dtype=bool)
+            rate = np.zeros(len(example.times))
+            width = np.zeros(len(example.times))
+            for ref in references:
+                mask = (example.times >= ref['start']) & (example.times < ref['end'])
+                truth[mask] = True
+                rate[mask] = width[mask] = np.nan
+            for region in YangDataset._examples_from_annotations(
+                    recording, example.times, example.pitch_midi, pitch_stage='common_pyin'):
+                mask = region.score_mask
+                rate[mask], width[mask] = region.rate_hz[mask], region.width_cents[mask]
+                for ref in references:
+                    if (abs(ref['start']-region.metadata['target_start_time']) < 1e-6
+                            and abs(ref['end']-region.metadata['target_end_time']) < 1e-6):
+                        ref.update(rate_hz=float(region.rate_hz[mask][0]),
+                                   extent_semitones=float(region.width_cents[mask][0])/200.)
+            example = replace(example, rate_hz=rate, width_cents=width, is_vibrato=truth,
+                metadata={**example.metadata, 'yang_references': references,
+                          'parameter_target_protocol': 'event_half_cycle_mean_v1'})
+            print(f'Production score-aware notes: {example.case_id}', flush=True)
+            config, pitch_data = cls._thaw_pitch(inputs[example.case_id])
+            score = ScoreData(score_path)
+            if len(score.note_datas[score.active_instrument].times) != row['score_note_count']:
+                raise ValueError(f'Score import changed note count: {example.case_id}')
+            take = Recording(score_data=score, config=config)
+            take.pitch_data = pitch_data
+            take.analyze_notes()
+            bounds = [(float(n.start_time), float(n.end_time), float(n.midi_num[0]))
+                      for n in take.note_data.data.values()]
+            variants.append(replace(example, metadata={**example.metadata,
+                'analysis_note_bounds': bounds,
+                'note_boundary_source': 'production_detect_align_repeat_with_candidate_score',
+                'score_match': row}))
+        return variants
+
+    @classmethod
+    def coco_examples(cls, root=REPO_ROOT, workers=2):
+        from benchmarks.modules.vibrato.datasets.CocoDataset import CocoDataset
+        return CocoDataset.build(
+            coco_root=Path(root) / 'benchmarks/datasets/cocochorales_tiny',
+            output_root=Path(root) / 'benchmarks/datasets/cocochorales_vibrato/paired',
+            max_stems=20, notes_per_stem=len(cls.PROFILES), profiles=cls.PROFILES,
+            snrs_db=(float('inf'), 20., 10.), min_note_seconds=.75,
+            injection_range='native', seed=0, adaptive_yin_window=True, workers=workers)
+
+    @classmethod
+    def run_suite(cls, suite, *, root=REPO_ROOT, workers=2):
+        """Rebuild examples with current production notes; reuse matching job checkpoints."""
+        from benchmarks.modules.vibrato.competitors.Attune import GatedAttune
+
+        if suite not in {'yang', 'coco'} or workers < 1:
+            raise ValueError('Choose yang/coco and a positive worker count.')
+        root = Path(root)
+        examples = cls.yang_examples(root) if suite == 'yang' else cls.coco_examples(root, workers)
+        detectors = [GatedAttune() if d.name == 'attune' else d
+                     for d in VibratoBenchmarker.available_detectors()
+                     if d.name != 'herrera_bonada_yang_window']
+        assert sum(d.name == 'attune' for d in detectors) == 1
+        # A source-keyed directory protects earlier runs; per-job checkpoints also
+        # fingerprint examples/settings and handle interrupted executions.
+        source_paths = sorted(set(
+            list((root / 'algorithms').glob('*.py'))
+            + list((root / 'app_logic').rglob('*.py'))
+            + list((root / 'benchmarks/modules/vibrato').rglob('*.py'))))
+        sources = {str(p.relative_to(root)): cls._digest(p) for p in source_paths}
+        import hashlib
+        key = hashlib.sha256(json.dumps(sources, sort_keys=True).encode()).hexdigest()[:12]
+        output = root / 'benchmarks/results/vibrato_runs' / f'paired_{suite}_{key}'
+        output.mkdir(parents=True, exist_ok=True)
+        benchmark = VibratoBenchmarker()
+        raw = benchmark.run(examples, detectors, workers=workers, strict=True,
+                            cache_dir=output / 'checkpoints')
+        benchmark.write_reports(raw, output)
+        summary = benchmark.summarize(raw)
+        summary.to_csv(output / 'comparison.csv', index=False)
+        (output / 'note_bounds.json').write_text(json.dumps(
+            {e.case_id: e.metadata['analysis_note_bounds'] for e in examples}, indent=2) + '\n')
+        (output / 'run_config.json').write_text(json.dumps(dict(
+            suite=suite, gate=GatedAttune.frame_gate(), methods=[d.name for d in detectors],
+            source_sha256=sources, workers=workers, cases=[e.case_id for e in examples],
+            profiles=cls.PROFILES if suite == 'coco' else None,
+            boundary_sources=sorted({e.metadata['note_boundary_source'] for e in examples}),
+            rate_tolerance_hz=.5, one_sided_extent_tolerance_semitones=.05,
+        ), indent=2) + '\n')
+        return summary, output
+
+    @staticmethod
+    def _thaw_pitch(frozen):
+        from app_logic.user.ds.PitchData import PitchData
+        config, origin, frames = frozen
+        config = replace(config)
+        pitch_data = PitchData(config)
+        pitch_data.t_origin = origin
+        pitch_data.load(frames)
+        return config, pitch_data
+
+    @classmethod
+    def score(cls, counts, metric):
+        """counts shape (..., five metrics, TP/FP/FN); soft TP is fractional credit."""
+        def f1(index):
+            tp, fp, fn = np.moveaxis(counts[..., index, :], -1, 0)
+            denominator = 2*tp+fp+fn
+            return np.divide(2*tp, denominator, out=np.zeros_like(tp, dtype=float), where=denominator > 0)
+        if metric == 'aggregate_f1':
+            return (f1(1)+f1(2))/2
+        if metric == 'aggregate_soft_f1':
+            return (f1(3)+f1(4))/2
+        return f1(cls.COUNT_NAMES.index(metric.removesuffix('_f1')))
+
+    @classmethod
+    def load_counts(cls, run, methods):
+        """Keep sufficient statistics; validate common references across methods."""
+        run = Path(run)
+        records, provenance = [], {}
+        for path in sorted((run/'checkpoints').glob('*.pkl.xz')):
+            # Only load checkpoint files generated by this local benchmark.
+            with lzma.open(path, 'rb') as handle:
+                rows = pickle.load(handle)
+            relevant = [r for r in rows if r['method'] in methods]
+            if not relevant:
+                continue
+            provenance[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+            for r in relevant:
+                if r.get('error') or r.get('skipped'):
+                    continue
+                h = hashlib.sha256()
+                for key in ('_curve_times', '_curve_evaluation_mask', '_curve_truth_rate_hz',
+                            '_curve_truth_amplitude_semitones', '_curve_truth_vibrato'):
+                    arr = np.asarray(r[key])
+                    h.update(key.encode()); h.update(str(arr.shape).encode()); h.update(arr.tobytes())
+                record = dict(method=r['method'], case_id=r['case_id'], reference_hash=h.hexdigest(),
+                              recording=r.get('meta_recording'), source=r.get('meta_track'),
+                              performer=r.get('meta_performer'), ensemble=r.get('meta_ensemble'))
+                for name in cls.COUNT_NAMES:
+                    if name.endswith('_soft'):
+                        prefix = '_soft_'+name.removesuffix('_soft')
+                        tp = float(r[prefix+'_credit'])
+                        fp = float(r[prefix+'_predictions'])-tp
+                        fn = float(r[prefix+'_references'])-tp
+                    else:
+                        tp, fp, fn = (float(r[f'_{name}_{k}']) for k in ('tp','fp','fn'))
+                    for key, value in zip(('tp','fp','fn'), (tp,fp,fn)):
+                        record[f'{name}_{key}'] = value
+                records.append(record)
+        rows = pd.DataFrame(records)
+        if rows.empty:
+            raise ValueError('No successful selected checkpoint rows')
+        if rows.duplicated(['method','case_id']).any():
+            raise ValueError('Multiple checkpoint versions for one method/case; use a single frozen run')
+        expected = set(json.loads((run/'run_config.json').read_text())['cases'])
+        # Fail rather than silently testing a partial/stale run.
+        for method in methods:
+            if set(rows.loc[rows.method.eq(method), 'case_id']) != expected:
+                raise ValueError(f'{method}: checkpoint coverage differs from run manifest')
+        for key in ('reference_hash','recording','source','performer','ensemble'):
+            if rows.groupby('case_id')[key].nunique(dropna=False).gt(1).any():
+                raise ValueError(f'Paired methods disagree on {key}')
+        return rows, provenance
+
+    @classmethod
+    def paired_tests(cls, rows, competitors, *, metrics=METRICS, draws=9999, seed=0):
+        """Two-sided paired swaps, percentile cluster CIs, Holm across all tests."""
+        if draws < 99:
+            raise ValueError('At least 99 draws required')
+        methods = ('attune', *competitors)
+        if len(set(methods)) != len(methods) or not metrics or any(m not in cls.METRICS for m in metrics):
+            raise ValueError('Select distinct methods and supported metrics')
+        if rows.duplicated(['method', 'case_id']).any():
+            raise ValueError('Duplicate method/case rows')
+        expected = set(rows.loc[rows.method.eq('attune'), 'case_id'])
+        for method in methods:
+            if set(rows.loc[rows.method.eq(method), 'case_id']) != expected:
+                raise ValueError('All methods must have identical case coverage')
+        if rows[['cluster','stratum']].isna().any().any():
+            raise ValueError('Missing cluster or stratum')
+        groups = sorted(rows.cluster.unique())
+        if len(groups) < 2:
+            raise ValueError('At least two resampling groups required')
+        if rows.groupby('cluster').stratum.nunique().gt(1).any():
+            raise ValueError('A cluster crosses bootstrap strata')
+        columns = [f'{name}_{key}' for name in cls.COUNT_NAMES for key in ('tp','fp','fn')]
+        matrices = {}
+        for method in methods:
+            subset = rows.loc[rows.method.eq(method)]
+            if subset.empty:
+                raise ValueError(f'Missing {method}')
+            matrices[method] = subset.groupby('cluster')[columns].sum().reindex(groups).to_numpy().reshape(len(groups),5,3)
+        if not all(np.isfinite(v).all() and (v >= -1e-8).all() for v in matrices.values()):
+            raise ValueError('Invalid counts')
+        strata = rows.drop_duplicates('cluster').set_index('cluster').loc[groups,'stratum'].to_numpy()
+        rng = np.random.default_rng(seed)
+        boot = np.concatenate([rng.choice(np.flatnonzero(strata == s), size=(draws, sum(strata == s)))
+                               for s in sorted(set(strata))], axis=1)
+        exact = 2**len(groups) <= draws
+        swaps = (np.array(list(itertools.product((False,True),repeat=len(groups)))) if exact
+                 else rng.integers(0,2,size=(draws,len(groups))).astype(bool))
+        a = matrices['attune']; results = []
+        for competitor in competitors:
+            b = matrices[competitor]
+            swap_a = np.where(swaps[:,:,None,None], b, a).sum(axis=1)
+            swap_b = np.where(swaps[:,:,None,None], a, b).sum(axis=1)
+            boot_a, boot_b = a[boot].sum(axis=1), b[boot].sum(axis=1)
+            for metric in metrics:
+                observed = float(cls.score(a.sum(axis=0),metric)-cls.score(b.sum(axis=0),metric))
+                null = cls.score(swap_a,metric)-cls.score(swap_b,metric)
+                extreme = int(np.sum(np.abs(null) >= abs(observed)-1e-12))
+                p = extreme/len(null) if exact else (extreme+1)/(len(null)+1)
+                low,high = np.quantile(cls.score(boot_a,metric)-cls.score(boot_b,metric),[.025,.975])
+                results.append(dict(competitor=competitor,metric=metric,clusters=len(groups),
+                    cases=rows.case_id.nunique(),attune_score=float(cls.score(a.sum(axis=0),metric)),
+                    competitor_score=float(cls.score(b.sum(axis=0),metric)),difference_pp=100*observed,
+                    ci_low_pp=100*low,ci_high_pp=100*high,p_value=p,exact=exact,
+                    permutations=len(null),bootstrap_draws=draws,seed=seed))
+        result = pd.DataFrame(results)
+        ordered = result.p_value.sort_values()
+        adjusted = np.minimum(1,np.maximum.accumulate(ordered.to_numpy()*np.arange(len(ordered),0,-1)))
+        result['p_holm'] = pd.Series(adjusted,index=ordered.index)
+        result['significant'] = result.p_holm < .05
+        return result
+
+    @classmethod
+    def run_significance(cls, run, suite, *, draws=9999, seed=0):
+        """One separate family per corpus; additional performer sensitivity for Yang."""
+        methods = ('attune', *cls.COMPETITORS[suite])
+        rows, inputs = cls.load_counts(run,methods)
+        rows['cluster'] = rows.recording if suite == 'yang' else rows.source
+        rows['stratum'] = 'all' if suite == 'yang' else rows.ensemble
+        if suite == 'yang' and rows.cluster.nunique() != 6:
+            raise ValueError('Yang analysis expects all six recording files')
+        result = cls.paired_tests(rows,cls.COMPETITORS[suite],draws=draws,seed=seed)
+        output = Path(run)/'paired_significance'
+        output.mkdir(exist_ok=True)
+        # Confirm pooled estimates reproduce the saved notebook scores exactly.
+        summary = pd.read_csv(Path(run)/'comparison.csv').set_index('method')
+        for r in result.itertuples():
+            for name,value in [('attune',r.attune_score),(r.competitor,r.competitor_score)]:
+                if not np.isclose(value,summary.loc[name,r.metric],rtol=1e-9,atol=1e-10):
+                    raise ValueError(f'Checkpoint scores differ from report: {name}/{r.metric}')
+        result.to_csv(output/'paired_tests.csv',index=False)
+        rows.to_csv(output/'paired_counts.csv',index=False)
+        if suite == 'yang':
+            sensitivity = rows.copy()
+            sensitivity['cluster'] = sensitivity.performer
+            cls.paired_tests(sensitivity,cls.COMPETITORS[suite],draws=draws,seed=seed).to_csv(
+                output/'performer_sensitivity.csv',index=False)
+        config = dict(suite=suite,methods=methods,metrics=cls.METRICS,draws=draws,seed=seed,
+            alternatives='two-sided',holm_family='all competitors × all seven metrics within this corpus',
+            ci='95% unadjusted percentile cluster bootstrap; Coco stratified by ensemble',
+            interpretation=('Exploratory recording-file inference; excerpts share performers and repertoire. '
+                            'See performer sensitivity; not independent-piece validation.' if suite=='yang' else
+                            'Source-track clusters retain every stem/note/noise version; ensemble-stratified bootstrap. '
+                            'Inference is conditional on sampled synthetic source tracks, not new real performances.'),
+            checkpoints_sha256=inputs,module_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+        (output/'protocol.json').write_text(json.dumps(config,indent=2)+'\n')
+        return result, output
 
     @staticmethod
     def _safe_div(numerator: float, denominator: float) -> float:
@@ -227,7 +626,76 @@ class VibratoBenchmarker:
                 yield
 
     @staticmethod
+    def _checkpoint_paths(benchmarker, estimators, groups, cache_dir):
+        """Fingerprint inputs, settings, and implementation before jobs mutate state."""
+        if cache_dir is None:
+            return {}
+        source = hashlib.sha256()
+        for root in (REPO_ROOT / "algorithms", REPO_ROOT / "app_logic",
+                     REPO_ROOT / "benchmarks/modules/vibrato"):
+            for path in sorted(root.rglob("*.py")):
+                if "tests" not in path.parts:
+                    source.update(str(path.relative_to(REPO_ROOT)).encode())
+                    source.update(path.read_bytes())
+        source.update(pickle.dumps(vars(benchmarker)))
+        group_keys = []
+        for group in groups:
+            digest = source.copy()
+            digest.update(pickle.dumps(group, protocol=pickle.HIGHEST_PROTOCOL))
+            # Audio methods can consume the file, not just its pitch contour.
+            for name in sorted({item.audio_path for item in group if item.audio_path}):
+                path = Path(name)
+                stat = path.stat() if path.is_file() else None
+                digest.update(repr((name, stat.st_size, stat.st_mtime_ns) if stat
+                                   else (name, None)).encode())
+            group_keys.append(digest)
+        paths = {}
+        for i, estimator in enumerate(estimators):
+            try:
+                state = pickle.dumps(estimator, protocol=pickle.HIGHEST_PROTOCOL)
+            except (AttributeError, pickle.PickleError, TypeError):
+                # Arbitrary notebook callables cannot be fingerprinted reliably.
+                continue
+            for j, digest in enumerate(group_keys):
+                key = digest.copy()
+                key.update(state)
+                paths[i, j] = Path(cache_dir) / (key.hexdigest() + ".pkl.xz")
+        return paths
+
+    @staticmethod
     def _run_detector_group_job(
+        benchmarker, estimator, group, strict, *, compute_clock, cache_path=None,
+    ):
+        """Persist each completed track/method even if a later job is interrupted."""
+        if cache_path is not None and cache_path.is_file():
+            try:
+                with lzma.open(cache_path, "rb") as stream:
+                    rows = pickle.load(stream)
+                if (isinstance(rows, list) and len(rows) == len(group)
+                        and all(isinstance(row, dict) and not row.get("error")
+                                and not row.get("skipped") for row in rows)):
+                    return rows
+            except (EOFError, OSError, ValueError, pickle.UnpicklingError, lzma.LZMAError):
+                pass  # A damaged checkpoint is a cache miss.
+        rows = VibratoBenchmarker._compute_detector_group_job(
+            benchmarker, estimator, group, strict, compute_clock=compute_clock,
+        )
+        if cache_path is not None and all(
+            not row.get("error") and not row.get("skipped") for row in rows
+        ):
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            fd, temporary = tempfile.mkstemp(dir=cache_path.parent, suffix=".tmp")
+            os.close(fd)
+            try:
+                with lzma.open(temporary, "wb") as stream:
+                    pickle.dump(rows, stream, protocol=pickle.HIGHEST_PROTOCOL)
+                os.replace(temporary, cache_path)
+            finally:
+                Path(temporary).unlink(missing_ok=True)
+        return rows
+
+    @staticmethod
+    def _compute_detector_group_job(
         benchmarker: VibratoBenchmarker,
         estimator: VibratoDetectorBase,
         group: list[VibratoExample],
@@ -510,8 +978,11 @@ class VibratoBenchmarker:
         # false positive and a false negative, as in ordinary matched-event
         # scoring. Predictions on negative controls are false positives.
         parameter_truth = rate_mask
-        extent_predicted = evaluation & detected & (estimated_amplitude > 0.0)
-        rate_predicted = evaluation & detected & (estimated_rate > 0.0)
+        parameter_evaluation = evaluation & (~truth | parameter_truth)
+        if example.metadata.get("parameter_annotations") is False:
+            parameter_evaluation[:] = False
+        extent_predicted = parameter_evaluation & detected & (estimated_amplitude > 0.0)
+        rate_predicted = parameter_evaluation & detected & (estimated_rate > 0.0)
         extent_matched = parameter_truth & extent_predicted & amplitude_within
         rate_matched = parameter_truth & rate_predicted & rate_within
         extent_tp = int(np.sum(extent_matched))
@@ -828,6 +1299,48 @@ class VibratoBenchmarker:
                 else np.full(len(truth), np.nan, dtype=np.float64)
             ),
         }
+        # Soft parameter scores exclude unknown positive annotations, never
+        # treating an unannotated vibrato as a negative. Area-only recordings
+        # have no parameter score at all.
+        eligible = evaluation.copy()
+        if example.metadata.get("parameter_annotations") is False:
+            eligible[:] = False
+        for name, reference, estimated in (
+            ("extent", true_amplitude, estimated_amplitude),
+            ("rate", np.asarray(example.rate_hz), estimated_rate),
+        ):
+            credit, predictions, references = YangMetrics.soft_counts(
+                truth, detected, reference, estimated, eligible)
+            n = int(np.sum(eligible & (~truth | (np.isfinite(reference) & (reference > 0)))))
+            metrics = YangMetrics.soft_prf(credit, predictions, references) if n else (np.nan,)*3
+            for metric, value in zip(("precision", "recall", "f1"), metrics):
+                row[f"{name}_soft_{metric}"] = value
+            for key, value in zip(("credit", "predictions", "references", "frames"), (credit, predictions, references, n)):
+                row[f"_soft_{name}_{key}"] = value
+        for metric in ("precision", "recall", "f1"):
+            row[f"aggregate_soft_{metric}"] = self._mean_if_all_finite(
+                row[f"extent_soft_{metric}"], row[f"rate_soft_{metric}"])
+        if example.metadata.get("parameter_annotations") is False:
+            for name in ("extent", "rate", "aggregate"):
+                for metric in ("precision", "recall", "f1"):
+                    row[f"{name}_{metric}"] = np.nan
+        if "yang_references" in example.metadata:
+            event = YangMetrics.evaluate(example.times, detected, estimated_rate,
+                estimated_amplitude, example.metadata["yang_references"])
+            row.update(event)
+            row.update(YangMetrics.summary(event))
+            row["yang_parameter_coverage"] = event["yang_parameter_matched"] / event["yang_parameter_truth"] if event["yang_parameter_truth"] else np.nan
+            row.update({f"_event_{key}": value for key, value in event.items()})
+            count = event["yang_parameter_matched"]
+            for parameter in ("extent", "rate"):
+                value = event[f"yang_{parameter}_sum"] / count if count else np.nan
+                row[f"yang_{parameter}_accuracy"] = value
+                row[f"_yang_{parameter}_accuracy"] = value
+            row["_yang_parameter_truth"] = event["yang_parameter_truth"]
+            row["_yang_parameter_matched"] = count
+            row["yang_parameter_matched"] = count
+            row["yang_overall_accuracy"] = self._mean_if_all_finite(
+                row["yang_extent_accuracy"], row["yang_rate_accuracy"])
         row.update(
             {
                 f"meta_{key}": value
@@ -916,6 +1429,7 @@ class VibratoBenchmarker:
         progress: ProgressCallback | None = None,
         strict: bool = False,
         workers: int = 1,
+        cache_dir: Path | None = None,
     ) -> pd.DataFrame:
         """Run independent detector/analysis-group jobs in parallel."""
         if workers < 1:
@@ -923,6 +1437,7 @@ class VibratoBenchmarker:
         scoring_started = time.perf_counter()
         total = len(examples) * len(estimators)
         analysis_groups = self._analysis_groups(examples)
+        checkpoints = self._checkpoint_paths(self, estimators, analysis_groups, cache_dir)
         for estimator in estimators:
             requires = set(getattr(estimator, "requires", {"pitch"}))
             unknown = requires - {"pitch", "audio"}
@@ -949,8 +1464,8 @@ class VibratoBenchmarker:
         if workers == 1 or len(analysis_groups) * len(estimators) <= 1:
             rows: list[dict[str, Any]] = []
             index = 0
-            for estimator in estimators:
-                for group in analysis_groups:
+            for estimator_index, estimator in enumerate(estimators):
+                for group_index, group in enumerate(analysis_groups):
                     for example in group:
                         index += 1
                         if progress is not None:
@@ -962,6 +1477,7 @@ class VibratoBenchmarker:
                             group,
                             strict,
                             compute_clock="process_cpu",
+                            cache_path=checkpoints.get((estimator_index, group_index)),
                         )
                     )
             return finish(rows, ["serial"])
@@ -1013,6 +1529,7 @@ class VibratoBenchmarker:
                         group,
                         strict,
                         compute_clock="process_cpu",
+                        cache_path=checkpoints.get((estimator_index, group_index)),
                     ): (
                         estimator_index,
                         group_index,
@@ -1048,6 +1565,7 @@ class VibratoBenchmarker:
                     group,
                     strict,
                     compute_clock="thread_cpu",
+                    cache_path=checkpoints.get((estimator_index, group_index)),
                 ): (
                     estimator_index,
                     group_index,
@@ -1121,6 +1639,10 @@ class VibratoBenchmarker:
                 rate_fp,
                 rate_fn,
             )
+            if not float(good["_soft_extent_frames"].sum()):
+                extent_precision = extent_recall = extent_f1 = np.nan
+            if not float(good["_soft_rate_frames"].sum()):
+                rate_precision = rate_recall = rate_f1 = np.nan
             rate_n = float(good["_rate_n"].sum())
             amplitude_n = float(good["_amplitude_n"].sum())
             active_amplitude_n = float(good["_active_amplitude_n"].sum())
@@ -1139,6 +1661,27 @@ class VibratoBenchmarker:
                 float(yang_rate_values.mean()) if len(yang_rate_values) else np.nan
             )
 
+            event_columns = [c for c in good if c.startswith("_event_")]
+            if event_columns:
+                event = {c.removeprefix("_event_"): float(good[c].sum()) for c in event_columns}
+                yang_extent_accuracy = event["yang_extent_sum"] / yang_matched_n if yang_matched_n else np.nan
+                yang_rate_accuracy = event["yang_rate_sum"] / yang_matched_n if yang_matched_n else np.nan
+                summary.update(YangMetrics.summary(event))
+                for metric in ("precision", "recall", "f1"):
+                    summary[f"yang_frame_macro_{metric}"] = float(good[f"frame_{metric}"].mean())
+                    summary[f"yang_note_macro_{metric}"] = float(good[f"yang_note_{metric}"].mean())
+                summary["yang_recordings"] = len(good)
+                summary["yang_parameter_recordings"] = int((good["_yang_parameter_truth"] > 0).sum())
+            summary["yang_matched_notes"] = yang_matched_n
+            summary["yang_parameter_notes"] = yang_truth_n
+            for name in ("extent", "rate"):
+                values = [float(good[f"_soft_{name}_{k}"].sum()) for k in ("credit", "predictions", "references", "frames")]
+                metrics = YangMetrics.soft_prf(*values[:3]) if values[3] else (np.nan,)*3
+                for metric, value in zip(("precision", "recall", "f1"), metrics):
+                    summary[f"{name}_soft_{metric}"] = value
+            for metric in ("precision", "recall", "f1"):
+                summary[f"aggregate_soft_{metric}"] = VibratoBenchmarker._mean_if_all_finite(
+                    summary[f"extent_soft_{metric}"], summary[f"rate_soft_{metric}"])
             extent_within_tolerance = (
                 VibratoBenchmarker._safe_div(
                     float(good["_active_amplitude_within"].sum()),
@@ -1344,6 +1887,16 @@ class VibratoBenchmarker:
         """Return the compact public comparison with F1 first per metric."""
         columns = [
             "method",
+            "aggregate_soft_f1", "extent_soft_f1", "rate_soft_f1",
+            "extent_soft_precision", "extent_soft_recall", "rate_soft_precision", "rate_soft_recall",
+            "yang_matched_notes", "yang_parameter_notes", "yang_parameter_coverage",
+            "yang_note_precision", "yang_note_recall", "yang_note_f1",
+            "yang_frame_macro_precision", "yang_frame_macro_recall", "yang_frame_macro_f1",
+            "yang_note_macro_precision", "yang_note_macro_recall", "yang_note_macro_f1",
+            "yang_recordings", "yang_parameter_recordings",
+            "yang_reference_notes", "yang_predicted_notes",
+            "yang_only_bad_onset_rate", "yang_only_bad_offset_rate", "yang_split_rate",
+            "yang_merge_rate", "yang_spurious_rate", "yang_non_detected_rate",
             "aggregate_f1",
             "aggregate_precision",
             "aggregate_recall",
@@ -1370,16 +1923,38 @@ class VibratoBenchmarker:
         displayed = displayed.rename(
             columns={
                 "method": "Method",
+                "aggregate_soft_f1": "Overall Soft F1",
+                "extent_soft_f1": "Extent Soft F1", "rate_soft_f1": "Rate Soft F1",
+                "extent_soft_precision": "Extent Soft Precision", "extent_soft_recall": "Extent Soft Recall",
+                "rate_soft_precision": "Rate Soft Precision", "rate_soft_recall": "Rate Soft Recall",
+                "yang_matched_notes": "Matched Parameter Notes (Yang)",
+                "yang_parameter_notes": "Annotated Parameter Notes (Yang)",
+                "yang_parameter_coverage": "Parameter Coverage (Yang)",
+                "yang_recordings": "Evaluated Recordings (Yang)",
+                "yang_parameter_recordings": "Parameter Recordings (Yang)",
+                "yang_frame_macro_precision": "Frame Precision (recording mean)",
+                "yang_frame_macro_recall": "Frame Recall (recording mean)",
+                "yang_frame_macro_f1": "Frame F1 (recording mean)",
+                "yang_note_macro_precision": "Note Precision (recording mean)",
+                "yang_note_macro_recall": "Note Recall (recording mean)",
+                "yang_note_macro_f1": "Note F1 (recording mean)",
+                "yang_note_precision": "Note Precision (Yang)", "yang_note_recall": "Note Recall (Yang)",
+                "yang_note_f1": "Note F1 (Yang)", "yang_reference_notes": "Reference Vibratos (Yang)",
+                "yang_predicted_notes": "Detected Vibratos (Yang)",
+                "yang_only_bad_onset_rate": "Only Bad Onset Rate (overlap)",
+                "yang_only_bad_offset_rate": "Only Bad Offset Rate (overlap)",
+                "yang_split_rate": "Split Rate (overlap)", "yang_merge_rate": "Merge Rate (overlap)",
+                "yang_spurious_rate": "Spurious Rate (overlap)", "yang_non_detected_rate": "Non-Detected Rate (overlap)",
                 "aggregate_precision": "Overall Precision",
                 "aggregate_recall": "Overall Recall",
-                "aggregate_f1": "Overall F1",
+                "aggregate_f1": "Overall F1 (hard)",
                 "extent_precision": "Extent Precision",
                 "extent_recall": "Extent Recall",
-                "extent_f1": "Extent F1",
+                "extent_f1": "Extent F1 (hard)",
                 "yang_extent_accuracy": "Extent Accuracy (Yang)",
                 "rate_precision": "Rate Precision",
                 "rate_recall": "Rate Recall",
-                "rate_f1": "Rate F1",
+                "rate_f1": "Rate F1 (hard)",
                 "yang_rate_accuracy": "Rate Accuracy (Yang)",
                 "center_within_tolerance": "Center Accuracy (Attune)",
                 "frame_accuracy": "Detection Accuracy",
@@ -1876,6 +2451,9 @@ class VibratoBenchmarker:
         )
         summary.to_csv(paths["summary"], index=False)
         note_macro_metrics = [
+            "aggregate_soft_f1", "extent_soft_f1", "rate_soft_f1",
+            "extent_soft_precision", "extent_soft_recall", "rate_soft_precision", "rate_soft_recall",
+            "yang_note_precision", "yang_note_recall", "yang_note_f1",
             "aggregate_f1",
             "aggregate_precision",
             "aggregate_recall",
@@ -2009,6 +2587,8 @@ class VibratoBenchmarker:
         )
         parser.add_argument("--yang-recording-limit", type=int, default=2)
         parser.add_argument("--yang-all-recordings", action="store_true")
+        parser.add_argument("--yang-full-audio", action="store_true")
+        parser.add_argument("--yang-parameters-only", action="store_true")
         parser.add_argument("--yang-no-smooth", action="store_true")
         parser.add_argument("--yang-force", action="store_true")
         parser.add_argument(
@@ -2209,8 +2789,11 @@ class VibratoBenchmarker:
                 if args.quick
                 else None if args.yang_all_recordings else args.yang_recording_limit
             )
+            from benchmarks.modules.vibrato.datasets.YangFullDataset import YangFullDataset, YangParameterDataset
+            dataset_class = (YangParameterDataset if args.yang_parameters_only else
+                             YangFullDataset if args.yang_full_audio else YangDataset)
             return (
-                YangDataset.build(
+                dataset_class.build(
                     dataset_root=args.yang_root,
                     cache_root=args.yang_cache_root,
                     max_recordings=limit,
@@ -2218,7 +2801,8 @@ class VibratoBenchmarker:
                     force=args.yang_force or args.force_pitch,
                     workers=args.workers,
                 ),
-                "yang_parameter_subset",
+                "yang_parameter_recordings_full_audio" if args.yang_parameters_only else
+                "yang_full_audio" if args.yang_full_audio else "yang_parameter_subset",
             )
         if args.driedger:
             return DriedgerDataset.load(args.driedger_root), "driedger_validation"
@@ -2293,6 +2877,7 @@ class VibratoBenchmarker:
             progress=None if args.quiet else progress,
             strict=args.strict,
             workers=args.workers,
+            cache_dir=args.output_dir / "checkpoints",
         )
         if progress_width:
             print()
@@ -2304,6 +2889,11 @@ class VibratoBenchmarker:
             if example.metadata.get("instrument")
             and example.metadata.get("synthesis_renderer")
         }
+        if args.coco:
+            from benchmarks.modules.pitch.datasets.CocoChorales import CocoChorales
+            from benchmarks.modules.vibrato.datasets.CocoDataset import (
+                PROFILE_PARAMETER_SAMPLER_VERSION,
+            )
         manifest = {
             "dataset": {
                 "source": source,
@@ -2322,6 +2912,13 @@ class VibratoBenchmarker:
                 "workers": args.workers,
             },
             "metrics": {
+                "version": "soft_yang_v1",
+                "soft_credit": "max(0, 1-abs(estimate-reference)/reference)",
+                "soft_aggregation": "pooled evaluated frames; 2*credit/(predictions+references)",
+                "yang_note_min_seconds": 0.28,
+                "yang_onset_tolerance_seconds": 0.1,
+                "yang_offset_tolerance": "max(0.1 seconds, 0.2*reference duration)",
+                "yang_error_diagnostics": "interval overlap topology adaptation, not Molina implementation",
                 "rate_tolerance_hz": args.rate_tolerance_hz,
                 "amplitude_tolerance_semitones": (args.amplitude_tolerance_semitones),
                 "center_tolerance_cents": args.center_tolerance_cents,

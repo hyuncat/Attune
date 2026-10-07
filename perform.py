@@ -548,12 +548,7 @@ class PerformTab(QWidget):
             return
         print("analyzing... ")
         rec.smooth_pitches()
-        rec.reset_analysis()  # clear stale notes/alignment/mistakes before recomputing
-        rec.detect_notes()
-
-        # Align original notes, then recover missing repeats locally.
-        rec.align_score_and_refine()
-        rec.update_alignment_distances() # color the user pitches by the final alignment
+        rec.analyze_notes()
         rec.trim_end()
         rec.analysis_notice = ""
 

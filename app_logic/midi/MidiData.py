@@ -1,7 +1,10 @@
 from pathlib import Path
+import logging
 import mido
 
 from app_logic.NoteData import NoteData, Note
+
+logger = logging.getLogger(__name__)
 
 # --- metronome / woodblock click constants ---
 # shared between init_metronome (embedded score clicks) and the count-in
@@ -52,7 +55,7 @@ class MidiData:
         Also track all instruments (and what channels they play on). 
         And find the BPM if possible.
         """
-        print("Handling MIDI file...")
+        logger.debug("Handling MIDI file...")
 
         metas, messages, programs = {}, {}, {}
         instruments = {}

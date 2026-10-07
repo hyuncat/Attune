@@ -274,6 +274,8 @@ class PitchDetectorBase(ABC):
                         from_cache=True,
                         metadata={
                             "compute_clock": compute_clock,
+                            **({"inference_threads": int(stored["inference_threads"])}
+                               if "inference_threads" in stored else {}),
                             "wall_pitch_compute_time": float(
                                 stored["wall_compute_time"]
                             ),
@@ -301,6 +303,8 @@ class PitchDetectorBase(ABC):
                 compute_time=np.asarray(estimate.compute_seconds, dtype=np.float64),
                 wall_compute_time=np.asarray(wall_compute_time, dtype=np.float64),
                 compute_clock=np.asarray(compute_clock, dtype=np.str_),
+                **({"inference_threads": int(estimate.metadata["inference_threads"])}
+                   if "inference_threads" in estimate.metadata else {}),
             )
 
     def __init__(
@@ -371,8 +375,9 @@ class PitchDetectorBase(ABC):
         The benchmark modules set the usual BLAS/OpenMP environment variables
         before imports, which covers spawned workers.  Notebook and test callers
         can import numpy first, however, so the runtime limit is needed as well.
-        It also keeps ``process_time`` comparable across detectors instead of
-        letting an inner BLAS pool multiply CPU seconds.
+        It also prevents unintended nested BLAS pools. CREPE's TensorFlow
+        inference pool is budgeted separately by the offline runner; process CPU
+        seconds include all of its threads, while wall seconds measure throughput.
         """
         try:
             from threadpoolctl import threadpool_limits

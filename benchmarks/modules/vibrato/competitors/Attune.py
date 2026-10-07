@@ -106,6 +106,11 @@ class Attune(VibratoDetectorBase):
         return VibratoDetector(config=config)
 
     def estimate(self, example: VibratoExample) -> VibratoEstimate:
+        # An explicitly empty detected-note list means segmentation found no
+        # notes. Do not replace this failure with an oracle/whole-track note.
+        if example.metadata.get("analysis_note_bounds") == []:
+            n = len(example.times)
+            return VibratoEstimate(np.zeros(n), np.zeros(n), np.zeros(n, dtype=bool))
         config = self._config(example.frame_rate, **self.config_overrides)
         pitch_data, note_data = self._inputs(example, config)
         implementation = self._implementation(config)
@@ -139,3 +144,31 @@ class Attune(VibratoDetectorBase):
             qualities,
             metadata={"fit_confidence": fit_confidence},
         )
+
+
+class GatedAttune(Attune):
+    """Notebook comparison using Yang's rate/extent gate on production fits."""
+
+    name = 'attune'
+    description = 'Attune: production score-aware notes; Yang rate/extent frame gate'
+
+    @staticmethod
+    def frame_gate():
+        from benchmarks.modules.vibrato.competitors.Yang import Yang
+        return dict(name='attune', min_rate_hz=Yang.DECISION_RATE_LIMITS_HZ[0],
+                    max_rate_hz=Yang.DECISION_RATE_LIMITS_HZ[1],
+                    min_width_cents=200 * Yang.DECISION_MIN_EXTENT_SEMITONES,
+                    min_quality=None)
+
+    def estimate(self, example):
+        from dataclasses import replace
+        estimate = super().estimate(example).validate_for(example)
+        gate = self.frame_gate()
+        rate, width = np.asarray(estimate.rate_hz), np.asarray(estimate.width_cents)
+        detected = (np.asarray(estimate.detected, dtype=bool)
+                    & np.isfinite(example.pitch_midi)
+                    & np.isfinite(rate) & np.isfinite(width)
+                    & (rate >= gate['min_rate_hz']) & (rate <= gate['max_rate_hz'])
+                    & (width >= gate['min_width_cents']))
+        return replace(estimate, detected=detected,
+                       metadata={**estimate.metadata, 'frame_gate': gate})

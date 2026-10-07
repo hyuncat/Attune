@@ -4,6 +4,7 @@ from __future__ import annotations
 from benchmarks.modules.pitch.PitchDetectorBase import PitchDetectorBase
 import argparse
 import contextlib
+from functools import lru_cache
 import math
 import multiprocessing
 import os
@@ -386,10 +387,45 @@ class PitchBenchmarker:
             memory = psutil.virtual_memory()
             reserve = max(2 * 2**30, memory.total * 0.15)
             budget = max(0, memory.available - reserve)
+            if memory.available < reserve:
+                raise MemoryError(
+                    "Pitch benchmark paused: available RAM is below the desktop "
+                    "reserve. Close unused applications and rerun to resume caches."
+                )
             affordable = max(1, int(budget / (gib_per_worker * 2**30)))
         except (ImportError, OSError):
             affordable = 2
         return max(1, min(requested, affordable))
+
+    @staticmethod
+    def worker_memory_gib(method: str, observed: float = 0.0) -> float:
+        """Bootstrap budgets; measured process high-water RSS adds 30% headroom."""
+        floor = 0.5 if method in {"attune", "praat", "pyin_framewise", "swiftf0"} else 2.0
+        # A completed calibration permits replacing the blanket neural/offline
+        # estimate, but never the interpreter/audio workspace floor.
+        return max(0.5, observed * 1.3) if observed > 0 else floor
+
+    @staticmethod
+    def inference_threads(method: str, workers: int, cpu_budget: int) -> int:
+        """Use spare cores inside CREPE when RAM limits model-process copies."""
+        if method != "crepe":
+            return 1
+        budget = min(cpu_budget, PitchBenchmarker.default_pitch_workers())
+        return max(1, budget // max(1, workers))
+
+    @staticmethod
+    def _initialize_offline_worker(inference_threads: int) -> None:
+        # Spawn imports this module before calling the initializer, but TensorFlow
+        # is imported lazily by the detector. Set its pool sizes before that import.
+        os.environ["TF_NUM_INTRAOP_THREADS"] = str(inference_threads)
+        os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+
+    @staticmethod
+    def peak_memory_gib() -> float:
+        import resource
+
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        return peak / (2**30 if sys.platform == "darwin" else 2**20)
 
     @staticmethod
     def joint_timing_worker(payload):
@@ -1269,16 +1305,6 @@ class PitchBenchmarker:
             total = len(examples) * len(selected)
             completed = 0
             for method in selected:
-                workers = min(
-                    len(examples),
-                    PitchBenchmarker.memory_limited_workers(
-                        self.config.workers,
-                        gib_per_worker=2.0 if method in self.ROLLING_METHODS else 1.0,
-                    ),
-                )
-                print(
-                    f"  {method}: {workers} worker(s) within the RAM budget", flush=True
-                )
                 progress = PitchBenchmarker.Progress(compact=True)
                 jobs = []
                 reused = 0
@@ -1336,50 +1362,72 @@ class PitchBenchmarker:
                 try:
                     if not jobs:
                         continue
-                    context = multiprocessing.get_context("spawn")
-                    pool = ProcessPoolExecutor(
-                        max_workers=min(workers, len(jobs)),
-                        mp_context=context,
-                        initializer=PitchBenchmarker._initialize_streaming_worker,
-                        initargs=(
-                            dict(vars(self.options)),
-                            asdict(self.config),
-                            [method],
-                        ),
-                    )
-                    try:
-                        remaining = iter(jobs)
-                        futures = {}
+                    pending = list(jobs)
+                    observed = 0.0
+                    while pending:
+                        budget = PitchBenchmarker.worker_memory_gib(method, observed)
+                        workers = min(
+                            len(pending),
+                            PitchBenchmarker.memory_limited_workers(
+                                self.config.workers, gib_per_worker=budget
+                            ),
+                        )
+                        # Calibrate on one track; then amortize model warmup over
+                        # eight tracks per worker before releasing the pool and
+                        # rechecking desktop memory and observed peak usage.
+                        size = workers * 8 if observed else 1
+                        wave, pending = pending[:size], pending[size:]
+                        workers = min(workers, len(wave))
+                        print(
+                            f"  {method}: {workers} worker(s); {budget:.2f} GiB/worker budget",
+                            flush=True,
+                        )
+                        context = multiprocessing.get_context("spawn")
+                        pool = ProcessPoolExecutor(
+                            max_workers=min(workers, len(wave)),
+                            mp_context=context,
+                            initializer=PitchBenchmarker._initialize_streaming_worker,
+                            initargs=(
+                                dict(vars(self.options)),
+                                asdict(self.config),
+                                [method],
+                            ),
+                        )
+                        try:
+                            remaining = iter(wave)
+                            futures = {}
 
-                        def submit_next():
-                            job = next(remaining, None)
-                            if job is not None:
-                                example, path = job
-                                future = pool.submit(
-                                    PitchBenchmarker._streaming_example_worker,
-                                    asdict(example),
-                                    path,
-                                )
-                                futures[future] = example
+                            def submit_next():
+                                job = next(remaining, None)
+                                if job is not None:
+                                    example, path = job
+                                    future = pool.submit(
+                                        PitchBenchmarker._measured_streaming_example_worker,
+                                        asdict(example),
+                                        path,
+                                    )
+                                    futures[future] = example
 
-                        for _ in range(min(workers, len(jobs))):
-                            submit_next()
-                        while futures:
-                            done, _ = wait(
-                                futures, timeout=1.0, return_when=FIRST_COMPLETED
-                            )
-                            for future in done:
-                                accept(futures.pop(future), future.result())
+                            for _ in range(min(workers, len(wave))):
                                 submit_next()
-                            if not done:
-                                render()
-                    except BaseException:
-                        for process in list(pool._processes.values()):
-                            process.terminate()
-                        pool.shutdown(wait=True, cancel_futures=True)
-                        raise
-                    else:
-                        pool.shutdown(wait=True)
+                            while futures:
+                                done, _ = wait(
+                                    futures, timeout=1.0, return_when=FIRST_COMPLETED
+                                )
+                                for future in done:
+                                    result, peak = future.result()
+                                    observed = max(observed, peak)
+                                    accept(futures.pop(future), result)
+                                    submit_next()
+                                if not done:
+                                    render()
+                        except BaseException:
+                            for process in list(pool._processes.values()):
+                                process.terminate()
+                            pool.shutdown(wait=True, cancel_futures=True)
+                            raise
+                        else:
+                            pool.shutdown(wait=True)
                 finally:
                     progress.finish()
             for row in rows:
@@ -1929,6 +1977,12 @@ class PitchBenchmarker:
         )
 
     @staticmethod
+    def _measured_streaming_example_worker(example, checkpoint_path):
+        with PitchDetectorBase.single_threaded_numerics():
+            rows = PitchBenchmarker._streaming_example_worker(example, checkpoint_path)
+        return rows, PitchBenchmarker.peak_memory_gib()
+
+    @staticmethod
     def _streaming_example_worker(example, checkpoint_path):
         from benchmarks.modules.pitch.PitchCache import PitchCache
         from benchmarks.modules.pitch.PitchDetectorBase import PitchDetectorBase
@@ -2109,6 +2163,7 @@ class PitchBenchmarker:
         errors: list[tuple[str, str, str, str]] = field(default_factory=list)
         seconds: float = 0.0
         skip_reason: str | None = None
+        peak_memory_gib: float = 0.0
 
     class Progress:
         """Multi-worker terminal display or one notebook-friendly progress line."""
@@ -2398,7 +2453,10 @@ class PitchBenchmarker:
             size = (
                 tracks_per_job
                 if tracks_per_job > 0
-                else max(1, math.ceil(len(selected) / max(1, workers)))
+                else min(
+                    1 if method == "crepe" else 4,
+                    max(1, math.ceil(len(selected) / max(1, workers))),
+                )
             )
             for start in range(0, len(selected), size):
                 jobs.append(
@@ -2538,7 +2596,7 @@ class PitchBenchmarker:
 
         Python redirection catches ordinary library chatter; temporarily
         redirecting file descriptors 1/2 also catches native TensorFlow/TFLite
-        messages. Each benchmark worker is single-threaded, so the scoped fd
+        messages. Each benchmark worker runs one job at a time, so the scoped fd
         redirection cannot swallow output from another job.
         """
         if not enabled:
@@ -2583,7 +2641,19 @@ class PitchBenchmarker:
                 os.close(devnull_fd)
 
     @staticmethod
-    def run_job(
+    @lru_cache(maxsize=1)
+    def _worker_detector(method, options):
+        """Retain one warmed model across small jobs in a spawned pool."""
+        return PitchBenchmarker.detector_for(method, options)
+
+    @staticmethod
+    def run_job(*args, **kwargs) -> "PitchBenchmarker.Outcome":
+        with PitchDetectorBase.single_threaded_numerics():
+            outcome = PitchBenchmarker._run_job(*args, **kwargs)
+        return replace(outcome, peak_memory_gib=PitchBenchmarker.peak_memory_gib())
+
+    @staticmethod
+    def _run_job(
         options: "PitchBenchmarker.Options | dict[str, Any]",
         job: "PitchBenchmarker.Job | dict[str, Any]",
         verbose: bool = False,
@@ -2604,7 +2674,11 @@ class PitchBenchmarker:
         errors: list[tuple[str, str, str, str]] = []
         try:
             with benchmarker.silence_runtime(options.quiet_runtime):
-                detector = benchmarker.detector_for(job.method, options)
+                detector = (
+                    benchmarker._worker_detector(job.method, options)
+                    if multiprocessing.current_process().name != "MainProcess"
+                    else benchmarker.detector_for(job.method, options)
+                )
                 detector.ensure_available()
         except PitchDetectorBase.Unavailable as exc:
             return PitchBenchmarker.Outcome(
@@ -2722,6 +2796,7 @@ class PitchBenchmarker:
                         print(trace.rstrip(), file=sys.stderr, flush=True)
             return (pd.DataFrame(rows), errors, skipped)
         batch_size = batch_size if batch_size > 0 else max(1, workers * 2)
+        memory_peaks: dict[str, float] = {}
         attempts: dict[str, int] = {}
         pending_jobs = list(jobs)
         total = sum((len(job.tracks) for job in jobs))
@@ -2744,10 +2819,16 @@ class PitchBenchmarker:
 
         try:
             while pending_jobs:
-                batch, pending_jobs = (
-                    pending_jobs[:batch_size],
-                    pending_jobs[batch_size:],
-                )
+                # Keep model families separate, and calibrate each in one fresh
+                # process before deciding how many copies fit in memory.
+                method = pending_jobs[0].method
+                count = 0
+                limit = batch_size if method in memory_peaks else 1
+                for job in pending_jobs[:limit]:
+                    if job.method != method:
+                        break
+                    count += 1
+                batch, pending_jobs = pending_jobs[:count], pending_jobs[count:]
                 runnable = []
                 for job in batch:
                     attempts[job.key] = attempts.get(job.key, 0) + 1
@@ -2766,15 +2847,26 @@ class PitchBenchmarker:
                 if not runnable:
                     continue
                 batch_workers = min(
-                    len(runnable), PitchBenchmarker.memory_limited_workers(workers)
+                    len(runnable),
+                    PitchBenchmarker.memory_limited_workers(
+                        workers,
+                        gib_per_worker=self.worker_memory_gib(
+                            method, memory_peaks.get(method, 0.0)
+                        ),
+                    ),
                 )
+                inference_threads = self.inference_threads(method, batch_workers, workers)
                 print(
-                    f"Pitch batch: {batch_workers}/{workers} worker(s) within the RAM budget",
+                    f"Pitch batch ({method}): {batch_workers}/{workers} worker(s) "
+                    f"× {inference_threads} inference thread(s); "
+                    f"{self.worker_memory_gib(method, memory_peaks.get(method, 0.0)):.2f} GiB/worker budget",
                     flush=True,
                 )
                 pool = ProcessPoolExecutor(
                     max_workers=batch_workers,
                     mp_context=multiprocessing.get_context("spawn"),
+                    initializer=PitchBenchmarker._initialize_offline_worker,
+                    initargs=(inference_threads,),
                 )
                 options_payload = self._worker_options_payload(self.options)
                 futures = {
@@ -2816,6 +2908,7 @@ class PitchBenchmarker:
                             break
                         last_activity = time.perf_counter()
                         broke = False
+                        uncollected = set(done)
                         for future in done:
                             job = futures[future]
                             try:
@@ -2823,6 +2916,15 @@ class PitchBenchmarker:
                             except BrokenProcessPool:
                                 broke = True
                                 break
+                            uncollected.remove(future)
+                            # Cache-only work does not calibrate detector memory.
+                            detected = any(
+                                not row.get("from_cache", True) for row in outcome.rows
+                            )
+                            memory_peaks[outcome.method] = max(
+                                memory_peaks.get(outcome.method, 0.0),
+                                outcome.peak_memory_gib if detected else 0.0,
+                            )
                             rows.extend(outcome.rows)
                             errors.extend(outcome.errors)
                             if outcome.status == "skip":
@@ -2854,7 +2956,7 @@ class PitchBenchmarker:
                                 for *_, trace in outcome.errors:
                                     print(trace.rstrip(), file=sys.stderr, flush=True)
                         if broke:
-                            stuck = [job, *[futures[f] for f in waiting]]
+                            stuck = [futures[f] for f in waiting | uncollected]
                             renderer.finish()
                             print(
                                 f"\n!! pool broke (a worker died) -- re-queueing {len(stuck)} unfinished job(s).",

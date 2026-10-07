@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 from music21 import converter, tempo, meter
 from music21 import stream as m21stream, note as m21note, chord as m21chord
 from music21 import duration as m21duration, instrument as m21instrument
@@ -8,6 +9,9 @@ import tempfile
 
 from app_logic.midi.MidiData import MidiData
 from app_logic.NoteData import NoteData, Note
+
+logger = logging.getLogger(__name__)
+
 
 class ScoreData:
     # MIDI/music21/Verovio round-trips can put a note that is visually on a
@@ -223,7 +227,7 @@ class ScoreData:
         """
         p = Path(filepath)
         ext = p.suffix.lower()
-        print(f"Loading score file: {filepath}")
+        logger.debug("Loading score file: %s", filepath)
         self.filepath = p
         # default the score title to the filename; the RecordingTree shows the
         # same value and is the source of truth from here on (set_title).
@@ -430,7 +434,8 @@ class ScoreData:
         self._rebuild_beats()
         # 5. remake notedatas (now reflects the refreshed metronome track)
         self.note_datas = self.midi_data.make_notedatas()
-        print(f"Tempo changed to {new_bpm} BPM (factor: {factor:.2f}). Score length is now {self.length:.2f} sec.")
+        logger.debug("Tempo changed to %s BPM (factor: %.2f). Score length is now %.2f sec.",
+                     new_bpm, factor, self.length)
 
     def _score_from_notedatas(self):
         """Build a compact music21 score from the current logical instruments.
@@ -548,7 +553,7 @@ class ScoreData:
                 return float(mark.number)
 
         DEFAULT_BPM = 120.0
-        print(f"No tempo markings found in score; defaulting to {DEFAULT_BPM} BPM.")
+        logger.debug("No tempo markings found in score; defaulting to %s BPM.", DEFAULT_BPM)
         return DEFAULT_BPM
     
     def init_beats(self) -> list[tuple[float, bool]]:

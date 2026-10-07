@@ -352,6 +352,19 @@ class Recording:
         )
         return self.config.min_note_length
 
+    def analyze_notes(self, verbose: bool = False):
+        """Run production segmentation, score alignment, and final repeat recovery.
+
+        Pitch detection/smoothing must already be complete. Vibrato is refreshed
+        on the final recovered notes, never on score-provided note boundaries.
+        """
+        self.reset_analysis()
+        self.detect_notes()
+        self.align_score_and_refine(verbose=verbose)
+        self.update_alignment_distances()
+        self.recompute_vibrato(note_aware=True)
+        return self.note_data
+
     def detect_notes(self):
         """Run the fixed frame-dense linear-KernelCPD production detector."""
         # Transition flags are legacy/benchmark-derived data persisted with pitch

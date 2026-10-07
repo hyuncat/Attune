@@ -97,6 +97,10 @@ class Crepe(PitchDetectorBase):
                             and np.isfinite(wall)
                             and (wall > 0)
                         ):
+                            self._frontend_inference_threads = (
+                                int(saved["inference_threads"])
+                                if "inference_threads" in saved else None
+                            )
                             return (*arrays, cpu, wall, True)
             except (OSError, ValueError, KeyError, EOFError):
                 pass
@@ -107,6 +111,11 @@ class Crepe(PitchDetectorBase):
         else:
             audio, sr = load_audio()
         arrays, cpu, wall = self.measure(lambda: self.predict_raw(audio, sr))
+        self._frontend_inference_threads = getattr(self, "_inference_threads", None)
+        thread_metadata = (
+            {"inference_threads": self._frontend_inference_threads}
+            if self._frontend_inference_threads is not None else {}
+        )
         if use_cache:
             path.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(
@@ -123,6 +132,7 @@ class Crepe(PitchDetectorBase):
                     compute_time=cpu,
                     wall_compute_time=wall,
                     compute_clock=self.COMPUTE_CLOCK,
+                    **thread_metadata,
                 )
                 os.replace(temporary, path)
             finally:
@@ -131,7 +141,12 @@ class Crepe(PitchDetectorBase):
 
     def predict_raw(self, audio, sr):
         import crepe
+        import tensorflow as tf
 
+        self._inference_threads = (
+            tf.config.threading.get_intra_op_parallelism_threads()
+            or int(os.environ.get("TF_NUM_INTRAOP_THREADS", "0"))
+        )
         times, freqs, confidence, _ = crepe.predict(
             audio,
             sr,
@@ -178,6 +193,8 @@ class Crepe(PitchDetectorBase):
             metadata={
                 "compute_clock": self.COMPUTE_CLOCK,
                 "wall_pitch_compute_time": wall,
+                **({"inference_threads": self._frontend_inference_threads}
+                   if self._frontend_inference_threads is not None else {}),
             },
         )
         if use_cache:

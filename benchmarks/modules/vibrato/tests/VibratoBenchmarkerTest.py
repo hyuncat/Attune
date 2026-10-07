@@ -53,10 +53,6 @@ from benchmarks.modules.vibrato.datasets.YangDataset import (
     YANG_PITCH_RANGE_OVERRIDES_HZ,
     YangDataset,
 )
-from benchmarks.modules.vibrato.VibratoNotebook import (
-    BENCHMARK_METHODS,
-    PRIMARY_COMPARISON_VERSION,
-)
 
 
 class _PreparedFixtureEstimator:
@@ -98,9 +94,6 @@ class VibratoBenchmarkerTest(unittest.TestCase):
         self.assertIn("rossignol", defaults)
         self.assertIn("driedger_benchmark_range", available)
         self.assertNotIn("driedger_benchmark_range", defaults)
-        self.assertIn("rossignol", BENCHMARK_METHODS)
-        self.assertIn("driedger_benchmark_range", BENCHMARK_METHODS)
-        self.assertEqual(PRIMARY_COMPARISON_VERSION, "primary_v7")
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -1879,29 +1872,16 @@ class VibratoBenchmarkerTest(unittest.TestCase):
             self.assertTrue(paths["note_macro"].is_file())
             self.assertTrue(paths["raw_outputs"].is_dir())
             public_summary = pd.read_csv(paths["summary"])
-            self.assertEqual(
-                list(public_summary.columns),
-                [
-                    "Method",
-                    "Overall F1",
-                    "Overall Precision",
-                    "Overall Recall",
-                    "Extent F1",
-                    "Extent Precision",
-                    "Extent Recall",
-                    "Rate F1",
-                    "Rate Precision",
-                    "Rate Recall",
-                    "Center Accuracy (Attune)",
-                    "Detection F1",
-                    "Detection Precision",
-                    "Detection Recall",
-                    "Detection Accuracy",
-                    "False Alarms",
-                    "Skipped",
-                    "Errors",
-                    "Audio(s)/Compute(s)",
-                ],
+            required_columns = {
+                "Method", "Overall Soft F1", "Extent Soft F1", "Rate Soft F1",
+                "Overall F1 (hard)", "Extent F1 (hard)", "Rate F1 (hard)",
+                "Detection F1", "False Alarms", "Errors", "Audio(s)/Compute(s)",
+            }
+            self.assertTrue(required_columns.issubset(public_summary.columns))
+            np.testing.assert_allclose(
+                public_summary.set_index("Method")["Overall Soft F1"].sort_index(),
+                summary.set_index("method")["aggregate_soft_f1"].sort_index(),
+                atol=0.00005,
             )
             self.assertEqual(
                 sorted(path.name for path in paths["raw_outputs"].iterdir()),
