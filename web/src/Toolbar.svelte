@@ -1,4 +1,5 @@
 <script>
+  import { instrumentName } from "./instruments.js";
   // Ports ui/info/Toolbar.py's structure and order exactly: Upload (menu) ->
   // Settings -> Save -> Clip (menu) -> separator -> Playback/instrument
   // select (menu) -> spacer -> Tempo spinbox -> Metronome label + switch.
@@ -117,7 +118,7 @@
               checked={!playback.mutedChannels.has(ch)}
               onchange={() => playback.toggleChannelMute(ch)}
             />
-            Channel {ch}
+            {instrumentName(session.noteData, ch)}
           </label>
         {/each}
       </div>

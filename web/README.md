@@ -228,3 +228,96 @@ web/
 ├── package.json
 └── vite.config.js
 ```
+
+## Landing page and `/demo/` deployment
+
+The Vite build now has two HTML entry points: `index.html` (landing page) and
+`demo/index.html` (the existing Svelte app). Both development and production
+serve the landing page at `/` and the app at `/demo/`. Shared assets remain at
+`/assets/`, `/icons/`, `/verovio/`, and `/synth/`; deploy the entire `web/dist`
+directory at the domain root. Do not set Vite's base to `/demo/` for this
+multi-page build.
+
+Run `npm run build:deploy`, then `npm run preview` to check the production
+output. `npm run dev` also serves both pages. Both Mac download links point to the v0.1.0 GitHub Release ZIP. To override the destination, set `VITE_MAC_DOWNLOAD_URL` before building.
+
+### Existing AWS Amplify deployment
+
+The repository-root `amplify.yml` installs dependencies in `web`, runs all asset
+sync scripts and the production build, then publishes `web/dist`. It assumes
+Amplify's build starts at the repository root (a standard single-app setup).
+If the existing Amplify app uses a monorepo app root of `web`, keep that setup's
+working directory and use `dist` as its artifact directory instead.
+
+Keep the existing Amplify `VITE_API_URL` environment variable. It is embedded
+at build time, so changes require a frontend rebuild. When unset, development
+uses `http://localhost:8000`; production uses the ECS endpoint recovered from
+the currently deployed public frontend:
+
+`https://at-c19b0e98085b4847b318cac88b97b75d.ecs.us-east-1.on.aws`
+
+On 2026-11-21, this endpoint's `/health` returned HTTP 503. Restore the ECS
+service before expecting score upload and analysis to work. This is separate
+from the frontend route changes.
+
+In Amplify Hosting's **Rewrites and redirects**, remove any unconditional SPA
+rewrite that sends all paths to `/index.html`. This is now a multi-page site.
+Place these rules before any fallback:
+
+| Source | Target | Status |
+| --- | --- | --- |
+| `/demo` | `/demo/` | 301 |
+| `/demo/` | `/demo/index.html` | 200 |
+
+Allow real static files to be served directly. There are no client-side nested
+demo routes requiring a catch-all rewrite. Check `/`, `/demo`, `/demo/`, and
+`/verovio/viewer.html` after deployment, including refreshing `/demo/` directly.
+
+Attach `myattune.org` in Amplify's custom-domain settings and redirect `www` to
+the apex domain. DNS and certificate validation must complete before the custom
+domain works. The Python API's `ATTUNE_ALLOWED_ORIGINS` environment variable is a
+comma-separated list; its default includes the current Amplify origin plus
+`https://myattune.org` and `https://www.myattune.org`. Deploy the backend change
+before testing uploads from the custom domain. CORS origins never include
+`/demo` because URL paths are not part of an origin.
+
+### Bundled example and landing screenshot
+
+The demo automatically opens the C major scale with `flute_scale_bad.m4a`
+and precomputed analysis. These static assets are committed in `web/sample`;
+loading, inspecting, and playing this example does not require the Python API.
+Uploading files, rerunning Analyze, and server realignment still use the API.
+**Reset demo** restores the bundled files and analysis. An upload made while
+the sample is downloading takes priority over the automatic load.
+
+`npm run dev`, `npm run build`, and `npm run build:deploy` copy the sample and
+landing screenshot into Vite's public directory via `sync-site`. To regenerate
+the example after pipeline changes, run from the repository root:
+
+```bash
+at-venv/bin/python web/scripts/export-sample.py
+```
+
+This reads the existing flute recording and cached pitch track, runs note
+analysis and alignment, and exports the fitted score timeline with the results.
+It does not alter the original audio or sidecar. The export strips local paths
+and cache metadata. Website builds do not require Python.
+
+`web/marketing/attune-desktop.png` is the user-supplied desktop app screenshot
+used on the landing page.
+
+### Plot controls
+
+The pitch plot and note-inspection charts resize with their panels. The pitch
+plot includes note labels and time gridlines: scroll over the plot to zoom both axes, over the left pitch labels to zoom
+pitch only, or over the bottom time labels to zoom time only. Drag to pan. Double-click or use Reset view to restore the
+full take. Clicking the plot seeks; clicking a note also opens its details.
+The transport slider supports dragging and keyboard arrows; playback pauses
+while scrubbing and resumes on release if it was playing beforehand.
+Instrument menus use the score's MIDI program names (the bundled web example
+uses Flute, program 73, and the title C Major Scale); the metronome is excluded from
+the analysis instrument selector.
+
+Volume and Vibrato support the same axis-aware wheel zoom and drag-to-pan
+controls as the pitch plot. Double-click a chart to reset; selecting a new note
+or changing the vibrato metric also restores the default view.

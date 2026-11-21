@@ -15,9 +15,12 @@
     "sync-verovio": "node scripts/sync-verovio.mjs",
     "sync-icons": "node scripts/sync-icons.mjs",
     "sync-synth": "node scripts/sync-synth.mjs",
-    "build:deploy": "npm run sync-verovio && npm run sync-icons && npm run sync-synth && vite build",
+    "build:deploy": "npm run sync-verovio && npm run sync-icons && npm run sync-synth && npm run sync-site && vite build",
     "backend": "cd .. && venv/bin/uvicorn web.api.analyze_api:app --app-dir . --port 8000",
-    "dev:all": "concurrently -n backend,frontend -c blue,green \"npm run backend\" \"npm run dev\""
+    "dev:all": "concurrently -n backend,frontend -c blue,green \"npm run backend\" \"npm run dev\"",
+    "sync-site": "node scripts/sync-site.mjs",
+    "predev": "npm run sync-site",
+    "prebuild": "npm run sync-site"
   },
   "dependencies": {
     "js-synthesizer": "^1.13.0"

@@ -73,12 +73,13 @@
   // visible geometry (see attemptLoad below) - App.svelte uses it to size the
   // score pane to the rendered line (mirrors perform.py's
   // _fit_score_viewer_height).
+  let loadVersion = 0;
   export function loadScore(xmlBytes, onRendered) {
     if (!ready) {
       console.warn("[ScoreViewer] loadScore called before ready, ignoring.");
       return;
     }
-    attemptLoad(bytesToBase64(xmlBytes), 0, onRendered);
+    attemptLoad(bytesToBase64(xmlBytes), 0, onRendered, ++loadVersion);
   }
 
   // Verovio's toolkit can report itself constructed before its engraver is
@@ -92,13 +93,17 @@
   // fired at all (a freshly-created/just-shown iframe's own timers can stall
   // independently of the host page's), while the host's timers fire
   // reliably.
-  function attemptLoad(b64, attempt, onRendered) {
+  function attemptLoad(b64, attempt, onRendered, version) {
+    if (version !== loadVersion) return;
     callIframe("loadScore", b64);
     const height = callIframe("getContentHeight");
-    if (height > 0) {
+    // The empty notation container has padding, so a positive height alone
+    // does not mean the WASM toolkit has rendered the preloaded score.
+    const hasNotes = iframeEl.contentDocument?.querySelector("#notation svg .note");
+    if (height > 0 && hasNotes) {
       onRendered?.(height);
-    } else if (attempt < 5) {
-      setTimeout(() => attemptLoad(b64, attempt + 1, onRendered), 60);
+    } else if (attempt < 100) {
+      setTimeout(() => attemptLoad(b64, attempt + 1, onRendered, version), 60);
     } else {
       console.warn("[ScoreViewer] score render kept coming back empty after retries");
     }

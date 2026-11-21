@@ -30,10 +30,24 @@
     else playback.play();
   }
 
+  let scrubbing = false;
+  let resumeAfterScrub = false;
+  function startScrub() {
+    scrubbing = true;
+    resumeAfterScrub = playback.isPlaying;
+    if (resumeAfterScrub) playback.pause();
+  }
+  function finishScrub() {
+    if (!scrubbing) return;
+    scrubbing = false;
+    if (resumeAfterScrub) playback.play();
+  }
   function handleSeek(e) {
     playback.seek(parseFloat(e.target.value));
   }
 </script>
+
+<svelte:window onpointerup={finishScrub} onpointercancel={finishScrub} />
 
 <div class="transport-bar">
   <button
@@ -63,7 +77,9 @@
     step="0.05"
     value={playback.currentTime}
     oninput={handleSeek}
-    disabled={!canPlay}
+    onpointerdown={startScrub}
+    aria-label="Playback position"
+    disabled={!session.noteData || playback.duration <= 0}
   />
   <button class="analyze-btn" onclick={() => session.runAnalyze()} disabled={!canAnalyze}>
     {session.analyzeStatus === "loading" ? "Analyzing..." : "Analyze"}
@@ -151,17 +167,23 @@
     flex: 1;
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--slider-track-unfilled);
+    height: 26px;
+    min-width: 40px;
+    cursor: pointer;
+    touch-action: none;
+    background: transparent;
   }
   .transport-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 16px;
-    height: 8px;
+    height: 16px;
+    margin-top: -6px;
     border-radius: 8px;
     background: var(--accent);
   }
+  .transport-slider::-webkit-slider-runnable-track { height: 4px; background: var(--slider-track-unfilled); border-radius: 2px; }
+  .transport-slider::-moz-range-track { height: 4px; background: var(--slider-track-unfilled); }
+  .transport-slider::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--accent); }
   .transport-slider:disabled {
     opacity: 0.5;
   }

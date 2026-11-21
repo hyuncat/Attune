@@ -1,4 +1,5 @@
 <script>
+  import { instrumentName } from "./instruments.js";
   // Ports ui/info/SettingsWidget.py's row structure exactly: Instrument,
   // Range, Tuning, Transpose, each a label + control(s) + checkmark Apply
   // button. Instrument, Range, and Tuning are wired to something real
@@ -58,8 +59,8 @@
       disabled={!session.noteData}
     >
       {#if session.noteData}
-        {#each session.noteData.instruments as ch}
-          <option value={ch}>Channel {ch}</option>
+        {#each session.noteData.instruments.filter(ch => ch !== session.noteData.metronome_channel) as ch}
+          <option value={ch}>{instrumentName(session.noteData, ch)}</option>
         {/each}
       {/if}
     </select>

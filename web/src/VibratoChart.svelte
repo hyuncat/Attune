@@ -1,4 +1,6 @@
 <script>
+  import { createChartViewport } from "./chartViewport.svelte.js";
+  import ChartAxes from "./ChartAxes.svelte";
   // Ports ui/note/VibratoWidget.py: vibrato speed/width over the note under
   // the cursor. Width is the full peak-to-peak excursion in cents.
   // the y value; dot color encodes the OTHER metric, ramped against the
@@ -13,8 +15,10 @@
 
   let { note, vibratoPoints, pitchFrames, currentTime } = $props();
 
-  const WIDTH = 380;
-  const HEIGHT = 140;
+  let panelWidth = $state(280);
+  let panelHeight = $state(240);
+  const WIDTH = $derived(Math.max(120, panelWidth - 60));
+  const HEIGHT = $derived(Math.max(80, panelHeight - 84));
   const Y_PADDING = 0.15;
   const DEFAULT_RANGES = { Width: [0, 200], Speed: [0, 10] };
 
@@ -47,13 +51,18 @@
     return contourToBand(pitchContour(pitchFrames, window[0], window[1]), yDomain[0], yDomain[1]);
   });
 
+
+  const clipId = $props.id();
+  const viewport = createChartViewport(() => ({ x: window ?? [0, 1], y: yDomain, width: WIDTH, height: HEIGHT }));
+  $effect(() => { note?.startTime; note?.endTime; pitchFrames; metric; viewport.reset(); });
+
   function xPos(t) {
     if (!window) return 0;
-    const span = window[1] - window[0] || 1;
-    return ((t - window[0]) / span) * WIDTH;
+    const [x0, x1] = viewport.x;
+    return ((t - x0) / (x1 - x0 || 1)) * WIDTH;
   }
   function yPos(v) {
-    const [y0, y1] = yDomain;
+    const [y0, y1] = viewport.y;
     const span = y1 - y0 || 1;
     return HEIGHT - ((v - y0) / span) * HEIGHT;
   }
@@ -92,7 +101,7 @@
   const GRADIENT_LABELS = { Width: ["slow", "fast"], Speed: ["narrow", "wide"] };
 </script>
 
-<div class="vibrato-wrap">
+<div class="vibrato-wrap" bind:clientWidth={panelWidth} bind:clientHeight={panelHeight}>
   <div class="metric-row">
     <select bind:value={metric}>
       <option value="Width">Width</option>
@@ -107,7 +116,12 @@
   {#if !note}
     <div class="chart-blank">No note under the cursor</div>
   {:else}
-    <svg viewBox="0 0 {WIDTH} {HEIGHT}" class="chart" role="img" aria-label="Vibrato over the current note">
+    <svg viewBox="0 0 {WIDTH + 58} {HEIGHT + 50}" class="chart" role="img" aria-label="Vibrato over the current note" onwheel={viewport.wheel} onpointerdown={viewport.down} onpointermove={viewport.move} onpointerup={viewport.up} onpointercancel={viewport.up} onlostpointercapture={viewport.up} ondblclick={viewport.reset}>
+      <title>Scroll over the plot to zoom both axes; scroll over labels to zoom one axis. Drag to pan. Double-click to reset.</title>
+      <defs><clipPath id={clipId}><rect width={WIDTH} height={HEIGHT} /></clipPath></defs>
+      <g transform="translate(46,20)">
+      <ChartAxes width={WIDTH} height={HEIGHT} xRange={viewport.x} yRange={viewport.y} label={widthMode ? "cents" : "Hz"} />
+      <g clip-path={`url(#${clipId})`}>
       {#if contourPath}
         <path d={contourPath} class="contour-line" />
       {/if}
@@ -120,14 +134,17 @@
       {#if timelineX != null}
         <line x1={timelineX} y1="0" x2={timelineX} y2={HEIGHT} class="timeline" />
       {/if}
-      <text x="4" y="12" class="axis-label">{widthMode ? "cents" : "Hz"}</text>
-      <text x={WIDTH - 4} y={HEIGHT - 4} class="axis-label" text-anchor="end">Time (s)</text>
+
+
+      </g></g>
     </svg>
   {/if}
 </div>
 
 <style>
   .vibrato-wrap {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -161,15 +178,23 @@
     background: linear-gradient(to right, rgb(68, 1, 84), rgb(59, 82, 139), rgb(33, 145, 140), rgb(94, 201, 98), rgb(253, 231, 37));
   }
   .chart {
+    display: block;
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
     width: 100%;
-    height: 116px;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     background: rgb(20, 20, 25);
     border: 1px solid var(--border);
     border-radius: 4px;
   }
   .chart-blank {
     width: 100%;
-    height: 116px;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -199,6 +224,6 @@
   }
   .axis-label {
     fill: rgb(230, 230, 235);
-    font-size: 9px;
+    font-size: 11px;
   }
 </style>

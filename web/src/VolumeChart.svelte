@@ -1,4 +1,6 @@
 <script>
+  import { createChartViewport } from "./chartViewport.svelte.js";
+  import ChartAxes from "./ChartAxes.svelte";
   // Ports ui/note/VolumeWidget.py: the cursor-note's level relative to the take's average,
   // with the pitch contour underlaid for context, windowed to the note's own
   // [startTime, endTime] span. NotePanel.svelte owns picking which note/tab
@@ -7,8 +9,10 @@
 
   let { note, pitchFrames, volumeStats, currentTime } = $props();
 
-  const WIDTH = 380;
-  const HEIGHT = 140;
+  let panelWidth = $state(280);
+  let panelHeight = $state(240);
+  const WIDTH = $derived(Math.max(120, panelWidth - 60));
+  const HEIGHT = $derived(Math.max(80, panelHeight - 52));
   const Y_PADDING = 0.15;
 
   // One reference and scale for all notes in the take; leave breathing room
@@ -34,13 +38,18 @@
       .map((point) => ({ ...point, db: point.db - ref }));
   });
 
+
+  const clipId = $props.id();
+  const viewport = createChartViewport(() => ({ x: window ?? [0, 1], y: yDomain, width: WIDTH, height: HEIGHT }));
+  $effect(() => { note?.startTime; note?.endTime; pitchFrames; volumeStats; viewport.reset(); });
+
   function xPos(t) {
     if (!window) return 0;
-    const span = window[1] - window[0] || 1;
-    return ((t - window[0]) / span) * WIDTH;
+    const [x0, x1] = viewport.x;
+    return ((t - x0) / (x1 - x0 || 1)) * WIDTH;
   }
   function yPos(v) {
-    const [y0, y1] = yDomain;
+    const [y0, y1] = viewport.y;
     const span = y1 - y0 || 1;
     return HEIGHT - ((v - y0) / span) * HEIGHT;
   }
@@ -68,20 +77,23 @@
   let timelineX = $derived(window ? xPos(Math.min(Math.max(currentTime, window[0]), window[1])) : null);
 </script>
 
-<div class="chart-wrap">
+<div class="chart-wrap" bind:clientWidth={panelWidth} bind:clientHeight={panelHeight}>
   {#if !note}
     <div class="chart-blank">No note under the cursor</div>
   {:else}
-    <svg viewBox="0 0 {WIDTH} {HEIGHT}" class="chart" role="img" aria-label="Volume over the current note">
+    <svg viewBox="0 0 {WIDTH + 58} {HEIGHT + 50}" class="chart" role="img" aria-label="Volume over the current note" onwheel={viewport.wheel} onpointerdown={viewport.down} onpointermove={viewport.move} onpointerup={viewport.up} onpointercancel={viewport.up} onlostpointercapture={viewport.up} ondblclick={viewport.reset}>
+      <title>Scroll over the plot to zoom both axes; scroll over labels to zoom one axis. Drag to pan. Double-click to reset.</title>
+      <defs><clipPath id={clipId}><rect width={WIDTH} height={HEIGHT} /></clipPath></defs>
+      <g transform="translate(46,20)">
+      <ChartAxes width={WIDTH} height={HEIGHT} xRange={viewport.x} yRange={viewport.y} label="Relative level (dB)" />
+      <g clip-path={`url(#${clipId})`}>
       {#if contourPath}
         <path d={contourPath} class="contour-line" />
       {/if}
       {#if volumeStats}
         <line x1="0" y1={yPos(0)} x2={WIDTH} y2={yPos(0)} class="average-line" />
         <text x={WIDTH - 4} y={yPos(0) - 4} class="axis-label" text-anchor="end">0 · Average</text>
-        {#each [yDomain[0], yDomain[1]] as level}
-          <text x="4" y={level < 0 ? HEIGHT - 5 : 25} class="axis-label">{level > 0 ? "+" : ""}{level.toFixed(0)}</text>
-        {/each}
+
       {/if}
       {#if curvePath}
         <path d={curvePath} class="volume-line" />
@@ -89,8 +101,9 @@
       {#if timelineX != null}
         <line x1={timelineX} y1="0" x2={timelineX} y2={HEIGHT} class="timeline" />
       {/if}
-      <text x="4" y="12" class="axis-label">Relative level (dB)</text>
-      <text x={WIDTH - 4} y={HEIGHT - 4} class="axis-label" text-anchor="end">Time (s)</text>
+
+
+      </g></g>
     </svg>
   {/if}
 </div>
@@ -98,9 +111,14 @@
 <style>
   .chart-wrap {
     width: 100%;
-    height: 140px;
+    flex: 1;
+    min-height: 0;
   }
   .chart {
+    display: block;
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
     width: 100%;
     height: 100%;
     background: rgb(20, 20, 25);
@@ -143,6 +161,6 @@
   }
   .axis-label {
     fill: rgb(230, 230, 235);
-    font-size: 9px;
+    font-size: 11px;
   }
 </style>

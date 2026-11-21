@@ -142,14 +142,16 @@
     // _fit_score_viewer_height.
     scoreViewer.loadScore(base64ToBytes(b64), (height) => {
       scoreFitHeight = height;
+      const veroOnsets = scoreViewer.getMeasureTimemap();
+      const appOnsets = session.noteData?.measure_onsets_og;
+      if (veroOnsets?.length && appOnsets?.length) {
+        timeMap.setAnchors(appOnsets, veroOnsets);
+      } else {
+        timeMap.clear();
+      }
+      pushAnnotations();
+      pushPlaybackTime();
     });
-    const veroOnsets = scoreViewer.getMeasureTimemap();
-    const appOnsets = session.noteData?.measure_onsets_og;
-    if (veroOnsets?.length && appOnsets?.length) {
-      timeMap.setAnchors(appOnsets, veroOnsets);
-    } else {
-      timeMap.clear();
-    }
   }
 
   // ScoreViewer's onReady catch-up push - mirrors perform.py's
@@ -173,6 +175,7 @@
   onMount(() => {
     const offTick = playback.onTick(pushPlaybackTime);
     const offNoteData = session.onNoteDataLoaded((noteData) => pushScoreLoad(noteData?.musicxml_b64));
+    session.loadSample();
     return () => {
       offTick();
       offNoteData();
@@ -181,6 +184,8 @@
 </script>
 
 <div class="app-shell">
+  {#if session.sampleError}<div role="alert">{session.sampleError} Use Upload or Reset demo to try again.</div>{/if}
+  <div class="demo-header"><a href="/">Attune</a><span>Web demo · Upload your own files or explore the example</span><button onclick={() => session.loadSample()} disabled={session.sampleLoading || session.analyzeStatus === "loading"}>{session.sampleLoading ? "Loading example…" : "Reset demo"}</button><a href="https://github.com/hyuncat/Attune">Source on GitHub</a></div>
   <Toolbar />
 
   <div class="main-splitter">
@@ -190,7 +195,7 @@
     </aside>
 
     <section class="center-column">
-      <div class="score-pane" style={`flex: 0 1 ${(scoreFitHeight ?? 200) + legendHeight + 4}px; min-height: 0;`}>
+      <div class="score-pane" style={`flex: 0 1 ${(scoreFitHeight ?? 200) + legendHeight + 4}px; min-height: 180px; max-height: 45%;`}>
         <div class="score-viewer-wrap">
           <ScoreViewer bind:this={scoreViewer} {onNoteClicked} {onAnnotationClicked} onReady={onScoreViewerReady} />
         </div>
@@ -261,6 +266,13 @@
 </div>
 
 <style>
+  .demo-header { display: flex; align-items: center; gap: 20px; padding: 10px 16px; background: #172535; color: #dfe9f0; font-size: 13px; flex-shrink: 0; }
+  .demo-header button { background: #263d50; color: #edf4f8; border: 1px solid #6b879c; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+  .demo-header button:hover:not(:disabled) { background: #36546c; }
+  .demo-header button:disabled { background: #253340; color: #b4c0ca; cursor: wait; }
+  .demo-header a { color: #a6dbc9; text-decoration: none; }
+  .demo-header span { flex: 1; }
+  @media (max-width: 650px) { .demo-header span { font-size: 11px; } .demo-header { gap: 10px; } }
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -358,7 +370,6 @@
        pinning them to the top - .overlay-placeholder itself isn't flex:1
        anymore (see its own comment), so without this it defaults to
        flex-start and sits right under the border instead of centered. */
-    justify-content: center;
     padding: 8px;
     overflow: auto;
     border-top: 4px solid var(--border);
@@ -400,8 +411,8 @@
     overflow: hidden;
   }
   .note-panel-pane {
-    height: 300px;
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 220px;
     border-top: 4px solid var(--border);
     overflow: hidden;
   }

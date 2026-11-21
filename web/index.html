@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Attune</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
-</html>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Attune is a free research tool for comparing musical recordings with scores. Explore pitch, timing, volume, and vibrato." /><meta name="theme-color" content="#172535" /><title>Attune: A feedback-centered system to improve music performance</title><link rel="stylesheet" href="/src/landing.css" /></head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="wrap"><a class="wordmark" href="/" aria-label="Attune home"><span class="mark" aria-hidden="true">♮</span>attune</a><nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="https://github.com/hyuncat/Attune">GitHub</a><a class="nav-demo" href="/demo/">Try the demo</a></nav></header>
+<main id="main">
+<section class="hero wrap"><div><h1>A feedback-centered system to improve music performance</h1><p class="intro">Record or upload yourself playing an instrument in the app, and assess your pitch and timing accuracy, musical dynamics, timbre, and vibrato.</p><div class="actions"><a class="button primary" href="/demo/">Try the web demo</a><a class="desktop-link" data-mac-download href="https://github.com/hyuncat/Attune/releases/download/v0.1.0/Attune-macOS-arm64.zip">Download for Mac (Apple silicon)</a></div><p class="footnote">The demo opens with a C major scale and sample flute recording.</p></div>
+<figure class="app-preview"><a href="/demo/" aria-label="Open the C major scale demo"><img src="/marketing/attune-desktop.png" alt="Attune desktop app showing a C major scale, a recorded pitch track, and highlighted pitch differences." width="1193" height="1040" /></a><figcaption>Pitch feedback for a C major scale in the Attune desktop app.</figcaption></figure></section>
+<section class="workflow wrap" id="how-it-works"><p class="eyebrow">How it works</p><h2>Compare your playing with the score</h2><div class="steps"><article><span class="step-label">INPUT</span><h3>Load a score and recording</h3><p>Upload a music score (as MIDI, MusicXML, or MEI), then record yourself playing the piece or upload an existing recording.</p></article><article><span class="step-label">ANALYSIS</span><h3>Inspect pitch and timing</h3><p>Attune compares the notes you played to the score, with adjustable levels of pitch and timing strictness.</p></article><article><span class="step-label">REVIEW</span><h3>Listen and examine notes</h3><p>Play back your take, inspect individual notes for any intonation or rhythm mistakes, and review your dynamics, vibrato, and timbre.</p></article></div></section>
+<section class="ways wrap"><p class="eyebrow">Use Attune</p><h2>Web and desktop versions</h2><div class="cards"><article class="demo-card"><span class="tag available">Available now</span><h3>Web demo</h3><p>Explore the preloaded C major scale and flute recording, or upload your own files. A desktop browser is recommended.</p><a class="button primary" href="/demo/">Open the web demo</a><p class="fine-print">Uploaded files are sent to the analysis server for processing. Live recording and Practice mode are desktop features.</p></article><article id="desktop"><h3>Desktop app</h3><p>Record and review performances, or use Practice mode for real-time pitch feedback.</p><a class="button primary" data-mac-download href="https://github.com/hyuncat/Attune/releases/download/v0.1.0/Attune-macOS-arm64.zip">Download for Mac (Apple silicon)</a><p class="fine-print">Unzip the download and move Attune to Applications.</p></article></div></section>
+<section class="source wrap"><div><p class="eyebrow">Source code</p><h2>Code and development</h2><p>The source code and instructions for running Attune are available on GitHub.</p></div><a class="button secondary" href="https://github.com/hyuncat/Attune">View source on GitHub</a></section>
+</main><footer class="wrap"><a class="wordmark" href="/">attune</a><p>A free research tool for music performance analysis</p><a href="https://github.com/hyuncat/Attune">GitHub</a></footer><script type="module" src="/src/desktop-download.js"></script></body></html>

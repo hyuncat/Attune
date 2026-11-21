@@ -13,6 +13,7 @@ Run (from the Attune project root):
     uvicorn web.api.analyze_api:app --reload --app-dir .
 """
 import base64
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -48,7 +49,10 @@ app = FastAPI(title="Attune Analyze API")
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
-    allow_origins=["https://main.dz0hpijjgdav5.amplifyapp.com"],
+    allow_origins=[origin.strip() for origin in os.environ.get(
+        "ATTUNE_ALLOWED_ORIGINS",
+        "https://main.dz0hpijjgdav5.amplifyapp.com,https://myattune.org,https://www.myattune.org",
+    ).split(",") if origin.strip()],
     #Post is the only relevant method because frontend will only send Post to the API
     allow_methods=["POST"],
     allow_headers=["*"],

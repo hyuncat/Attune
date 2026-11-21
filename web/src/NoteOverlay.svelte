@@ -65,7 +65,10 @@
   function alignHue(distance, tolerance) {
     const greenThresh = Math.max(tolerance, 0);
     const maxDist = Math.max(ALIGN_MAX_MULT * greenThresh, greenThresh + 0.05);
-    const d = Math.min(Math.abs(distance), maxDist);
+    // JsonHandler encodes infinite mismatch distances as "inf". Passing
+    // that string to Math.abs produced NaN and an invalid SVG fill (black).
+    const numericDistance = Number(distance);
+    const d = Number.isFinite(numericDistance) ? Math.min(Math.abs(numericDistance), maxDist) : maxDist;
     if (d <= greenThresh) return 120;
     const frac = Math.max(0, Math.min(1, (d - greenThresh) / (maxDist - greenThresh)));
     return 120 * (1 - frac);
@@ -153,16 +156,88 @@
     ]
   );
 
-  const WIDTH = 800;
-  const HEIGHT = 280;
+  let panelWidth = $state(800);
+  let panelHeight = $state(280);
+  const WIDTH = $derived(Math.max(100, panelWidth - 58));
+  const HEIGHT = $derived(Math.max(80, panelHeight - 40));
+  const plotId = $props.id();
+  let timeView = $state(null);
+  let pitchView = $state(null);
   const BAR_HEIGHT = 6;
   const PITCH_DOT_RADIUS = 2.5;
   const PITCH_PADDING = 3;
 
-  let minTime = $derived(allTimes.length ? Math.min(...allTimes) : 0);
-  let maxTime = $derived(allTimes.length ? Math.max(...allTimes) : 1);
-  let minPitch = $derived((allPitches.length ? Math.min(...allPitches) : 60) - PITCH_PADDING);
-  let maxPitch = $derived((allPitches.length ? Math.max(...allPitches) : 72) + PITCH_PADDING);
+  let fullMinTime = $derived(allTimes.length ? Math.min(...allTimes) : 0);
+  let fullMaxTime = $derived(allTimes.length ? Math.max(...allTimes) : 1);
+  let fullMinPitch = $derived((allPitches.length ? Math.min(...allPitches) : 60) - PITCH_PADDING);
+  let fullMaxPitch = $derived((allPitches.length ? Math.max(...allPitches) : 72) + PITCH_PADDING);
+
+  let minTime = $derived(timeView?.[0] ?? fullMinTime);
+  let maxTime = $derived(timeView?.[1] ?? fullMaxTime);
+  let minPitch = $derived(pitchView?.[0] ?? fullMinPitch);
+  let maxPitch = $derived(pitchView?.[1] ?? fullMaxPitch);
+  $effect(() => { scoreNotes; userNotes; timeView = null; pitchView = null; });
+
+  function resetView() { timeView = null; pitchView = null; }
+  function zoom(factor, fraction = 0.5, pitch = false) {
+    const low = pitch ? minPitch : minTime;
+    const high = pitch ? maxPitch : maxTime;
+    const span = Math.max(pitch ? 2 : 0.1, Math.min(pitch ? 127 : Math.max(1, fullMaxTime - fullMinTime) * 4, (high - low) * factor));
+    const anchor = low + fraction * (high - low);
+    const range = [anchor - fraction * span, anchor + (1 - fraction) * span];
+    if (pitch) pitchView = range; else timeView = range;
+  }
+  function wheelZoom(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    // Convert to SVG coordinates so hit regions follow the rendered axes.
+    const x = (event.clientX - rect.left) * panelWidth / rect.width - 50;
+    const y = (event.clientY - rect.top) * panelHeight / rect.height - 8;
+    const overTime = x >= 0 && x <= WIDTH;
+    const overPitch = y >= 0 && y <= HEIGHT;
+    const inPlot = overTime && overPitch;
+    const onPitchAxis = x < 0 && overPitch;
+    const onTimeAxis = y > HEIGHT && overTime;
+    if (!inPlot && !onPitchAxis && !onTimeAxis) return;
+    event.preventDefault();
+    const timeFraction = Math.max(0, Math.min(1, x / WIDTH));
+    const pitchFraction = Math.max(0, Math.min(1, 1 - y / HEIGHT));
+    const factor = Math.exp(Math.max(-1, Math.min(1, event.deltaY * 0.002)));
+    if (inPlot || onTimeAxis) zoom(factor, timeFraction);
+    if (inPlot || onPitchAxis) zoom(factor, pitchFraction, true);
+  }
+  let drag = null;
+  let dragged = false;
+  function startPan(event) {
+    if (event.button !== 0) return;
+    dragged = false;
+    drag = { x: event.clientX, y: event.clientY, time: [minTime, maxTime], pitch: [minPitch, maxPitch] };
+  }
+  function movePan(event) {
+    if (!drag) return;
+    const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+    if (!dragged && Math.hypot(dx, dy) < 4) return;
+    dragged = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    timeView = drag.time.map(t => t - dx / WIDTH * (drag.time[1] - drag.time[0]));
+    pitchView = drag.pitch.map(p => p + dy / HEIGHT * (drag.pitch[1] - drag.pitch[0]));
+    closePopup();
+  }
+  function endPan() { drag = null; }
+  function plotClick(event) {
+    closePopup();
+    if (dragged) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const fraction = (event.clientX - rect.left - 50) / WIDTH;
+    if (fraction >= 0 && fraction <= 1) onSeek?.(Math.max(0, minTime + fraction * (maxTime - minTime)));
+  }
+  let timeTicks = $derived.by(() => {
+    const raw = (maxTime - minTime) / Math.max(2, WIDTH / 85);
+    const magnitude = 10 ** Math.floor(Math.log10(raw || 1));
+    const step = [1, 2, 5, 10].find(v => v * magnitude >= raw) * magnitude;
+    const ticks = [];
+    for (let t = Math.ceil(minTime / step) * step; t <= maxTime; t += step) ticks.push(t);
+    return ticks;
+  });
 
   function xPos(t) {
     const span = maxTime - minTime || 1;
@@ -304,6 +379,7 @@
   }
 
   function handleNoteClick(ev, i) {
+    if (dragged) return;
     ev.stopPropagation();
     const wrapRect = ev.currentTarget.closest(".overlay-wrap").getBoundingClientRect();
     selectNote(i, { x: ev.clientX - wrapRect.left, y: ev.clientY - wrapRect.top });
@@ -344,12 +420,21 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="overlay-wrap">
-<svg viewBox="0 0 {WIDTH} {HEIGHT}" class="overlay" role="img" aria-label="Pitch overlay" onclick={closePopup}>
+<div class="overlay-wrap" bind:clientWidth={panelWidth} bind:clientHeight={panelHeight}>
+<svg viewBox="0 0 {panelWidth} {panelHeight}" class="overlay" role="img" aria-label="Pitch overlay: scroll over plot to zoom both axes, over pitch or time labels to zoom that axis, drag to pan, double-click to reset" onclick={plotClick} onwheel={wheelZoom} onpointerdown={startPan} onpointermove={movePan} onpointerup={endPan} onpointercancel={endPan} onlostpointercapture={endPan} ondblclick={resetView}>
+  <defs><clipPath id={plotId}><rect width={WIDTH} height={HEIGHT} /></clipPath></defs>
+  <g transform="translate(50,8)">
+  <g clip-path={`url(#${plotId})`}>
   {#each midiBands as band}
     <rect x="0" y={band.y - semitoneHeight / 2} width={WIDTH} height={semitoneHeight} fill={band.color} />
   {/each}
 
+  {#each timeTicks as t}
+    <line x1={xPos(t)} x2={xPos(t)} y1="0" y2={HEIGHT} class="grid-line" />
+  {/each}
+  {#each midiBands.filter(b => b.midi % 12 === 0) as band}
+    <line x1="0" x2={WIDTH} y1={yPos(band.midi)} y2={yPos(band.midi)} class="grid-line" />
+  {/each}
   {#each matchLines as line}
     <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} class="match-line" />
   {/each}
@@ -408,6 +493,15 @@
       onmouseleave={handleNoteLeave}
     />
   {/each}
+  </g>
+  {#each midiBands.filter(b => b.midi >= minPitch && b.midi <= maxPitch && b.midi % (semitoneHeight > 22 ? 1 : 12) === 0) as band}
+    <text x="-8" y={yPos(band.midi) + 4} text-anchor="end" class="axis-label">{noteName(band.midi)}</text>
+  {/each}
+  {#each timeTicks as t}
+    <text x={xPos(t)} y={HEIGHT + 20} text-anchor="middle" class="axis-label">{Number(t.toFixed(2))}</text>
+  {/each}
+  <text x={WIDTH} y={HEIGHT + 31} text-anchor="end" class="axis-label">Time (s)</text>
+  </g>
 </svg>
 
 {#if noteInfo}
@@ -432,6 +526,7 @@
 {/if}
 </div>
 
+<div class="plot-tools"><span>Scroll over plot to zoom both axes · Over labels to zoom one axis · Drag to pan</span><button onclick={() => zoom(0.7)} aria-label="Zoom in">+</button><button onclick={() => zoom(1 / 0.7)} aria-label="Zoom out">−</button><button onclick={resetView}>Reset view</button></div>
 <div class="legend-row">
   <p class="legend">
     {#if colorMode === "volume"}
@@ -454,9 +549,18 @@
 </div>
 
 <style>
+  .axis-label { fill: #c4c9d0; font-size: 12px; }
+  .grid-line { stroke: #adb6c2; stroke-opacity: 0.16; }
+  .plot-tools { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-top: 5px; font-size: 11px; color: var(--text-secondary); }
+  .plot-tools span { flex: 1; }
+  .plot-tools button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+
   .overlay {
     width: 100%;
-    height: 280px;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    user-select: none;
     background: rgb(20, 20, 25);
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -484,15 +588,17 @@
     stroke: rgb(80, 255, 80);
   }
   .user-note {
-    opacity: 0.95;
+    opacity: 0.5;
   }
   .user-note.hovered {
-    opacity: 1;
+    opacity: 0.5;
   }
   .user-note-hit {
     cursor: pointer;
   }
   .overlay-wrap {
+    flex: 1;
+    min-height: 100px;
     position: relative;
   }
   /* NotePopupGH, ported: same dark rounded box, same row styling. */

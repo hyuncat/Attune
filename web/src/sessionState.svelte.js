@@ -14,7 +14,7 @@ import { buildAnnotations } from "./annotations.js";
 import { playback } from "./playback.svelte.js";
 import { makeNotifier } from "./notifier.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : "https://at-c19b0e98085b4847b318cac88b97b75d.ecs.us-east-1.on.aws");
 
 function createSessionState() {
   let scoreFile = $state(null);
@@ -276,7 +276,53 @@ function createSessionState() {
     selectedMistakeKey = null;
   }
 
+  let selectionVersion = 0;
+  let sampleLoading = $state(false);
+  let sampleError = $state("");
+
+  async function loadSample() {
+    const version = ++selectionVersion;
+    sampleLoading = true;
+    sampleError = "";
+    try {
+      const responses = await Promise.all(["example.json", "major.mxl", "flute_scale_bad.m4a"].map(
+        name => fetch(`/sample/${name}`).then(response => {
+          if (!response.ok) throw new Error("Could not load the bundled example.");
+          return response;
+        })
+      ));
+      const [example, score, audio] = await Promise.all([responses[0].json(), responses[1].blob(), responses[2].blob()]);
+      // A manual upload made while the example was downloading takes priority.
+      if (version !== selectionVersion) return;
+      playback.pause();
+      _resetAnalysis();
+      selectedInstrument = null;
+      scoreFile = new File([score], "major.mxl");
+      audioFile = new File([audio], "flute_scale_bad.m4a", { type: "audio/mp4" });
+      noteData = example.score;
+      noteDataError = "";
+      analysisResult = example.analysis;
+      pitchTolerance = 0.5;
+      timingTolerance = 0.25;
+      tuning = 440;
+      rangeError = "";
+      applyDefaultRangeForActiveInstrument();
+      playback.loadNoteData(noteData);
+      playback.loadUserAudio(audioFile);
+      playback.seek(0);
+      notifyNoteDataLoaded(noteData);
+      statusMessage = "C Major Scale · flute_scale_bad · precomputed analysis";
+    } catch (error) {
+      if (version === selectionVersion) sampleError = error instanceof Error ? error.message : String(error);
+    } finally {
+      if (version === selectionVersion) sampleLoading = false;
+    }
+  }
+
   async function pickScore(file) {
+    selectionVersion++;
+    sampleLoading = false;
+    sampleError = "";
     scoreFile = file;
     noteDataError = "";
     selectedInstrument = null;
@@ -299,6 +345,9 @@ function createSessionState() {
   }
 
   function pickAudio(file) {
+    selectionVersion++;
+    sampleLoading = false;
+    sampleError = "";
     audioFile = file;
     statusMessage = file ? `Recording set: ${file.name}` : "";
     _resetAnalysis();
@@ -423,6 +472,9 @@ function createSessionState() {
     get selectedMistake() { return selectedMistake; },
     get selectedMistakeKey() { return selectedMistakeKey; },
 
+    get sampleLoading() { return sampleLoading; },
+    get sampleError() { return sampleError; },
+    loadSample,
     pickScore,
     pickAudio,
     runAnalyze,

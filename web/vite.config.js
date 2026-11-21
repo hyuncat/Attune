@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 
 // Respect an externally-assigned port (e.g. the dev preview harness sets
@@ -8,6 +9,14 @@ const port = Number(process.env.PORT) || 5173;
 
 export default defineConfig({
   plugins: [svelte()],
+  build: {
+    rollupOptions: {
+      input: {
+        landing: fileURLToPath(new URL("./index.html", import.meta.url)),
+        demo: fileURLToPath(new URL("./demo/index.html", import.meta.url)),
+      },
+    },
+  },
   // vendored external assets (Verovio now, the MuseScore soundfont later) are
   // synced into web-resources/ via `npm run sync-verovio` rather than
   // committed twice; see web/scripts/sync-verovio.mjs.
