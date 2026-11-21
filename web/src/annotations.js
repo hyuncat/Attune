@@ -7,7 +7,7 @@
 // lives in sessionState client-side - see the project note on why mistake
 // classification itself is client-side.
 import { noteFromArray, noteName } from "./mistakes.js";
-import { meanVolume, volumeFrac, volumeRangeDb, viridis, cssRgb } from "./colors.js";
+import { meanLevelDb, volumeFractionDb, volumeColorScale, viridis, cssRgb } from "./colors.js";
 
 function pitchName(midi, cents = false) {
   if (midi == null || midi < 0) return "-";
@@ -136,11 +136,11 @@ function flankingScoreIndices(pairs, pairIndex) {
 // (Colors.viridis(frac, dim=True) - score-dimmed, unlike GuitarHero's own
 // dots, so the playback cursor still reads on top). Mirrors
 // ScoreAnnotations._score_note_volume/_user_note_volume.
-function userNoteVolume(userNote, pitchFrames, volumeRange) {
+function userNoteVolume(userNote, pitchFrames, volumeScale) {
   if (!userNote) return null;
-  const volume = meanVolume(pitchFrames, userNote.startTime, userNote.endTime);
-  if (volume <= 0) return null;
-  const frac = volumeFrac(volume, volumeRange[0], volumeRange[1]);
+  const level = meanLevelDb(pitchFrames, userNote.startTime, userNote.endTime);
+  const frac = volumeFractionDb(level, volumeScale);
+  if (frac == null) return null;
   return { frac, color: cssRgb(viridis(frac, true)) };
 }
 
@@ -169,7 +169,7 @@ export function buildAnnotations({
   const insertionSlots = new Map();
 
   const userNotesParsed = (userNotesActive ?? []).map(noteFromArray);
-  const volumeRange = pitchFrames ? volumeRangeDb(pitchFrames) : [null, null];
+  const volumeScale = volumeColorScale(pitchFrames);
   // scoreIdx -> userIdx, the note each score note actually aligned to (a
   // clean match or a substitution both count - only deletions have none).
   const userIdxForScoreIdx = new Map();
@@ -184,7 +184,7 @@ export function buildAnnotations({
     };
     if (!pitchFrames) return;
     const userIdx = userIdxForScoreIdx.get(idx);
-    const volume = userIdx != null ? userNoteVolume(userNotesParsed[userIdx], pitchFrames, volumeRange) : null;
+    const volume = userIdx != null ? userNoteVolume(userNotesParsed[userIdx], pitchFrames, volumeScale) : null;
     if (volume) volumes[String(idx)] = volume;
   });
 
@@ -208,7 +208,7 @@ export function buildAnnotations({
       const midi = primaryMidi(mistake.userNote);
       if (midi != null) entry.midis.push(midi);
       if (pitchFrames) {
-        const volume = userNoteVolume(mistake.userNote, pitchFrames, volumeRange);
+        const volume = userNoteVolume(mistake.userNote, pitchFrames, volumeScale);
         if (volume) entry.volume = volume;
       }
       continue;

@@ -103,7 +103,7 @@ class PitchCache:
             temporary.unlink(missing_ok=True)
 
     "One track's raw and smoothed ``PitchData``, lzma-pickled under a file lock.\n\n    Attune writes it; the note, mistake, and vibrato benchmarks read it so they\n    never re-run pitch detection just to get a pitch track.\n    "
-    VERSION: ClassVar[int] = 14
+    VERSION: ClassVar[int] = 16
     RAW: ClassVar[str] = "raw"
     SMOOTHED: ClassVar[str] = "smoothed"
 
@@ -117,8 +117,11 @@ class PitchCache:
         def __contains__(self, stage: str) -> bool:
             return stage in self.data
 
-    def __init__(self, path: Path | str) -> None:
+    def __init__(self, path: Path | str, *, compatible_versions: tuple[int, ...] = ()) -> None:
         self.path = Path(path)
+        # Only adapters with unchanged inference may opt into older payloads.
+        # Production Attune keeps strict version invalidation.
+        self.compatible_versions = compatible_versions
 
     @classmethod
     def stage_name(cls, smooth: bool) -> str:
@@ -282,14 +285,12 @@ class PitchCache:
         with lzma.open(self.path, "rb") as handle:
             payload = pickle.load(handle)
         version = payload.get("version")
-        if version not in (13, self.VERSION):
+        if version not in (self.VERSION, *self.compatible_versions):
             raise ValueError(f"unsupported pitch cache version: {version}")
         stages = {
             str(stage): dict(body or {})
             for stage, body in (payload.get("stages") or {}).items()
         }
-        if version == 13:
-            stages.pop(self.SMOOTHED, None)
         raw_metadata = payload.get("metadata") or {}
         return (
             stages,
@@ -564,6 +565,7 @@ class PitchCache:
         stat = example.audio_path.stat()
         config = asdict(self.config)
         config.pop("workers")
+        native_policy = config.pop("native_feedback_policy", False)
         identity = {
             "version": self.VERSION,
             "method": method,
@@ -576,6 +578,35 @@ class PitchCache:
                 example.ref_times.tobytes() + example.ref_freqs.tobytes()
             ).hexdigest(),
         }
+        if native_policy and method in ("pyin_framewise", "praat", "crepe_tiny"):
+            identity["native_feedback_adapter"] = {"pyin_framewise": "quarter_window_v1",
+                "praat": "native_single_frame_v1", "crepe_tiny": "rolling_64ms_10ms_v1"}[method]
+        if method == "attune":
+            identity["pitch_cache_version"] = PitchCache.VERSION
+            from benchmarks.modules.pitch.competitors.Attune import Attune
+            identity["live_gates"] = {
+                "unv_thresh": Attune.DEFAULT_CONFIG.unv_thresh,
+                "min_volume": Attune.DEFAULT_CONFIG.min_volume,
+            }
+        if method == "crepe_tiny":
+            from benchmarks.modules.pitch.competitors.CrepeStreaming import CrepeStreaming
+
+            identity["adapter_version"] = CrepeStreaming.VERSION
+            # Keep the identity local to this new method; existing baseline
+            # checkpoint hashes must remain unchanged.
+            import importlib.metadata
+            import importlib.util
+
+            try:
+                identity["crepe_version"] = importlib.metadata.version("crepe")
+                weights = Path(importlib.util.find_spec("crepe").origin).with_name("model-tiny.h5")
+                identity["weights_sha256"] = hashlib.sha256(weights.read_bytes()).hexdigest()
+            except (importlib.metadata.PackageNotFoundError, OSError, AttributeError):
+                identity["weights_sha256"] = None
+        elif method == "mcleod":
+            from benchmarks.modules.pitch.competitors.McLeod import McLeod
+
+            identity["adapter_version"] = McLeod.VERSION
         identity["options"] = {
             k: v
             for k, v in identity["options"].items()

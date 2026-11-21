@@ -10,9 +10,9 @@ from ui.note.NoteCurveWidget import NoteCurveWidget
 
 
 class VibratoWidget(NoteCurveWidget):
-    """Vibrato speed/width over the note under the cursor.
+    """Vibrato rate/extent over the note under the cursor.
 
-    Width is always the full peak-to-peak pitch excursion. The selected
+    Extent is the one-sided amplitude of the pitch oscillation. The selected
     metric is the y value; viridis brushes encode the
     other metric. All signal analysis lives in VibratoDetector, so repainting
     only slices VibratoData and updates one ScatterPlotItem.
@@ -20,12 +20,12 @@ class VibratoWidget(NoteCurveWidget):
 
     CONTOUR_ROLE = "vibrato"
     DEFAULT_RANGES = {
-        "Width": (0.0, 200.0),
-        "Speed": (0.0, 10.0),
+        "Extent": (0.0, 100.0),
+        "Rate": (0.0, 10.0),
     }
     Y_PADDING = 0.15
-    HELP = ("Vibrato over the note under the cursor. Speed is the oscillation "
-            "rate in Hz; Width is the full peak-to-peak pitch excursion in "
+    HELP = ("Vibrato over the note under the cursor. Rate is the oscillation "
+            "rate in Hz; Extent is the one-sided amplitude in "
             "cents. Dot colors use the minimum and maximum "
             "across the whole recording for direct note-to-note comparison. "
             "The grey line is the measured pitch contour.")
@@ -33,7 +33,7 @@ class VibratoWidget(NoteCurveWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.metric_combo = QComboBox()
-        self.metric_combo.addItems(["Width", "Speed"])
+        self.metric_combo.addItems(["Extent", "Rate"])
         self.metric_combo.setStyleSheet(GuitarHero._COMBO_STYLE)
         self._metric = self.metric_combo.currentText()
         self._metric_ranges: dict[str, tuple[float, float]] = {}
@@ -74,7 +74,7 @@ class VibratoWidget(NoteCurveWidget):
         self.refresh()
 
     def _apply_axis(self):
-        if self.metric_combo.currentText() == "Width":
+        if self.metric_combo.currentText() == "Extent":
             self.set_y_label("cents")
         else:
             self.set_y_label("Hz")
@@ -84,7 +84,7 @@ class VibratoWidget(NoteCurveWidget):
             self._layout.removeWidget(self.legend)
             self.legend.hide()
             self.legend.deleteLater()
-        if self.metric_combo.currentText() == "Width":
+        if self.metric_combo.currentText() == "Extent":
             gradient = VibratoGradient("slow", "fast")
         else:
             gradient = VibratoGradient("narrow", "wide")
@@ -101,16 +101,20 @@ class VibratoWidget(NoteCurveWidget):
             self._render_blank()
             return
         times, rates, widths = data.curve(t0, t1)
-        width_mode = self.metric_combo.currentText() == "Width"
-        values = widths if width_mode else rates
-        colors = rates if width_mode else widths
+        extent_mode = self.metric_combo.currentText() == "Extent"
+        # The detector stores full peak-to-peak widths; display amplitude.
+        extents = widths / 2.0
+        values = extents if extent_mode else rates
+        colors = rates if extent_mode else extents
         mask = np.isfinite(times) & np.isfinite(values) & np.isfinite(colors)
         if not mask.any():
             self._render_blank()
             return
         visible_colors = colors[mask]
-        color_metric = "rate" if width_mode else "width"
+        color_metric = "rate" if extent_mode else "width"
         color_range = data.global_characteristic_range(color_metric)
+        if color_range is not None and not extent_mode:
+            color_range = tuple(value / 2.0 for value in color_range)
         if color_range is not None and color_range[1] > color_range[0]:
             color_min, color_max = color_range
             fractions = np.clip(

@@ -122,7 +122,7 @@ class ProductionPitchSmootherTest(unittest.TestCase):
         self.assertEqual(result.value, midi)
         self.assertEqual(result.unvoiced_prob, 0.5)
 
-    def test_v13_preserves_raw_but_invalidates_smoothed_cache(self):
+    def test_old_pitch_cache_is_invalidated_for_fresh_promotion(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "v13.pitch.pkl.xz"
             with lzma.open(path, "wb") as handle:
@@ -133,7 +133,7 @@ class ProductionPitchSmootherTest(unittest.TestCase):
                     },
                     handle,
                 )
-            self.assertIsNotNone(PitchCache(path).read(PitchCache.RAW, self.config))
+            self.assertIsNone(PitchCache(path).read(PitchCache.RAW, self.config))
             self.assertIsNone(PitchCache(path).read(PitchCache.SMOOTHED, self.config))
 
     def test_notebook_reuses_cached_methods_by_default(self):

@@ -25,12 +25,11 @@ class ToleranceWidget(QWidget):
         self._TIMING_HELP_TEXT = "How far off +/- the user's note can vary from the score in timing."
         # Pitch is shown/edited in semitones, one-to-one with the raw Config
         # pitch_tolerance: 1 semitone displayed == 1.0 pitch_tolerance == 1 MIDI
-        # step. The slider steps in whole semitones; the box is the source of truth
-        # and can hold fractional values (e.g. the 0.5 default).
-        #   semitones 1 2 3 4 5  <->  pitch_tolerance 1 2 3 4 5
+        # step. The slider uses tenths of a semitone; the box retains arbitrary
+        # non-negative values, including values outside the slider range.
         self._TOL_PER_SEMITONE = 1.0
-        self._SEMITONE_MIN = 1
-        self._SEMITONE_MAX = 5
+        self._PITCH_SLIDER_MIN = 3   # 0.3 semitones
+        self._PITCH_SLIDER_MAX = 30  # 3.0 semitones
         self._DEFAULT_SEMITONES = 0.5  # -> 0.5 tolerance (matches Config.pitch_tolerance)
         self._TIMING_SLIDER_MIN = 1    # hundredths of a second, i.e. 0.01s
         self._TIMING_SLIDER_MAX = 100  # 1.00s
@@ -156,8 +155,8 @@ class ToleranceWidget(QWidget):
             self.slider.setSingleStep(1)
             self.slider.setPageStep(10)
         else:
-            self.slider.setMinimum(self._SEMITONE_MIN)
-            self.slider.setMaximum(self._SEMITONE_MAX)
+            self.slider.setMinimum(self._PITCH_SLIDER_MIN)
+            self.slider.setMaximum(self._PITCH_SLIDER_MAX)
             self.slider.setSingleStep(1)
             self.slider.setPageStep(1)
         value = self._display_value()
@@ -177,12 +176,12 @@ class ToleranceWidget(QWidget):
             slider_value = round(display_value * 100)
             clamped = min(max(slider_value, self._TIMING_SLIDER_MIN), self._TIMING_SLIDER_MAX)
         else:
-            clamped = round(min(max(display_value, self._SEMITONE_MIN), self._SEMITONE_MAX))
+            clamped = round(min(max(display_value * 10, self._PITCH_SLIDER_MIN), self._PITCH_SLIDER_MAX))
         self.slider.setValue(int(clamped))
 
     def _on_slider_changed(self, value: int):
         # user dragged the slider -> it becomes the source of truth.
-        display_value = value / 100.0 if self._mode == "timing" else float(value)
+        display_value = value / 100.0 if self._mode == "timing" else value / 10.0
         self.value_box.setText(self._fmt(display_value))
 
     def _on_text_edited(self):

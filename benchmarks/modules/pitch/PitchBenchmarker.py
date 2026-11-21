@@ -369,6 +369,8 @@ class PitchBenchmarker:
         result["significant"] = result["p_holm"].lt(alpha)
         return (result, selected)
 
+    ATTUNE_WORKERS = 8  # Explicit benchmark override; no RAM throttling/calibration.
+
     @staticmethod
     def default_pitch_workers() -> int:
         """Leave two logical CPUs for the desktop; RAM is checked when work starts."""
@@ -1233,6 +1235,7 @@ class PitchBenchmarker:
             default_factory=lambda: PitchBenchmarker.default_streaming_workers()
         )
         max_seconds: float = math.inf
+        native_feedback_policy: bool = False
         transition_seconds: float = 0.05
         deep_rest_seconds: float = 0.25
         event_search_seconds: float = 0.5
@@ -1249,9 +1252,10 @@ class PitchBenchmarker:
         VERSION = (
             "native_center_v9_pyin_joint_state_latency_samples__" + SCORING_VERSION
         )
-        METHODS = ("attune", "pyin_framewise", "praat", "swiftf0", "spice")
+        METHODS = ("attune", "pyin_framewise", "praat", "swiftf0", "spice", "mcleod")
+        SUPPORTED_METHODS = (*METHODS, "crepe_tiny")
         MATCHED_METHODS = ("attune", "praat")
-        ROLLING_METHODS = ("swiftf0", "spice")
+        ROLLING_METHODS = ("swiftf0", "spice", "mcleod", "crepe_tiny")
         APP_SR = Attune.DEFAULT_CONFIG.sr
         MODEL_SR = 16000
         ROLLING_GEOMETRY = {
@@ -1284,8 +1288,8 @@ class PitchBenchmarker:
                 if methods is None
                 else {methods} if isinstance(methods, str) else set(methods)
             )
-            selected = [method for method in self.METHODS if method in requested]
-            unknown = requested.difference(self.METHODS)
+            selected = [method for method in self.SUPPORTED_METHODS if method in requested]
+            unknown = requested.difference(self.SUPPORTED_METHODS)
             if unknown:
                 raise ValueError(
                     f"unknown streaming method(s): {', '.join(sorted(unknown))}"
@@ -1296,7 +1300,10 @@ class PitchBenchmarker:
                 )
             if not examples:
                 return pd.DataFrame()
-            workers = min(self.config.workers, len(examples))
+            workers = min(
+                PitchBenchmarker.ATTUNE_WORKERS if selected == ["attune"] else self.config.workers,
+                len(examples),
+            )
             print(
                 f"Streaming replay: {workers} worker(s); serial frames per track; dedicated-worker CPU latency simulation",
                 flush=True,
@@ -1368,18 +1375,22 @@ class PitchBenchmarker:
                         budget = PitchBenchmarker.worker_memory_gib(method, observed)
                         workers = min(
                             len(pending),
-                            PitchBenchmarker.memory_limited_workers(
-                                self.config.workers, gib_per_worker=budget
-                            ),
+                            (PitchBenchmarker.ATTUNE_WORKERS if method == "attune" else
+                             PitchBenchmarker.memory_limited_workers(
+                                 self.config.workers, gib_per_worker=budget
+                             )),
                         )
                         # Calibrate on one track; then amortize model warmup over
                         # eight tracks per worker before releasing the pool and
                         # rechecking desktop memory and observed peak usage.
-                        size = workers * 8 if observed else 1
+                        size = workers * 8 if observed or method == "attune" else 1
                         wave, pending = pending[:size], pending[size:]
                         workers = min(workers, len(wave))
                         print(
-                            f"  {method}: {workers} worker(s); {budget:.2f} GiB/worker budget",
+                            f"  {method}: {workers} worker(s); " + (
+                                "forced 8-worker policy (limited only by remaining tracks)"
+                                if method == "attune" else f"{budget:.2f} GiB/worker budget"
+                            ),
                             flush=True,
                         )
                         context = multiprocessing.get_context("spawn")
@@ -1460,7 +1471,10 @@ class PitchBenchmarker:
             rolling: dict[str, PitchDetectorBase],
         ) -> list[dict[str, Any]]:
             rows: list[dict[str, Any]] = []
-            matched = [method for method in self.MATCHED_METHODS if method in selected]
+            matched = [method for method in self.MATCHED_METHODS if method in selected
+                       and not (method == "praat" and self.config.native_feedback_policy)]
+            if "praat" in selected and self.config.native_feedback_policy:
+                rows.append(self._run_praat_framewise(example))
             if matched:
                 rows.extend(self._run_matched_example(example, matched))
             if "pyin_framewise" in selected:
@@ -1490,12 +1504,25 @@ class PitchBenchmarker:
                 if method not in methods:
                     continue
                 try:
-                    detector = PitchBenchmarker.detector_for(method, self.options)
+                    if method == "crepe_tiny":
+                        from benchmarks.modules.pitch.competitors.CrepeStreaming import CrepeStreaming
+
+                        detector = CrepeStreaming(rolling_10ms=self.config.native_feedback_policy)
+                        sr = self.APP_SR
+                        frame_size = detector.buffer_size(sr)
+                    elif method == "mcleod":
+                        detector = PitchBenchmarker.detector_for(method, self.options)
+                        sr = detector.input_sr
+                        frame_size = detector.STREAM_HOP
+                    else:
+                        detector = PitchBenchmarker.detector_for(method, self.options)
+                        sr = self.MODEL_SR
+                        frame_size, _, _, _ = self.ROLLING_GEOMETRY[method]
                     detector.ensure_available()
-                    frame_size, _, _, _ = self.ROLLING_GEOMETRY[method]
-                    detector.predict(
+                    predict = detector.predict_streaming if method == "mcleod" else detector.predict
+                    predict(
                         np.zeros(frame_size, dtype=np.float32),
-                        self.MODEL_SR,
+                        sr,
                         20.0,
                         5000.0,
                     )
@@ -1625,6 +1652,29 @@ class PitchBenchmarker:
                 )
             return rows
 
+        def _run_praat_framewise(self, example):
+            detector = Praat.FrameLocal()
+            audio, sr = example.audio(self.APP_SR)
+            audio, duration = self._crop_audio(audio, sr)
+            size, hop = detector.geometry(sr, example.fmin, example.fmax)
+            detector.predict(audio[:size], sr, example.fmin, example.fmax)
+            track = self._empty_track()
+            for end in range(size, len(audio) + 1, hop):
+                start = end - size
+                (times, freqs), cpu, wall = PitchDetectorBase.measure(
+                    lambda: detector.predict(audio[start:end], sr, example.fmin, example.fmax))
+                freq = detector.constrain_freqs_to_range(freqs, example.fmin, example.fmax)[0]
+                self._append_frame(track, start / sr + times[0], freq, end / sr, cpu, wall)
+            if not track["times"]:
+                raise ValueError(f"{example.track_id}: no complete Praat frame")
+            return self._row(
+                "praat", example, duration,
+                (np.asarray(track["times"]), np.asarray(track["freqs"])),
+                track["cpu"], track["wall"], np.asarray(track["latencies"]),
+                np.asarray(track["cpus"]), hop / sr, size, None, hop, sr,
+                stream_adapter="Native raw AC single frame; local silence reference; no path tracking",
+                model_hop_size=hop, algorithmic_lookahead=size / sr - times[0])
+
         def _run_pyin_framewise(self, example: PitchExample) -> dict[str, Any]:
             """Select raw pYIN candidates on the production capture grid; no HMM."""
             from benchmarks.modules.pitch.PitchDetectorBase import PitchDetectorBase
@@ -1634,7 +1684,7 @@ class PitchBenchmarker:
             audio, sr = example.audio(detector.input_sr)
             audio, duration = self._crop_audio(audio, sr)
             frame_size = detector.FRAME_LENGTH
-            hop_size = detector.DEFAULT_CONFIG.h1
+            hop_size = frame_size // 4 if self.config.native_feedback_policy else detector.DEFAULT_CONFIG.h1
             fmin, fmax = detector.clamp_range(example.fmin, example.fmax)
             if len(audio) < frame_size:
                 raise ValueError(
@@ -1675,7 +1725,7 @@ class PitchBenchmarker:
                 frame_size,
                 hop_size,
                 sr,
-                stream_adapter="Frame-restarted public API",
+                stream_adapter="Local reference pYIN joint-state decision; no sequence HMM",
                 model_hop_size=hop_size,
                 algorithmic_lookahead=0.5 * frame_size / sr,
             )
@@ -1686,22 +1736,35 @@ class PitchBenchmarker:
             """Commit one model-native center estimate per rolling update."""
             from benchmarks.modules.pitch.PitchDetectorBase import PitchDetectorBase
 
-            audio, sr = example.audio(self.MODEL_SR)
+            input_sr = detector.input_sr if method == "mcleod" else self.APP_SR if method == "crepe_tiny" else self.MODEL_SR
+            audio, sr = example.audio(input_sr)
+            if method == "mcleod":
+                # Avoid round-tripping the full length through floating seconds:
+                # floor((len / sr) * sr) can discard one sample and a whole hop.
+                limit = int(math.floor(min(len(audio), self.config.max_seconds * sr)))
+                audio = np.ascontiguousarray(audio[:limit], dtype=np.float32)
+                duration = len(audio) / sr
+                return self._run_tartini_example(detector, example, audio, sr, duration)
             audio, duration = self._crop_audio(audio, sr)
-            frame_size, update_size, model_hop, output_index = self.ROLLING_GEOMETRY[
-                method
-            ]
+            if method == "crepe_tiny":
+                frame_size = update_size = model_hop = detector.buffer_size(sr)
+                if self.config.native_feedback_policy:
+                    update_size = model_hop = round(0.010 * sr)
+                output_index = 0
+            else:
+                frame_size, update_size, model_hop, output_index = self.ROLLING_GEOMETRY[method]
             if len(audio) < frame_size:
                 raise ValueError(
                     f"{example.track_id}: {duration:.3f}s excerpt is shorter than the {method} {frame_size}-sample receptive frame"
                 )
             track = self._empty_track()
             local_timestamp: float | None = None
+            predict = detector.predict
             for end in range(frame_size, len(audio) + 1, update_size):
                 start = end - frame_size
                 frame = audio[start:end]
                 (times, freqs), cpu, wall = PitchDetectorBase.measure(
-                    lambda frame=frame: detector.predict(
+                    lambda frame=frame: predict(
                         frame, sr, example.fmin, example.fmax
                     )
                 )
@@ -1723,7 +1786,7 @@ class PitchBenchmarker:
                 np.asarray(track["times"], dtype=np.float64),
                 np.asarray(track["freqs"], dtype=np.float64),
             )
-            return self._row(
+            row = self._row(
                 method,
                 example,
                 duration,
@@ -1737,10 +1800,57 @@ class PitchBenchmarker:
                 None,
                 update_size,
                 sr,
-                stream_adapter="Rolling center frame",
+                stream_adapter=(("CREPE tiny, rolling 64 ms / 10 ms (Python CPU)" if self.config.native_feedback_policy else "CREPE tiny, web demo callback (Python CPU)") if method == "crepe_tiny" else "Rolling center frame"),
                 model_hop_size=model_hop,
                 algorithmic_lookahead=frame_size / sr - local_timestamp,
             )
+            if method == "crepe_tiny":
+                row.update(
+                    model_capacity="tiny",
+                    adapter_version=detector.VERSION,
+                    model_input_sample_rate_hz=detector.MODEL_SR,
+                    model_input_samples=detector.FRAME_SIZE,
+                    confidence_threshold=detector.CONFIDENCE,
+                    temporal_smoothing=False,
+                )
+            return row
+
+        def _run_tartini_example(self, detector, example, audio, sr, duration):
+            """Sequential native hops; commit only values available at that hop."""
+            track = self._empty_track()
+            hop = detector.STREAM_HOP
+            # Fresh noise-floor, filter, note and FFT state per track. Also drops
+            # the warm-up channel; FFT planning remains outside update timing.
+            detector.reset_streaming()
+            try:
+                for start in range(0, len(audio) - hop + 1, hop):
+                    (times, freqs), cpu, wall = PitchDetectorBase.measure(
+                        lambda start=start: detector.predict_streaming(
+                            audio[start:start + hop], sr, example.fmin, example.fmax
+                        )
+                    )
+                    frequency = detector.constrain_freqs_to_range(
+                        freqs, example.fmin, example.fmax
+                    )[0]
+                    self._append_frame(track, start / sr + float(times[0]),
+                                       float(frequency), (start + hop) / sr, cpu, wall)
+            finally:
+                detector.close_streaming()
+            row = self._row(
+                "mcleod", example, duration,
+                (np.asarray(track["times"]), np.asarray(track["freqs"])),
+                float(track["cpu"]), float(track["wall"]),
+                np.asarray(track["latencies"]), np.asarray(track["cpus"]),
+                hop / sr, detector.FRAME_SIZE, None, hop, sr,
+                stream_adapter="Tartini 1.2 native stateful MPM; causal snapshots",
+                model_hop_size=hop, algorithmic_lookahead=hop / sr,
+            )
+            row.update(adapter_version=detector.VERSION,
+                       relative_peak_cutoff=detector.CUTOFF,
+                       minimum_peak_height=detector.SMALL_CUTOFF,
+                       temporal_smoothing=True,
+                       retrospective_note_revision=True)
+            return row
 
         def _crop_audio(self, audio: np.ndarray, sr: int) -> tuple[np.ndarray, float]:
             duration = min(self.config.max_seconds, len(audio) / float(sr))
@@ -1817,6 +1927,8 @@ class PitchBenchmarker:
                     "compute_clock": PitchDetectorBase.COMPUTE_CLOCK,
                 },
             )
+            from benchmarks.modules.pitch.PitchCache import PitchCache
+
             row = self.reporter.score(method, cropped, estimate)
             row.update(
                 {
@@ -1824,6 +1936,7 @@ class PitchBenchmarker:
                         "output_latency_ms": latencies * 1000.0,
                         "call_cpu_ms": call_cpus * 1000.0,
                         "estimate_times_seconds": np.asarray(melody[0]),
+                        "estimate_frequencies_hz": np.asarray(melody[1]),
                     },
                     "result_label": f"{example.dataset}_streaming",
                     "audio_seconds": float(duration),
@@ -1842,6 +1955,8 @@ class PitchBenchmarker:
                     "sample_rate_hz": int(sr),
                     "update_interval_ms": float(deadline_seconds) * 1000.0,
                     "algorithmic_lookahead_ms": float(algorithmic_lookahead) * 1000.0,
+                    **({"pitch_cache_version": PitchCache.VERSION,
+                        "volume_reference": "running_p95"} if method == "attune" else {}),
                     "dynamic_volume_floor_ratio": (
                         float(Attune.DEFAULT_CONFIG.min_volume)
                         if method == "attune"
@@ -2320,6 +2435,7 @@ class PitchBenchmarker:
         from benchmarks.modules.pitch.competitors.Spice import Spice
         from benchmarks.modules.pitch.competitors.SwiftF0 import SwiftF0
         from benchmarks.modules.pitch.competitors.PYIN import PYIN
+        from benchmarks.modules.pitch.competitors.McLeod import McLeod
 
         return [
             PYIN(),
@@ -2332,6 +2448,7 @@ class PitchBenchmarker:
             Spice(),
             Penn(),
             Rmvpe(),
+            McLeod(),
         ]
 
     @classmethod
@@ -2454,8 +2571,8 @@ class PitchBenchmarker:
                 tracks_per_job
                 if tracks_per_job > 0
                 else min(
-                    1 if method == "crepe" else 4,
-                    max(1, math.ceil(len(selected) / max(1, workers))),
+                    1 if method in {"attune", "crepe"} else 4,
+                    max(1, math.ceil(len(selected) / (self.ATTUNE_WORKERS if method == "attune" else max(1, workers)))),
                 )
             )
             for start in range(0, len(selected), size):
@@ -2484,7 +2601,13 @@ class PitchBenchmarker:
             )
         )
         wall_compute = float(estimate.metadata.get("wall_pitch_compute_time", compute))
+        adapter_metadata = {}
+        if method == "mcleod":
+            from benchmarks.modules.pitch.competitors.McLeod import McLeod
+
+            adapter_metadata["adapter_version"] = McLeod.VERSION
         return {
+            **adapter_metadata,
             **metrics,
             **{
                 key: value
@@ -2778,7 +2901,7 @@ class PitchBenchmarker:
         rows: list[dict[str, Any]] = []
         errors: list[tuple[str, str, str, str]] = []
         skipped: dict[str, str] = {}
-        if workers == 1:
+        if workers == 1 and not any(job.method == "attune" for job in jobs):
             total = sum((len(job.tracks) for job in jobs))
             for job in jobs:
                 outcome = self.run_job(
@@ -2823,7 +2946,8 @@ class PitchBenchmarker:
                 # process before deciding how many copies fit in memory.
                 method = pending_jobs[0].method
                 count = 0
-                limit = batch_size if method in memory_peaks else 1
+                limit = (max(batch_size, self.ATTUNE_WORKERS * 8) if method == "attune"
+                         else batch_size if method in memory_peaks else 1)
                 for job in pending_jobs[:limit]:
                     if job.method != method:
                         break
@@ -2848,7 +2972,7 @@ class PitchBenchmarker:
                     continue
                 batch_workers = min(
                     len(runnable),
-                    PitchBenchmarker.memory_limited_workers(
+                    self.ATTUNE_WORKERS if method == "attune" else PitchBenchmarker.memory_limited_workers(
                         workers,
                         gib_per_worker=self.worker_memory_gib(
                             method, memory_peaks.get(method, 0.0)
@@ -2857,9 +2981,11 @@ class PitchBenchmarker:
                 )
                 inference_threads = self.inference_threads(method, batch_workers, workers)
                 print(
-                    f"Pitch batch ({method}): {batch_workers}/{workers} worker(s) "
+                    f"Pitch batch ({method}): {batch_workers}/{self.ATTUNE_WORKERS if method == 'attune' else workers} worker(s) "
                     f"× {inference_threads} inference thread(s); "
-                    f"{self.worker_memory_gib(method, memory_peaks.get(method, 0.0)):.2f} GiB/worker budget",
+                    + ("forced Attune policy; no calibration or RAM throttling"
+                       if method == "attune" else
+                       f"{self.worker_memory_gib(method, memory_peaks.get(method, 0.0)):.2f} GiB/worker budget"),
                     flush=True,
                 )
                 pool = ProcessPoolExecutor(

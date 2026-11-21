@@ -2,12 +2,13 @@
 
 The promoted live and completed-audio paths share ordinary pYIN CMNDF troughs.
 The live decision is causal and applies the selected raw unvoiced-probability
-and running-peak RMS gates. Completed-audio decoding retains the same evidence
+and running-p95 RMS gates. Completed-audio decoding retains the same evidence
 for its whole-recording controller. No band-pass filter is applied.
 """
 
 from __future__ import annotations
 
+from bisect import insort
 import threading
 import time
 import warnings
@@ -21,7 +22,7 @@ from scipy.stats import beta as beta_distribution
 from scipy.stats import boltzmann
 from tqdm import tqdm
 
-from algorithms.Config import Config
+from algorithms.Config import Config, PYIN_GLOBAL_VOLUME_PERCENTILE
 from app_logic.user.ds.PitchData import Pitch
 from app_logic.user.ds.Recording import Recording
 
@@ -69,6 +70,7 @@ class PitchDetector(QObject):
         self._drain_on_stop = False
         self._owns_spectrum_worker = False
         self.block = False
+        self._practice_timing = False
 
     # ---------------------------------------------------------------- config
     def load_config(self, config: Config) -> None:
@@ -122,6 +124,7 @@ class PitchDetector(QObject):
         )
         self.beta_probs = np.diff(beta_cdf)
         self.max_volume = 0.0
+        self._volume_history = []
 
     def re_init(self, config: Config | None = None) -> None:
         if config is not None:
@@ -164,12 +167,14 @@ class PitchDetector(QObject):
             )
 
     # --------------------------------------------------------------- live API
-    def run(self, start_time: float | None = None) -> None:
-        """Start causal frame detection on the recording's audio queue."""
+    def run(self, start_time: float | None = None, *, practice_timing: bool = False) -> None:
+        """Start detection; Practice timestamps pitches on its gated score clock."""
         self.stop()
+        self._practice_timing = practice_timing
         self.stop_event.clear()
         self._drain_on_stop = False
         self.max_volume = 0.0
+        self._volume_history = []
         self.recording.a2p_queue.init_start_time(start_time)
         self.recording.spectrum_detector.start()
         self._owns_spectrum_worker = True
@@ -202,6 +207,19 @@ class PitchDetector(QObject):
                     frame_start
                     + 0.5 * self.INTEGRATION_SIZE / self.SR
                 )
+                if self._practice_timing:
+                    # Practice's frame address is score progress, not elapsed
+                    # audio time. Plot and color against the same target used
+                    # by PracticeTab._pitch_matches, independent of UI refresh.
+                    pitch.time = frame_start
+                    score = self.recording.score_data
+                    notes = score.note_datas.get(score.active_instrument)
+                    target = notes.note_containing(frame_start) if notes else None
+                    pitch.live_distance = (
+                        target.midi_num[0] - pitch.value
+                        if target is not None and pitch.value != -1
+                        else None
+                    )
                 self.recording.write_pitch_data([pitch], frame_start)
                 # PitchData is addressed on the frame-start grid even though
                 # the plotted/analysed Pitch carries the window-centre time.
@@ -504,10 +522,18 @@ class PitchDetector(QObject):
         )
         volume = float(volumes[frame_index])
         self.max_volume = max(self.max_volume, volume)
+        # Exact NumPy-style linear percentile, including silence/current frame.
+        insort(self._volume_history, volume)
+        position = (len(self._volume_history) - 1) * PYIN_GLOBAL_VOLUME_PERCENTILE / 100
+        lower = int(position)
+        upper = min(lower + 1, len(self._volume_history) - 1)
+        reference = self._volume_history[lower] + (position - lower) * (
+            self._volume_history[upper] - self._volume_history[lower]
+        )
         if (
             unvoiced_prob >= float(self.config.unv_thresh)
             or volume
-            < self.max_volume * max(0.0, float(self.config.min_volume))
+            < reference * max(0.0, float(self.config.min_volume))
         ):
             value = -1.0
 
@@ -597,6 +623,7 @@ class PitchDetector(QObject):
         )[::self.HOP_SIZE]
         frame_count = len(frames)
         self.max_volume = 0.0
+        self._volume_history = []
         output: list[Pitch] = []
         started = time.perf_counter()
         if verbose:

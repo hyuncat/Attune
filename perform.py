@@ -250,7 +250,7 @@ class PerformTab(QWidget):
         self.audio_player.load_audio(rec.audio_data)
         self.audio_recorder.load_recording(rec)
         self._refresh_mistake_widget(rec)
-        if rec.analysis_notice and self.status_bar is not None:
+        if self.status_bar is not None:
             self.status_bar.update_status(rec.analysis_notice)
 
     def _wire_detector(self, rec: Recording):

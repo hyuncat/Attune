@@ -1001,11 +1001,12 @@ class Attune(QMainWindow):
 
     # ------> TOLERANCE PANEL
     def _sync_tolerance_widget(self):
-        if self.active_recording is None:
+        rec = self._active_slider_recording()
+        if rec is None:
             return
         self.tolerance_widget.set_tolerances(
-            self.active_recording.config.pitch_tolerance,
-            self.active_recording.config.timing_tolerance,
+            rec.config.pitch_tolerance,
+            rec.config.timing_tolerance,
         )
 
     def on_mistake_mode_changed(self, mode: str):
@@ -1016,6 +1017,14 @@ class Attune(QMainWindow):
     def on_tolerance_applied(self, mode: str, tolerance: float):
         """Set the active recording's pitch or timing tolerance and refresh the
         relevant mistake view."""
+        if self._practice_active():
+            if mode == "pitch":
+                self.practice_tab.set_pitch_tolerance(tolerance)
+            else:
+                rec = self.practice_tab.recording
+                rec.config.timing_tolerance = tolerance
+                rec.update_config(rec.config)
+            return
         if not self._has_recording():
             return
         rec = self.active_recording
@@ -1033,8 +1042,6 @@ class Attune(QMainWindow):
 
         rec.config.pitch_tolerance = tolerance
         rec.update_config(rec.config)
-        # mirror into the Practice tab (drives its live pitch match)
-        self.practice_tab.set_pitch_tolerance(tolerance)
         self.perform_tab.guitar_hero.user_pitches.set_tolerance(tolerance)
         self.perform_tab.guitar_hero.update_view_items()
         self.perform_tab.reanalyze_if_analyzed()
@@ -1128,6 +1135,7 @@ class Attune(QMainWindow):
         self._sync_transpose_input()
 
         # the note panel follows the new tab's recording (Practice keeps its own)
+        self._sync_tolerance_widget()
         self.note_panel.set_recording(self._active_slider_recording())
 
         # preserve the current time, re-range for the new tab, clamp, and render.

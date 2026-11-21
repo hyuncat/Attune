@@ -6,7 +6,7 @@ import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QSplitter
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 
 from app_logic.midi.ScoreData import ScoreData
 from app_logic.midi.MidiPlayer import MidiPlayer
@@ -31,6 +31,8 @@ class PracticeTab(QWidget):
         # explicitly (instrument selection, score upload).
         self.score_data = ScoreData()
         self.recording = Recording(score_data=self.score_data)
+        self.recording.config.pitch_tolerance = 0.3
+        self.recording.update_config(self.recording.config)
 
         self.is_playing = False
         self.is_recording = False
@@ -38,11 +40,15 @@ class PracticeTab(QWidget):
         # While RECORDING, practice mode is driven by the PitchDetector's emitted
         # pitch times (not the wall clock): the audio->pitch buffer only advances
         # its read time when the user's pitch matches the score, so the last
-        # emitted time IS the playhead. `practice_time` is that time; repaints are
-        # throttled (the detector emits hundreds of frames/sec) to ~30 fps.
+        # emitted time IS the playhead. Render on a separate cadence so batches
+        # of detector signals do not also dictate repaint timing.
         self.practice_time = 0.0
         self._RENDER_INTERVAL = 1.0 / 30.0
         self._last_render = 0.0
+        self._render_timer = QTimer(self)
+        self._render_timer.setTimerType(Qt.TimerType.PreciseTimer)
+        self._render_timer.setInterval(17)
+        self._render_timer.timeout.connect(self._render_practice)
 
         # score viewer: render only the active instrument's part (default) or the
         # full score. The host (app.py) owns the toggle and pushes it in via
@@ -163,6 +169,8 @@ class PracticeTab(QWidget):
             0,
         )
         self.recording = Recording(score_data=self.score_data)
+        self.recording.config.pitch_tolerance = 0.3
+        self.recording.update_config(self.recording.config)
         if self.midi_player is not None:
             self.midi_player.load_score(self.score_data)
         self.guitar_hero.load_score(self.score_data)
@@ -199,7 +207,7 @@ class PracticeTab(QWidget):
         self.recording.update_config(self.recording.config)
 
     def set_pitch_tolerance(self, tolerance: float):
-        """Mirror a pitch-tolerance change: set our Recording's Config value, which
+        """Apply a pitch-tolerance change: set our Recording's Config value, which
         is the semitone slack `_pitch_matches` uses to decide whether a live
         pitch is close enough to let the playhead advance."""
         self.recording.config.pitch_tolerance = tolerance
@@ -277,24 +285,23 @@ class PracticeTab(QWidget):
         self.practice_time = t
         self._last_render = 0.0
         self.is_recording = True
-        # Practice advances on the frame-start address emitted by the detector,
-        # while pitch dots use the analysis-window center. Keep the visual
-        # playhead on that center without changing the gating/storage time.
-        cfg = self.recording.config
-        self.guitar_hero.set_live_playhead_offset(0.5 * cfg.w1 / cfg.sr)
+        # Dots, cursor, and matching all use the gated score-clock address.
+        self.guitar_hero.set_live_playhead_offset(0.0)
         self.guitar_hero.set_live(True)  # pitch-dot opacity: fixed absolute dB window
         if self.note_panel is not None:
             self.note_panel.set_live(True)  # trailing-window mode
-        self.recording.pitch_detector.run(start_time=t)
+        self.recording.pitch_detector.run(start_time=t, practice_timing=True)
         # Keep this incremental and off the pitch thread. Starting with the
         # take prevents a historical backfill spike if Vibrato is opened later.
         self.recording.vibrato_detector.run()
         self.audio_recorder.run(start_time=t)
+        self._render_timer.start()
 
     def stop_recording(self):
         if not self.is_recording:
             return
         self.is_recording = False
+        self._render_timer.stop()
         self.guitar_hero.set_live(False)  # pitch-dot opacity: remap to the take's range
         if self.note_panel is not None:
             self.note_panel.set_live(False)
@@ -345,7 +352,7 @@ class PracticeTab(QWidget):
         on a correct pitch (we block it otherwise), `t` only moves forward when
         the user matches the score. So we use `t` directly as the playhead:
         (1) decide whether this frame matched and block/unblock the buffer for the
-        NEXT frame, then (2) move every view to `t` (throttled).
+        NEXT frame, then (2) publish `t` for the render timer.
         """
         if not self.is_recording:
             return
@@ -355,16 +362,26 @@ class PracticeTab(QWidget):
         self.recording.pitch_detector.block = not self._pitch_matches(t)
         # `t` is the time of the last emitted pitch -> drive the whole UI from it
         self.practice_time = t
-        # Throttled repaint: the detector emits hundreds of frames/sec; repainting
-        # (and calling the Verovio JS cursor) on every one would swamp the UI, so cap
-        # redraws to ~30 fps. `t` itself is always current — only the redraw is
-        # throttled. The shared time label follows along: move_plot emits plot_moved ->
-        # the slider updates, whose slider_changed the host uses to refresh the label.
-        now = time.monotonic()
-        if now - self._last_render < self._RENDER_INTERVAL:
+
+    def _render_practice(self):
+        """Coalesce pitch events and pan at ~60 Hz without predicting progress.
+
+        Rebuild dots/notes and update the web score at ~30 Hz; intermediate
+        ticks only move the existing scene and cursor. Refresh even when stalled
+        because the current pitch slot can change without the time advancing.
+        """
+        if not self.is_recording:
             return
-        self._last_render = now
-        self._move_views(t)
+        t = self.practice_time
+        now = time.monotonic()
+        refresh = now - self._last_render >= self._RENDER_INTERVAL
+        self.score_data.update_time(t)
+        if refresh:
+            self._last_render = now
+            self.score_viewer.set_playback_time(self._score_viewer_time(t))
+            if self.note_panel is not None:
+                self.note_panel.update_time(t)
+        self.guitar_hero.move_plot(t, refresh_items=refresh)
 
     def _pitch_matches(self, t: float) -> bool:
         """Whether the detected pitch at time `t` should let the playhead advance.
@@ -377,7 +394,9 @@ class PracticeTab(QWidget):
         pitch all hold. (The tolerance follows the side-panel Tolerance control.)
         """
         note_data = self.score_data.note_datas.get(self.score_data.active_instrument)
-        target = note_data.read_current_note(t) if note_data else None
+        # The onset-only lookup drops the final note after its onset and holds
+        # the preceding note through rests. Gate on the actual sounding span.
+        target = note_data.note_containing(t) if note_data else None
         m = target.midi_num[0] if target is not None else None
 
         if m is None or m == -1:
@@ -388,20 +407,23 @@ class PracticeTab(QWidget):
             not self.recording.pitch_data.is_voiced_pitch(p)
             or not p.candidate_pitches
         ):
-            self.status_bar.update_status(f"Waiting for note: {m:.1f}…")
+            self.status_bar.update_status(f"Waiting for note: {target.get_note_name()}…")
             return False
 
         u = p.value
         # NaN/inf guard: abs(nan - m) <= tol is False anyway, but be explicit so a
         # garbage candidate can never be read as "on pitch".
         if not np.isfinite(u):
-            self.status_bar.update_status(f"Waiting for note: {m:.1f}…")
+            self.status_bar.update_status(f"Waiting for note: {target.get_note_name()}…")
             return False
 
         tolerance = self.recording.config.pitch_tolerance
         on_pitch = abs(u - m) <= tolerance
         state = "On" if on_pitch else "Off"
-        self.status_bar.update_status(f"{state}! Detected note: {u:.1f}, Target note: {m:.1f}")
+        played_name = self.recording.config.get_note_name(u)
+        self.status_bar.update_status(
+            f"{state}! Detected note: {played_name}, Target note: {target.get_note_name()}"
+        )
         return on_pitch
 
     # --- SCORE VIEWER ---

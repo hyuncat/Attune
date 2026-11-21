@@ -43,7 +43,7 @@ class JsonHandler:
     # gate, and replaces completed-audio HMM voicing with the selected
     # framewise 0.985/0.04 confidence/RMS controller.
     # v6 hides decoded pitch bins without positive candidate support post hoc.
-    PITCH_ANALYSIS_VERSION = 6
+    PITCH_ANALYSIS_VERSION = 7  # Fixed 0.990 tracking; final 0.9875 offline gate.
     # Note-analysis versions:
     # v2: spectral onsets moved to score-guided deletion correction.
     # v3: unvoiced pitch-run splitting follows min_gap_factor * min_note_length.

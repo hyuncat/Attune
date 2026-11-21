@@ -5,15 +5,15 @@ from typing import ClassVar
 # --- pYIN voicing / volume-gate defaults (shared with the benchmark harness) ---
 PRAAT_DEFAULT_VOICING_THRESHOLD = 0.45
 PYIN_PRAAT_MIRROR_UNV_THRESH = 1.0 - PRAAT_DEFAULT_VOICING_THRESHOLD
-# Promoted on the 26-track, two-per-instrument URMP development ablation.
+# November 17: equal-dataset pitch sweep selection, applied offline and live.
 # Live and completed-audio gates deliberately have separate volume references:
-# the former uses a causal running peak, the latter a recording-wide p95 RMS.
-PYIN_DEFAULT_UNV_THRESH = 0.985
-PYIN_DEFAULT_MIN_VOLUME = 0.03
-# Completed-audio recovery: retain >1% voiced confidence. Validated with the
-# real-take and paired mistake replay in docs/duration-confidence-recovery-2026-09-27.md.
-PYIN_POSTHOC_UNV_THRESH = 0.990
-PYIN_POSTHOC_MIN_VOLUME = 0.04
+# both use p95 RMS: causal history live, the whole recording post-hoc.
+PYIN_DEFAULT_UNV_THRESH = 0.9875
+PYIN_DEFAULT_MIN_VOLUME = 0.06
+# Fixed HMM tracking regions; final gate selected by the mixed-dataset sweep.
+PYIN_TRACKING_UNV_THRESH = 0.990
+PYIN_POSTHOC_UNV_THRESH = 0.9875
+PYIN_POSTHOC_MIN_VOLUME = 0.06
 PYIN_GLOBAL_VOLUME_PERCENTILE = 95.0
 PYIN_RANGE_PADDING_SEMITONES = 8.0
 
@@ -44,6 +44,7 @@ class Config:
         "unv_thresh",
         "min_volume",
         "posthoc_unv_thresh",
+        "pitch_tracking_unv_thresh",
         "posthoc_min_volume",
     )
     # These settings change note boundaries while reusing the cached pitch
@@ -129,11 +130,12 @@ class Config:
     tuning: float = 440.0  # Hz
     unv_thresh: float = PYIN_DEFAULT_UNV_THRESH  # larger unvoiced probability -> unvoiced
 
-    # Live gain-relative RMS floor against the causal running peak.
+    # Live gain-relative RMS floor against the causal running 95th percentile.
     min_volume: float = PYIN_DEFAULT_MIN_VOLUME
 
     # Completed-audio voicing controller. It uses ordinary pYIN periodicity
     # and a recording-wide PYIN_GLOBAL_VOLUME_PERCENTILE RMS reference.
+    pitch_tracking_unv_thresh: float = PYIN_TRACKING_UNV_THRESH
     posthoc_unv_thresh: float = PYIN_POSTHOC_UNV_THRESH
     posthoc_min_volume: float = PYIN_POSTHOC_MIN_VOLUME
 
@@ -145,17 +147,17 @@ class Config:
     # refreshes this after every score-to-take fit and before correction.
     min_note_length: float = 0.03  # seconds
     # Initial detection admits short erroneous notes even in a slow score.
-    # min(200 ms, half the shortest tempo-adjusted score note): the larger cap
+    # min(200 ms, 0.75 times the shortest tempo-adjusted score note): the cap
     # resists expressive fragments in slow passages while fast scores retain
     # their shorter minimum. Zero cap disables the ceiling for comparisons.
-    min_note_length_factor: float = 0.50
+    min_note_length_factor: float = 0.75
     min_note_length_cap: float = 0.200  # seconds; 0 means uncapped
     # Note refinement caps the detector's score-relative minimum at this
     # correction-only absolute threshold.
     mistake_correction_min_length: float = 0.15  # seconds
     # Width of the decoded-silence majority window. At sr=44100 and h1=128,
-    # 40 ms maps to 13 frames, requiring a majority of seven unvoiced frames.
-    min_silence_duration_ms: float = 40.0
+    # 20 ms maps to seven frames, requiring a majority of four unvoiced frames.
+    min_silence_duration_ms: float = 20.0
 
     # --- STRING EDIT PARAMETERS ---
     ins_cost: float = 5
@@ -169,21 +171,19 @@ class Config:
     # raw semitone and second-valued terms into a common edit-cost scale. Gap
     # operations use the full unmatched duration because no paired onset exists
     # with which to blend it.
-    # Pitch weight 4 promoted from mistake2: tied-best event F1 with only one
-    # cost changed (82.83% vs 80.39%; six fewer FP, unchanged TP/FN). Confirmed
-    # with the current note defaults and repeat correction on the same corpus.
-    # Other costs retain the runner-v2 seed-0 defaults. Robust score-time fitting
+    # November 17 sweep selection: pitch/time 6:2, fixed gap costs 5/5.
+    # Robust score-time fitting
     # handles the global onset placement before string editing; duration then
     # supplies the local temporal evidence without letting expressive onset
     # shifts manufacture insertion/deletion cascades.
     alignment_alpha_onset: float = 0.0
     alignment_alpha_duration: float = 1.0
-    alignment_gamma_pitch: float = 4.0
+    alignment_gamma_pitch: float = 6.0
     # Legacy collapsed-repeat option retained for old benchmark configurations.
     # Current recovery uses deletion-neutral fees instead of this timing gate.
     repeat_split_timing_slack: float = 0.100
-    alignment_gamma_time: float = 1.0
-    pitch_tolerance: float = 1   # semitones
+    alignment_gamma_time: float = 2.0
+    pitch_tolerance: float = 0.5   # semitones (Perform default)
     timing_tolerance: float = 0.25  # sec
 
     # --- VIBRATO ---
@@ -373,7 +373,7 @@ class Config:
 
 
     def __repr__(self):
-        return (f"Config\n---\n   sr={self.sr}, w1={self.w1}, h1={self.h1}, fmin={self.fmin}, fmax={self.fmax}, tuning={self.tuning}, unv_thresh={self.unv_thresh}, min_volume={self.min_volume}, posthoc_unv_thresh={self.posthoc_unv_thresh}, posthoc_min_volume={self.posthoc_min_volume},\n"
+        return (f"Config\n---\n   sr={self.sr}, w1={self.w1}, h1={self.h1}, fmin={self.fmin}, fmax={self.fmax}, tuning={self.tuning}, unv_thresh={self.unv_thresh}, min_volume={self.min_volume}, pitch_tracking_unv_thresh={self.pitch_tracking_unv_thresh}, posthoc_unv_thresh={self.posthoc_unv_thresh}, posthoc_min_volume={self.posthoc_min_volume},\n"
                 f"   pitch_thresh={self.pitch_thresh}, min_note_length={self.min_note_length:.3f}, "
                 f"min_note_length_factor={self.min_note_length_factor}, "
                 f"min_note_length_cap={self.min_note_length_cap}, "

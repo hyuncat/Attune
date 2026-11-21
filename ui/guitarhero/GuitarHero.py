@@ -165,7 +165,7 @@ class GuitarHero(QWidget):
 
         self.update_view_items()
 
-    def move_plot(self, t: float):
+    def move_plot(self, t: float, *, refresh_items: bool = True):
         """Move the plot to time t (sec).
         Update the window boundaries, the background, and our viewbox range.
         Note that we keep a "is_moving" flag on to avoid accumulating errors
@@ -188,7 +188,8 @@ class GuitarHero(QWidget):
         self.timeline.setPos(t + self.live_playhead_offset)
 
         self.is_moving = False # now we good
-        self.update_view_items()
+        if refresh_items:
+            self.update_view_items()
         self.plot_moved.emit(t)
 
 

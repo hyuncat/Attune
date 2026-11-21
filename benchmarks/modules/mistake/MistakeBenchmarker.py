@@ -120,8 +120,8 @@ class MistakeBenchmarker(NoteBenchmarker):
                 raise FileNotFoundError(f'TheGlueNote bundled weights missing: {checkpoint}')
             packages['TheGlueNote'] = dict(checkpoint_sha256=hashlib.sha256(checkpoint.read_bytes()).hexdigest(), device='cuda' if torch.cuda.is_available() else 'cpu', **{p: version(p) for p in ('torch', 'symusic', 'miditok', 'tokenizers')})
         if 'Nakamura' in methods:
-            import benchmarks.modules.mistake.competitors.Nakamura as _api_Nakamura
-            packages['Nakamura'] = nakamura_preflight()
+            from benchmarks.modules.mistake.competitors.Nakamura import Nakamura
+            packages['Nakamura'] = Nakamura.preflight()
         if 'PolyTune' in methods:
             packages['PolyTune'] = (polytune or PolyTune()).preflight()
         if 'LadderSym' in methods:
@@ -156,17 +156,25 @@ class MistakeBenchmarker(NoteBenchmarker):
         if not score_notes or not user_notes:
             return [(None, s) for s in score_notes] + [(u, None) for u in user_notes]
         if method == 'Nakamura':
-            import benchmarks.modules.mistake.competitors.Nakamura as _api_Nakamura
-            alignment = align(score_notes, user_notes)
+            from benchmarks.modules.mistake.competitors.Nakamura import Nakamura
+            alignment = Nakamura.align(score_notes, user_notes)
         else:
             import parangonar
             classes = {'Parangonar DualDTW': parangonar.DualDTWNoteMatcher, 'Parangonar Automatic': parangonar.AutomaticNoteMatcher, 'Parangonar TheGlueNote': parangonar.TheGlueNoteMatcher}
             alignment = classes[method]()(MistakeBenchmarker.note_array(score_notes, score=True, bpm=bpm), MistakeBenchmarker.note_array(user_notes))
-        return MistakeBenchmarker.validated_pairs(alignment, score_notes, user_notes)
+        try:
+            # Automatic's window cutter/mender can leave notes outside every
+            # returned window. Keep its correspondences and count uncovered
+            # events as gaps, rather than dropping them from evaluation.
+            return MistakeBenchmarker.validated_pairs(
+                alignment, score_notes, user_notes,
+                complete_unmatched=(method == 'Parangonar Automatic'))
+        except ValueError as exc:
+            raise ValueError(f'{method}: {exc}') from exc
 
     @staticmethod
-    def validated_pairs(alignment, score_notes, user_notes):
-        """All competitors must return complete, one-to-one note coverage."""
+    def validated_pairs(alignment, score_notes, user_notes, *, complete_unmatched=False):
+        """Validate one-to-one IDs; optionally make uncovered events explicit gaps."""
         pairs, seen_s, seen_u = ([], set(), set())
         for item in alignment:
             label = item['label']
@@ -180,8 +188,13 @@ class MistakeBenchmarker(NoteBenchmarker):
                         raise ValueError(f'Duplicate/invalid alignment index: {item}')
                     seen.add(idx)
             pairs.append((user_notes[ui] if ui is not None else None, score_notes[si] if si is not None else None))
-        if len(seen_s) != len(score_notes) or len(seen_u) != len(user_notes):
-            raise ValueError('External alignment omitted input notes')
+        missing_s = sorted(set(range(len(score_notes))) - seen_s)
+        missing_u = sorted(set(range(len(user_notes))) - seen_u)
+        if complete_unmatched:
+            pairs.extend((None, score_notes[i]) for i in missing_s)
+            pairs.extend((user_notes[i], None) for i in missing_u)
+        elif missing_s or missing_u:
+            raise ValueError(f'External alignment omitted input notes: score={missing_s}, performance={missing_u}')
         return pairs
 
     @staticmethod
@@ -345,7 +358,7 @@ class MistakeBenchmarker(NoteBenchmarker):
         return pd.DataFrame(result)
 
     @staticmethod
-    def run_comparison(midis, output, *, seeds=(0,), rates=(0.0, 0.25), methods=COMPETITOR_METHODS, tolerances=(0.05, 0.1, 0.2), polytune=None, source_metadata=None, workers=None, neural_workers=None, parallel=True, input_kinds=('detected', 'oracle_notes', 'audio'), force_pitch_detection=False, polytune_last=False, laddersym=None):
+    def run_comparison(midis, output, *, seeds=(0,), rates=(0.0, 0.25), methods=COMPETITOR_METHODS, tolerances=(0.05, 0.1, 0.2), polytune=None, source_metadata=None, workers=None, neural_workers=None, parallel=True, input_kinds=('detected', 'oracle_notes', 'audio'), force_pitch_detection=False, polytune_last=False, laddersym=None, append=False):
         from benchmarks.modules.mistake.MistakeCache import MistakeCache
         input_kinds = tuple(input_kinds)
         if not input_kinds or len(set(input_kinds)) != len(input_kinds) or set(input_kinds) - {'detected', 'oracle_notes', 'audio'}:
@@ -374,6 +387,8 @@ class MistakeBenchmarker(NoteBenchmarker):
         code = MistakeCache.pipeline_fingerprint()
         for p in ('benchmarks/modules/mistake/MistakeBenchmarker.py', 'algorithms/RepeatSplitter.py', 'benchmarks/modules/mistake/MistakeBenchmarker.py', 'benchmarks/modules/mistake/MistakeDetectorBase.py', 'benchmarks/modules/mistake/competitors/Nakamura.py', 'benchmarks/modules/mistake/datasets/MistakeCases.py', 'benchmarks/modules/mistake/MistakeDetectorBase.py', 'benchmarks/modules/mistake/competitors/PolyTune.py', 'benchmarks/modules/mistake/competitors/PolyTune.py', 'benchmarks/modules/mistake/competitors/PolyTune.py', 'benchmarks/modules/mistake/competitors/LadderSym.py', 'benchmarks/modules/mistake/competitors/LadderSym.py'):
             code[p] = hashlib.sha256((REPO_ROOT / p).read_bytes()).hexdigest()
+        runner = 'benchmarks/modules/mistake/MistakeBenchmarker.py'
+        code[runner] = MistakeBenchmarker.cache_runner_identity(code[runner])
         metadata = dict(sources=midis, source_metadata=source_metadata, seeds=seeds, rates=rates, methods=list(methods), tolerances=tolerances, packages=packages, code=code, input_kinds=list(input_kinds), force_pitch_detection=bool(force_pitch_detection), ladder_contiguous_inference=bool(getattr(laddersym, 'contiguous_inference', False)), score_fit_protocol='matched_onsets_once_v1', scoring='primary audio_pitch: canonical missed/extra with one-to-one onset+pitch matching; pitch: legacy ID diagnostic; duration separate', pipeline='aligners: shared pitches/fresh unmodified notes, no truth boundary correction; PolyTune/LadderSym: raw shared performance audio + clean score audio; LadderSym also uses clean score MIDI prompt; oracle input skips refinement', timeline_protocol='monophonic_edits_v3', checkpoint_schema=1, status='running')
         metadata['execution_code'] = {name: hashlib.sha256((Path(__file__).parent / name).read_bytes()).hexdigest() for name in ('MistakeBenchmarker.py', 'MistakeCache.py')}
         run_path = output / 'run.json'
@@ -387,6 +402,13 @@ class MistakeBenchmarker(NoteBenchmarker):
                     key = (midi, seed, rate)
                     jobs[key] = {unit: checkpoints.job(midi, seed, rate, *unit) for unit in selected_units}
                     recovered[key] = {unit: saved for unit, job in jobs[key].items() if not (force_pitch_detection and unit[0] == 'detected') if (saved := checkpoints.load(job)) is not None}
+        if append and previous:
+            for key, cached in recovered.items():
+                if key[0] in previous['sources']:
+                    # Existing checkpoints may be incomplete after interruption,
+                    # but completed runs must retain every compatible evaluation.
+                    if previous.get('status') == 'complete' and len(cached) != len(jobs[key]):
+                        raise ValueError('Cannot append: an existing evaluation is missing or incompatible; preserve this run and use a new output for changed settings')
         MistakeCache.atomic_json(run_path, metadata)
         rows = [row for cached in recovered.values() for batch in cached.values() for row in batch]
 
@@ -444,8 +466,10 @@ class MistakeBenchmarker(NoteBenchmarker):
                     def neural_started(count):
                         from benchmarks.modules.mistake.MistakeCache import MistakeCache
                         metadata['parallelism']['neural_workers'] = count
+                        metadata['parallelism']['model_threads'] = max(1, ((os.cpu_count() or 4) - 1) // count)
                         MistakeCache.atomic_json(run_path, metadata)
-                        progress.update_compact(total, 'audio models', f'{count} persistent model workers', count=0)
+                        progress.last_render = 0  # Always show a change in worker allocation.
+                        progress.update_compact(total, 'audio models', f'{count} model workers per algorithm × {metadata["parallelism"]["model_threads"]} CPU threads', count=0)
                     joiner = ' then ' if polytune_last else ' + '
                     model_label = model_workers if model_workers is not None else 'auto-sized'
                     progress.update_compact(total, 'starting', f'{cpu_workers} CPU{joiner}{model_label} model workers', count=0)
@@ -500,6 +524,828 @@ class MistakeBenchmarker(NoteBenchmarker):
         """
         kwargs.setdefault('methods', COMPETITOR_SYMBOLIC_METHODS)
         return MistakeBenchmarker.run_comparison(midis, output, input_kinds=('oracle_notes',), **kwargs)
+
+    ISOLATED_METHODS = COMPETITOR_SYMBOLIC_METHODS
+    ISOLATED_INSTRUMENTS = (
+        'violin', 'viola', 'cello', 'double_bass', 'flute', 'oboe', 'clarinet',
+        'bassoon', 'saxophone', 'trumpet', 'horn', 'trombone', 'tuba',
+    )
+
+    @classmethod
+    def isolated_instrument(cls, name):
+        """Normalize author-mirror and Coco instrument labels to shared quotas."""
+        normalized = '_'.join(name.strip().lower().replace('_', ' ').split())
+        normalized = {
+            'french_horn': 'horn',
+            'contrabass': 'double_bass',
+            'tenor_sax': 'saxophone',
+            'tenor_saxophone': 'saxophone',
+        }.get(normalized, normalized)
+        if normalized not in cls.ISOLATED_INSTRUMENTS:
+            raise ValueError(f'Unknown isolated instrument: {name}')
+        return normalized
+
+    @staticmethod
+    def isolated_midi_notes(path):
+        """One event per MIDI note, retaining equal onsets, overlap and durations.
+
+        NoteData and OneInstrumentScoreData can overwrite/collapse equal onsets;
+        native E must instead reach every aligner as an ordered event list.
+        """
+        import pretty_midi
+        midi = pretty_midi.PrettyMIDI(str(path))
+        parts = [part for part in midi.instruments if part.notes]
+        if any(part.is_drum for part in parts) or len(parts) > 1:
+            raise ValueError(f'Expected one pitched instrument stem: {path}')
+        raw = sorted((n for part in parts for n in part.notes),
+                     key=lambda n: (n.start, -n.pitch, n.end, n.velocity))
+        return [Note(i, float(n.start), float(n.end), [int(n.pitch)],
+                     velocity=int(n.velocity)) for i, n in enumerate(raw)]
+
+    @staticmethod
+    def isolated_note_data(notes):
+        """E2's monophonic injector requires distinct onset keys; never drop notes."""
+        if len({n.start_time for n in notes}) != len(notes):
+            raise ValueError('E2 source has simultaneous notes; cannot inject monophonically')
+        result = NoteData()
+        result.load_data({n.start_time: n for n in notes})
+        return result
+
+    @classmethod
+    def isolated_sources(cls, dataset, output, *, root, per_instrument=20, seed=0):
+        """Freeze a 13-instrument test cohort before evaluating any method.
+
+        E uses a seeded order of author-mirror test pieces, filling instrument
+        quotas from MIDI filenames only. E2 uses the existing Coco sampler.
+        No audio is downloaded, extracted, synthesized, or analyzed.
+        """
+        from collections import Counter
+        from benchmarks.modules.mistake.datasets.NativeDatasets import (
+            DATASETS, SPLIT_SHA256, LABELS, test_ids, stem_key,
+        )
+        from benchmarks.modules.pitch.datasets.CocoChorales import CocoChorales
+        output, root = Path(output), Path(root).resolve()
+        path = output / 'manifest.json'
+        selection = dict(dataset=dataset, root=str(root), split='test',
+                         per_instrument=per_instrument, seed=seed)
+        if path.exists():
+            manifest = json.loads(path.read_text())
+            if manifest['selection'] != selection:
+                raise ValueError('Selection changed; choose a fresh isolated output tag')
+            for case in manifest['cases']:
+                for key, source in case['files'].items():
+                    if digest(source) != case['hashes'][key]:
+                        raise ValueError(f'Isolated input changed: {source}')
+            return manifest
+        cases = []
+        if dataset == 'E2':
+            coco = CocoChorales(root=root, split='test', per_instrument=per_instrument, seed=seed)
+            records = coco.select_records()
+            # Reuse shard extraction with only MIDI members requested.
+            coco.materialize_records([
+                replace(r, wav_member='', metadata_member='', mix_midi_member='')
+                for r in records
+            ])
+            for r in records:
+                candidates = [coco.materialized_midi_path(r)] + [
+                    root / 'main_dataset' / r.split / r.track / folder / (r.stem + '.mid')
+                    for folder in ('stems_midi', 'stems_MIDI')
+                ]
+                source = next((p for p in candidates if p.is_file()), None)
+                if source is None:
+                    raise FileNotFoundError(f'Missing selected MIDI: {r.track_id}')
+                cases.append(dict(track_id=r.track_id, group=r.track,
+                                  instrument=cls.isolated_instrument(r.instrument),
+                                  files=dict(score=str(source.resolve())),
+                                  hashes=dict(score=digest(source))))
+            provenance = dict(selection_policy=CocoChorales.PER_INSTRUMENT_SELECTION_POLICY)
+        elif dataset == 'E':
+            repo, revision, split_name = DATASETS['coco']
+            cache = root / '.inventory' / revision
+            split = download(repo, revision, split_name, root / split_name,
+                             sha256=SPLIT_SHA256['coco'])
+            available = {Path(e['path']).name for e in tree(repo, revision, 'score', cache / 'pieces.json')
+                         if e['type'] == 'directory'}
+            pieces = sorted(test_ids(json.loads(split.read_text())) & available,
+                            key=lambda p: hashlib.sha256(f'{seed}:{p}'.encode()).hexdigest())
+            counts = Counter()
+            selected = []
+            for piece in pieces:
+                folder = f'score/{piece}/stems_midi'
+                entries = tree(repo, revision, folder, cache / (folder + '.json'))
+                for entry in sorted(entries, key=lambda e: e['path']):
+                    if entry['type'] != 'file' or not entry['path'].endswith('.mid'):
+                        continue
+                    stem = stem_key(entry['path'])
+                    instrument = cls.isolated_instrument(stem.split('_', 1)[1])
+                    if counts[instrument] < per_instrument:
+                        selected.append((piece, stem, instrument, entry))
+                        counts[instrument] += 1
+                if all(counts[i] == per_instrument for i in cls.ISOLATED_INSTRUMENTS):
+                    break
+            # Selection is finished before accessing any performance or labels.
+            for piece, stem, instrument, score_entry in selected:
+                files, hashes = {}, {}
+                folders = dict(performed=f'mistake/{piece}/stems_midi',
+                               **{k: f'label/{v}/{piece}/stems_midi' for k, v in LABELS.items()})
+                entries = dict(score=score_entry)
+                for key, folder in folders.items():
+                    matches = [e for e in tree(repo, revision, folder, cache / (folder + '.json'))
+                               if e['type'] == 'file' and e['path'].endswith('.mid')
+                               and stem_key(e['path']) == stem]
+                    if len(matches) != 1:
+                        raise ValueError(f'Missing/ambiguous {key}: {piece}/{stem}')
+                    entries[key] = matches[0]
+                for key, entry in entries.items():
+                    source = download(repo, revision, entry['path'], root / entry['path'],
+                                      sha256=entry.get('lfs', {}).get('oid'))
+                    files[key], hashes[key] = str(source), digest(source)
+                cases.append(dict(track_id=f'{piece}/{stem}', group=piece,
+                                  instrument=instrument, files=files, hashes=hashes))
+            provenance = dict(repo=repo, revision=revision, split_sha256=digest(split),
+                              selection_policy='seeded_piece_order_instrument_quotas_v1',
+                              scope='author-hosted LadderSym mirror test subset')
+        else:
+            raise ValueError('Select E or E2')
+        counts = Counter(c['instrument'] for c in cases)
+        expected = {i: per_instrument for i in cls.ISOLATED_INSTRUMENTS}
+        if dict(counts) != expected or len({c['track_id'] for c in cases}) != sum(expected.values()):
+            raise ValueError(f'Incomplete or duplicate cohort; require {expected}, found {dict(counts)}')
+        manifest = dict(selection=selection, provenance=provenance, cases=cases)
+        save_json(path, manifest)
+        return manifest
+
+    @staticmethod
+    def isolated_attune_pairs(score, performed, config):
+        """Production edit costs with endpoint fitting and one robust refit.
+
+        Fit directly on event lists so simultaneous MIDI notes are never merged.
+        This is the isolated alignment adapter, without acoustic repeat recovery.
+        """
+        from algorithms.MistakeDetector import MistakeDetector
+        fitted = deepcopy(score)
+        detector = MistakeDetector(config=config)
+
+        def transform(scale, offset):
+            for note in fitted:
+                note.start_time = note.start_time * scale + offset
+                note.end_time = note.end_time * scale + offset
+
+        total_scale = 1.0  # Event-list score uses a constant 120 BPM coordinate system.
+        if len(score) > 1 and len(performed) > 1:
+            sspan = score[-1].start_time - score[0].start_time
+            uspan = performed[-1].start_time - performed[0].start_time
+            if sspan > 0 and uspan > 0:
+                total_scale = min(uspan / sspan, 120.0)  # Production minimum: 1 BPM.
+                transform(total_scale, performed[0].start_time - total_scale * score[0].start_time)
+        alignment = detector.get_string_edit_alignment(performed, fitted)
+        pairs = alignment.pairs
+        anchors = sorted([(u, s) for u, s in pairs if u is not None and s is not None
+                          and not detector.is_pitch_substitution(u, s)], key=lambda pair: pair[1].start_time)
+        slopes = [(v.start_time - u.start_time) / (t.start_time - s.start_time)
+                  for i, (u, s) in enumerate(anchors)
+                  for v, t in anchors[i + 1:]
+                  if t.start_time > s.start_time and v.start_time > u.start_time]
+        if slopes:
+            scale = min(float(np.median(slopes)), 120.0 / total_scale)
+            offset = float(np.median([u.start_time - scale * s.start_time for u, s in anchors]))
+            transform(scale, offset)
+            alignment = detector.get_string_edit_alignment(performed, fitted)
+        return detector.reconcile_gap_pairs(alignment).pairs
+
+    @staticmethod
+    def isolated_annotated_notes(events):
+        """Exact annotated performances, retaining simultaneous/duplicate events."""
+        ordered = sorted(events, key=lambda e: (e['onset'], -e['pitch'], e['end']))
+        return [Note(i, float(e['onset']), float(e['end']), [int(e['pitch'])], velocity=int(e.get('velocity', 64)))
+                for i, e in enumerate(ordered)]
+
+    @classmethod
+    def isolated_case(cls, task):
+        """Evaluate one exact-note case. Called only by an explicitly enabled run."""
+        dataset, case = task['dataset'], task['case']
+        directory = Path(task['directory'])
+        directory.mkdir(parents=True, exist_ok=True)
+        score = cls.isolated_midi_notes(case['files']['score'])
+        if not score:
+            raise ValueError(f'Empty reference: {case["track_id"]}')
+        config = Config()
+        if dataset == 'E':
+            from collections import Counter
+            def label_events(key):
+                return [dict(kind=key, onset=n.start_time, end=n.end_time,
+                             pitch=n.midi_num[0], velocity=n.velocity)
+                        for n in cls.isolated_midi_notes(case['files'][key])]
+            correct, extra = label_events('correct'), label_events('extra')
+            actual = cls.native_midi_events(case['files']['performed'], 'performed')
+            signature = lambda events: Counter((e['pitch'], round(e['onset'], 6), round(e['end'], 6)) for e in events)
+            annotated = correct + extra
+            actual_counts, label_counts = signature(actual), signature(annotated)
+            save_json(directory / 'annotation_audit.json', dict(
+                input_policy='annotated correct+extra MIDI events',
+                raw_performed_notes=len(actual), annotated_performed_notes=len(annotated),
+                unlabelled_raw_notes=[dict(pitch=p, onset=t, end=e, count=count)
+                                     for (p, t, e), count in (actual_counts - label_counts).items()],
+                labels_absent_from_raw=[dict(pitch=p, onset=t, end=e, count=count)
+                                       for (p, t, e), count in (label_counts - actual_counts).items()],
+            ))
+            # Use the same annotation-defined input for every E case. Do not
+            # score undocumented raw notes as false positives or silently skip tracks.
+            performed = cls.isolated_annotated_notes(annotated)
+            truth = extra + cls.native_midi_events(case['files']['missed'], 'missed')
+        else:
+            reference = cls.isolated_note_data(score)
+            injector = MistakeInjector(mistake_rate=task['rate'], weights=(0.2,) * 5,
+                                      timing_std_ms=0.0, duration_std=0.0,
+                                      duration_error_min_sec=max(0.3, config.timing_tolerance + 0.05))
+            injected, history = injector.inject(reference, np.random.default_rng(task['seed']))
+            payload = dict(injector=injector.last_metadata,
+                           performance_timeline=cls.performance_timeline(injected),
+                           injection_history=cls._jsonable_truth(history))
+            midi = directory / 'performed.mid'
+            cls.notedata_to_pm(injected).write(str(midi))
+            performed = cls.isolated_midi_notes(midi)
+            note_data = cls.isolated_note_data(performed)
+            score_onsets = MistakeDetectorBase.timeline_score_onsets(payload, note_data)
+            net, _ = MistakeDetectorBase.net_mistakes(
+                reference, note_data, pitch_tolerance=config.pitch_tolerance,
+                duration_tolerance=config.timing_tolerance, score_onsets=score_onsets)
+            truth = MistakeDetectorBase.truth_events(net, reference, note_data)
+            payload['net_truth'] = cls._jsonable_truth(net)
+            save_json(directory / 'injection.json', payload)
+            if task['rate'] == 0 and truth:
+                raise ValueError('Clean E2 control contains net pitch mistakes')
+        originals = {n.id: n for n in score}
+        rows, predictions = [], {}
+        for method in task['methods']:
+            checkpoint = cls.isolated_method_checkpoint(task, method)
+            if checkpoint.exists():
+                cached = json.loads(checkpoint.read_text())
+                rows.extend(cached['rows'])
+                predictions[method] = cached['predictions']
+                if task.get('events') is not None:
+                    task['events'].put(('done', method, case['track_id'], task['case_id']))
+                continue
+            if task.get('events') is not None:
+                task['events'].put(('start', method, case['track_id'], task['case_id']))
+            start = perf_counter()
+            pairs = (cls.isolated_attune_pairs(score, performed, config)
+                     if method == 'Attune (no refinement)' else
+                     cls.external_pairs(method, deepcopy(score), deepcopy(performed), 120.0))
+            events = []
+            for mistake in cls.label_pairs(pairs, config):
+                if mistake.type in ('deletion', 'substitution'):
+                    note = originals[mistake.midi_note.id]
+                    # Retain each dataset's established event timestamp semantics.
+                    onset = (mistake.user_note.start_time if dataset == 'E' and mistake.type == 'substitution'
+                             else note.start_time)
+                    events.append(dict(kind='missed', onset=onset, pitch=note.midi_num[0]))
+                if mistake.type in ('insertion', 'substitution'):
+                    note = mistake.user_note
+                    events.append(dict(kind='extra', onset=note.start_time, pitch=note.midi_num[0]))
+            seconds = perf_counter() - start
+            predictions[method] = events
+            first_row = len(rows)
+            for tolerance in task['tolerances']:
+                for metric, (tp, fp, fn) in MistakeDetectorBase.score_events(events, truth, tolerance).items():
+                    precision, recall, f1 = MistakeDetectorBase.prf(tp, fp, fn)
+                    rows.append(dict(dataset=dataset, track_id=case['track_id'], group=case['group'],
+                                     instrument=case['instrument'], case_id=task['case_id'],
+                                     seed=task['seed'], rate=task['rate'], input='oracle_notes',
+                                     method=method, status='ok', tolerance=tolerance, metric=metric,
+                                     tp=tp, fp=fp, fn=fn, precision=precision, recall=recall,
+                                     f1=f1 if tp + fp + fn else None, seconds=seconds,
+                                     score_notes=len(score), performed_notes=len(performed)))
+            # Commit inside the worker before reporting completion. A later
+            # method failure or notebook interrupt must not lose this result.
+            save_json(checkpoint, dict(rows=rows[first_row:], predictions=events))
+            if task.get('events') is not None:
+                task['events'].put(('done', method, case['track_id'], task['case_id']))
+        save_json(directory / 'events.json', dict(truth=truth, predictions=predictions))
+        save_json(directory / 'rows.json', rows)
+        return rows
+
+    @staticmethod
+    def isolated_method_checkpoint(task, method):
+        key = hashlib.sha256(method.encode()).hexdigest()[:20]
+        return Path(task['directory']) / 'methods' / (key + '.json')
+
+    @staticmethod
+    def isolated_worker_count(workers=None):
+        """Use available cores, budgeting memory for a matcher per process."""
+        if workers is not None:
+            if not isinstance(workers, int) or workers < 1:
+                raise ValueError('workers must be a positive integer or None')
+            return workers
+        import psutil
+        cores = max(1, (os.cpu_count() or 4) - 1)
+        memory = max(1, int((psutil.virtual_memory().available / 2**30 - 1) / 1.6))
+        return min(cores, memory)
+
+    @classmethod
+    def isolated_worker(cls, task):
+        from benchmarks.modules.note.NoteBenchmarker import NoteEvaluation
+        directory = Path(task['directory'])
+        directory.mkdir(parents=True, exist_ok=True)
+        with NoteEvaluation._worker_log(directory / 'worker.log'):
+            try:
+                return cls.isolated_case(task)
+            except BaseException:
+                traceback.print_exc()
+                raise
+
+    @staticmethod
+    def isolated_progress_line(message, counts, total, offset=0):
+        """Convert per-method child counters into one monotonic suite counter."""
+        import re
+        match = re.fullmatch(r'(E[12]) \[\s*(\d+)/(\d+)\]: ([^:]+): (.*)', message)
+        if match is None:
+            return message
+        dataset, completed, _, method, track = match.groups()
+        if method in counts:
+            counts[method] = max(counts[method], int(completed))
+        return f'{dataset} [{offset + sum(counts.values()):3d}/{total}]: {method}: {track}'
+
+    @classmethod
+    def launch_isolated_suite(cls, requests):
+        """One display and total across all enabled datasets and methods."""
+        requests = list(requests)
+        sizes = [len(cls.ISOLATED_INSTRUMENTS) * r.get('per_instrument', 20)
+                 * len(r.get('methods', cls.ISOLATED_METHODS)) for r in requests]
+        total, offset, handle = sum(sizes), 0, None
+        for request, size in zip(requests, sizes):
+            handle = cls.launch_isolated(request, handle, progress_total=total,
+                                         progress_offset=offset)
+            offset += size
+        return handle
+
+    @classmethod
+    def launch_isolated(cls, request, display_handle=None, *, progress_total=None, progress_offset=0):
+        """Stream child progress into one notebook display, with errors in a log."""
+        import subprocess
+        output = Path(request['output'])
+        output.mkdir(parents=True, exist_ok=True)
+        log_path = output / 'launcher.log'
+        methods = request.get('methods', cls.ISOLATED_METHODS)
+        tracks = len(cls.ISOLATED_INSTRUMENTS) * request.get('per_instrument', 20)
+        counts = {'Attune' if m.startswith('Attune') else m.removeprefix('Parangonar '): 0
+                  for m in methods}
+        total = progress_total if progress_total is not None else tracks * len(methods)
+        last_message = f'{"E1" if request["dataset"] == "E" else "E2"} [0/{tracks}]: Preparing: MIDI cohort'
+        try:
+            from IPython import get_ipython
+            from IPython.display import display
+            notebook = get_ipython() is not None and getattr(get_ipython(), 'kernel', None) is not None
+        except ImportError:
+            notebook = False
+        if notebook and display_handle is None:
+            display_handle = display({'text/plain': ''}, raw=True, display_id=True)
+        with log_path.open('a') as log:
+            process = subprocess.Popen(
+                [sys.executable, '-m', 'benchmarks.modules.mistake.MistakeBenchmarker', 'isolated'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
+                text=True, bufsize=1, cwd=REPO_ROOT,
+            )
+            try:
+                process.stdin.write(json.dumps(request))
+                process.stdin.close()
+                width = 0
+                for line in process.stdout:
+                    message = line.strip()
+                    if not message:
+                        continue
+                    if message.startswith(('E1 [', 'E2 [')):
+                        last_message = message
+                        message = cls.isolated_progress_line(message, counts, total, progress_offset)
+                        if notebook:
+                            display_handle.update({'text/plain': message}, raw=True)
+                        else:
+                            width = max(width, len(message))
+                            print('\r' + message.ljust(width), end='', flush=True)
+                    else:
+                        log.write(line)
+                        log.flush()
+                returncode = process.wait()
+            except BaseException:
+                process.terminate()
+                process.wait()
+                raise
+            finally:
+                process.stdout.close()
+        if returncode:
+            tail = '\n'.join(log_path.read_text().splitlines()[-18:])
+            raise RuntimeError(f'Isolated {request["dataset"]} failed. Log: {log_path}\n{tail}')
+        # Completed cached cases need not emit individual worker events.
+        counts.update({method: tracks for method in counts})
+        message = cls.isolated_progress_line(last_message, counts, total, progress_offset)
+        if notebook:
+            display_handle.update({'text/plain': message}, raw=True)
+        else:
+            print('\r' + message.ljust(width), end='', flush=True)
+        return display_handle
+
+    @classmethod
+    def isolated_analysis_fingerprint(cls):
+        """Fingerprint inference helpers, excluding notebook/progress presentation."""
+        import inspect
+        names = ('isolated_midi_notes', 'isolated_note_data', 'isolated_attune_pairs',
+                 'isolated_annotated_notes', 'isolated_case', 'external_pairs',
+                 'note_array', 'validated_pairs', 'label_pairs', 'native_midi_events',
+                 'performance_timeline', '_jsonable_truth')
+        source = '\n'.join(inspect.getsource(getattr(cls, name)) for name in names)
+        return hashlib.sha256(source.encode()).hexdigest()
+
+    @classmethod
+    def run_isolated(cls, dataset, output, *, root, per_instrument=20, seed=0,
+                     injection_seeds=(0,), methods=COMPETITOR_SYMBOLIC_METHODS,
+                     tolerances=(0.05, 0.1, 0.2), workers=None):
+        """Resumable exact-note E/E2 suite, with no acoustic/neural audio stages."""
+        if dataset not in ('E', 'E2') or not isinstance(per_instrument, int) or per_instrument < 1:
+            raise ValueError('Select E/E2 and a positive instrument quota')
+        if not methods or len(set(methods)) != len(methods) or set(methods) - set(cls.ISOLATED_METHODS):
+            raise ValueError(f'Isolated methods must be distinct members of {cls.ISOLATED_METHODS}')
+        if not injection_seeds or len(set(injection_seeds)) != len(injection_seeds):
+            raise ValueError('Provide distinct injection seeds')
+        if not tolerances or len(set(tolerances)) != len(tolerances) or any(not np.isfinite(t) or t <= 0 for t in tolerances):
+            raise ValueError('Provide distinct positive finite onset tolerances')
+        workers = cls.isolated_worker_count(workers)
+        output = Path(output).resolve()
+        output.mkdir(parents=True, exist_ok=True)
+        label = 'E1' if dataset == 'E' else 'E2'
+        print(f'\r{label} [  0/{13 * per_instrument}]: Preparing: MIDI cohort\r', end='', flush=True)
+        with (output / 'preparation.log').open('a') as log, redirect_stdout(log), redirect_stderr(log):
+            packages = cls.preflight(methods)
+            manifest = cls.isolated_sources(dataset, output, root=root,
+                                            per_instrument=per_instrument, seed=seed)
+        contract = dict(protocol='isolated_annotated_events_v2', dataset=dataset,
+                        native_performance='correct+extra label MIDI; raw MIDI discrepancy audited',
+                        manifest_sha256=digest(output / 'manifest.json'),
+                        methods=list(methods), tolerances=list(tolerances),
+                        injection_seeds=list(injection_seeds), config=asdict(Config()),
+                        packages=packages, code=MistakeCache.pipeline_fingerprint(),
+                        benchmark_sha256=cls.isolated_analysis_fingerprint(),
+                        injector_sha256=digest(Path(__file__).parent / 'datasets/MistakeInjector.py'),
+                        base_sha256=digest(Path(__file__).parent / 'MistakeDetectorBase.py'),
+                        nakamura_sha256=digest(Path(__file__).parent / 'competitors/Nakamura.py'),
+                        fitting='event-list endpoint fit then one robust matched-onset affine refit',
+                        simultaneous_notes='retained; onset, descending pitch, offset, velocity ordering',
+                        native_missed_timestamps='replacement onset for substitutions; score onset for deletions',
+                        e2_missed_timestamps='original score onset')
+        path = output / 'run.json'
+        if path.exists():
+            previous = json.loads(path.read_text())['contract']
+            # Completed cases in these exact v2 revisions already passed strict
+            # coverage validation. Gap completion only changes formerly failing
+            # Automatic cases, so their successful checkpoints remain valid.
+            presentation_only_predecessors = {
+                '162835e92bb188097a2f9eb0d4a75e8b8ca525e4037160813c993a094a8e71b1',
+                'd6513a24d39327afda3b33106c7141d9f6fa59effeca4208b3d88491cc406ede',
+                '17b26572d012eef950710be993afe366b3513a3853cf7f6a30fcdb95e969389a',
+                # Per-method checkpointing changes persistence only.
+                '5bfe3e5d27789cf1fe520b8415768ba94b77b6af2aedfd1d3ff90d0a9bc44e7b',
+            }
+            if previous.get('benchmark_sha256') in presentation_only_predecessors:
+                previous = dict(previous, benchmark_sha256=contract['benchmark_sha256'])
+            if previous != contract:
+                raise ValueError('Isolated configuration/code changed; choose a fresh output tag')
+        metadata = dict(status='running', contract=contract, workers=workers)
+        save_json(path, metadata)
+        tasks, rows = [], []
+        for case in manifest['cases']:
+            conditions = [(0, 0.0)] + [(s, 0.25) for s in injection_seeds] if dataset == 'E2' else [(0, -1.0)]
+            for injection_seed, rate in conditions:
+                case_id = hashlib.sha256(f'{dataset}:{case["track_id"]}:{injection_seed}:{rate}'.encode()).hexdigest()[:20]
+                task = dict(dataset=dataset, case=case, seed=injection_seed, rate=rate,
+                            case_id=case_id, methods=list(methods), tolerances=list(tolerances),
+                            directory=str(output / 'cases' / case_id))
+                tasks.append(task)
+        expected = len(tasks)
+        metadata['expected_cases'] = expected
+        save_json(path, metadata)
+        pending = []
+        for task in tasks:
+            checkpoint = Path(task['directory']) / 'rows.json'
+            if checkpoint.exists():
+                rows.extend(json.loads(checkpoint.read_text()))
+            else:
+                pending.append(task)
+
+        from collections import defaultdict
+        completed = defaultdict(set)
+        track_conditions = defaultdict(set)
+        for task in tasks:
+            track_conditions[task['case']['track_id']].add(task['case_id'])
+        for row in rows:
+            completed[row['method'], row['track_id']].add(row['case_id'])
+        for task in pending:
+            for method in methods:
+                if cls.isolated_method_checkpoint(task, method).exists():
+                    completed[method, task['case']['track_id']].add(task['case_id'])
+        width = 0
+
+        def progress(method, track):
+            nonlocal width
+            count = sum(completed[method, t] >= conditions for t, conditions in track_conditions.items())
+            shown = 'Attune' if method.startswith('Attune') else method.removeprefix('Parangonar ')
+            message = f'{label} [{count:3d}/{len(track_conditions)}]: {shown}: {track}'
+            width = max(width, len(message))
+            print('\r' + message.ljust(width) + '\r', end='', flush=True)
+
+        def receive(task, batch):
+            rows.extend(batch)
+            for method in methods:
+                completed[method, task['case']['track_id']].add(task['case_id'])
+
+        def drain(events):
+            while True:
+                try:
+                    kind, method, track, case_id = events.get_nowait()
+                except queue.Empty:
+                    return
+                if kind == 'done':
+                    completed[method, track].add(case_id)
+                progress(method, track)
+
+        try:
+            # Seed every method's global display counter with resumed work.
+            for method in methods:
+                progress(method, 'Cached results')
+            with cls.single_thread_environment():
+                if pending:
+                    context = mp.get_context('spawn')
+                    with context.Manager() as manager:
+                        events = manager.Queue()
+                        with ProcessPoolExecutor(max_workers=min(workers, len(pending)),
+                                                 mp_context=context, initializer=cls._init_cpu,
+                                                 initargs=(None,)) as pool:
+                            futures = {pool.submit(cls.isolated_worker, dict(task, events=events)): task
+                                       for task in pending}
+                            remaining = set(futures)
+                            try:
+                                while remaining:
+                                    done, remaining = wait(remaining, timeout=0.1, return_when=FIRST_COMPLETED)
+                                    drain(events)
+                                    for future in done:
+                                        receive(futures[future], future.result())
+                                drain(events)
+                            except BaseException:
+                                for future in futures:
+                                    future.cancel()
+                                raise
+                if tasks:
+                    progress(methods[-1], tasks[-1]['case']['track_id'])
+            frame = pd.DataFrame(rows)
+            keys = ['case_id', 'method', 'metric', 'tolerance']
+            if frame.duplicated(keys).any() or len(frame) != expected * len(methods) * len(tolerances) * 3:
+                raise ValueError('Incomplete/duplicate isolated results')
+            for name, table in [('rows.csv', frame), ('summary.csv', cls.isolated_summary(frame))]:
+                temporary = output / (name + '.tmp')
+                table.to_csv(temporary, index=False)
+                temporary.replace(output / name)
+            metadata['rows_sha256'] = digest(output / 'rows.csv')
+            metadata['status'] = 'complete'
+        except BaseException as exc:
+            metadata.update(status='interrupted' if isinstance(exc, KeyboardInterrupt) else 'failed', error=repr(exc))
+            raise
+        finally:
+            save_json(path, metadata)
+        return frame
+
+    @staticmethod
+    def isolated_summary(rows):
+        keys = ['dataset', 'rate', 'method', 'metric', 'tolerance']
+        table = rows.groupby(keys).agg(cases=('case_id', 'nunique'), tracks=('track_id', 'nunique'),
+                                      tp=('tp', 'sum'), fp=('fp', 'sum'), fn=('fn', 'sum'),
+                                      score_notes=('score_notes', 'sum')).reset_index()
+        table['precision'] = table.tp / (table.tp + table.fp).replace(0, np.nan)
+        table['recall'] = table.tp / (table.tp + table.fn).replace(0, np.nan)
+        table['f1'] = 2 * table.tp / (2 * table.tp + table.fp + table.fn).replace(0, np.nan)
+        table['clean_fp_per_100_notes'] = np.where(table.rate.eq(0), 100 * table.fp / table.score_notes, np.nan)
+        return table
+
+    @staticmethod
+    def isolated_tables(output, *, tolerance=0.1):
+        """Compact result/clean-control tables; refuse partial runs."""
+        output = Path(output)
+        run = json.loads((output / 'run.json').read_text())
+        if run['status'] != 'complete' or digest(output / 'rows.csv') != run['rows_sha256']:
+            raise ValueError('Isolated run is incomplete or results changed')
+        rows = pd.read_csv(output / 'rows.csv')
+        primary = rows.loc[rows.metric.eq('audio_pitch') & np.isclose(rows.tolerance, tolerance)]
+        if primary.empty:
+            raise ValueError('No results at the requested tolerance')
+        table = MistakeBenchmarker.isolated_summary(primary)
+        errors = table.loc[table.rate.ne(0)].copy()
+        for metric in ('precision', 'recall', 'f1'):
+            errors[metric] *= 100
+        errors = errors[['dataset', 'method', 'tracks', 'cases', 'tp', 'fp', 'fn',
+                         'precision', 'recall', 'f1']].sort_values('f1', ascending=False)
+        clean = table.loc[table.rate.eq(0), ['dataset', 'method', 'tracks', 'cases',
+                                           'fp', 'clean_fp_per_100_notes']]
+        return dict(errors=errors.round(3), clean=clean.round(3))
+
+    @staticmethod
+    def isolated_average_table(outputs, *, tolerance=0.1):
+        """Equal-weight mean of each dataset's pooled metrics, excluding clean controls."""
+        if set(outputs) != {'E', 'E2'}:
+            raise ValueError('Supply both E and E2')
+        tables = []
+        for directory in outputs.values():
+            table = MistakeBenchmarker.isolated_tables(directory, tolerance=tolerance)['errors']
+            # Recompute from integer counts rather than rounded display metrics.
+            table['precision'] = 100 * table.tp / (table.tp + table.fp)
+            table['recall'] = 100 * table.tp / (table.tp + table.fn)
+            table['f1'] = 200 * table.tp / (2 * table.tp + table.fp + table.fn)
+            tables.append(table.set_index('method')[['precision', 'recall', 'f1']])
+        if set(tables[0].index) != set(tables[1].index):
+            raise ValueError('Datasets must contain the same methods')
+        return pd.concat(tables).groupby('method').mean().sort_values('f1', ascending=False)
+
+    @staticmethod
+    def isolated_significance(outputs, *, tolerance=0.1, n_resamples=9999, seed=0, alpha=0.05):
+        """Two-sided clustered paired swaps of pooled event F1; one Holm family.
+
+        Every selected method/case must be complete. Seeds and stems from one
+        composition are swapped together. Clean E2 controls are reported
+        separately, not mixed into the error-condition hypothesis tests.
+        Returns comparisons and coverage; never executes benchmark inference.
+        """
+        import itertools
+        if not isinstance(n_resamples, int) or n_resamples < 99 or not 0 < alpha < 1:
+            raise ValueError('Use at least 99 permutations and 0 < alpha < 1')
+        if set(outputs) != {'E', 'E2'}:
+            raise ValueError('Supply both E and E2 outputs for a single Holm family')
+        records, coverage = [], []
+        for dataset, directory in sorted(outputs.items()):
+            directory = Path(directory)
+            run = json.loads((directory / 'run.json').read_text())
+            if run['status'] != 'complete' or run['contract']['dataset'] != dataset:
+                raise ValueError(f'{dataset}: run missing, incomplete or wrong dataset')
+            if digest(directory / 'rows.csv') != run['rows_sha256']:
+                raise ValueError(f'{dataset}: saved results changed')
+            if digest(directory / 'manifest.json') != run['contract']['manifest_sha256']:
+                raise ValueError(f'{dataset}: manifest changed')
+            methods = run['contract']['methods']
+            baseline = 'Attune (no refinement)'
+            if baseline not in methods or len(methods) < 2:
+                raise ValueError('Select Attune and at least one isolated competitor')
+            rows = pd.read_csv(directory / 'rows.csv', dtype={'group': str, 'track_id': str, 'case_id': str})
+            data = rows.loc[rows.metric.eq('audio_pitch') & np.isclose(rows.tolerance, tolerance)
+                            & rows.rate.eq(0.25 if dataset == 'E2' else -1.0)].copy()
+            manifest = json.loads((directory / 'manifest.json').read_text())
+            tracks = {c['track_id']: str(c['group']) for c in manifest['cases']}
+            seeds = run['contract']['injection_seeds'] if dataset == 'E2' else [0]
+            expected = {(track, s, m) for track in tracks for s in seeds for m in methods}
+            keys = ['track_id', 'seed', 'method']
+            if data.duplicated(keys).any() or set(data[keys].itertuples(index=False, name=None)) != expected:
+                raise ValueError(f'{dataset}: missing or duplicate paired evaluations')
+            if not data.status.eq('ok').all() or not data.input.eq('oracle_notes').all() or not data.dataset.eq(dataset).all():
+                raise ValueError(f'{dataset}: invalid isolated rows')
+            if not data.group.eq(data.track_id.map(tracks)).all():
+                raise ValueError(f'{dataset}: inconsistent source groups')
+            counts = data[['tp', 'fp', 'fn']].to_numpy(float)
+            if not np.isfinite(counts).all() or (counts < 0).any() or (counts != np.floor(counts)).any():
+                raise ValueError('Counts must be finite nonnegative integers')
+            data['_truth'] = data.tp + data.fn
+            if data.groupby(['track_id', 'seed'])._truth.nunique().gt(1).any():
+                raise ValueError('Methods disagree on reference event counts')
+            groups = sorted(data.group.unique())
+            if len(groups) < 2 or data._truth.sum() == 0:
+                raise ValueError('Need at least two source pieces and reference errors')
+            coverage.append(dict(dataset=dataset, tracks=len(tracks), cases=len(tracks) * len(seeds),
+                                 source_groups=len(groups), methods=len(methods), excluded_cases=0))
+
+            def f1(values):
+                numerator = 2 * values[..., 0]
+                denominator = numerator + values[..., 1] + values[..., 2]
+                return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator > 0)
+
+            for method in methods:
+                if method == baseline:
+                    continue
+                a, b = [data.loc[data.method.eq(m)].groupby('group')[['tp', 'fp', 'fn']]
+                        .sum().loc[groups].to_numpy(float) for m in (baseline, method)]
+                total_a, total_b = a.sum(axis=0), b.sum(axis=0)
+                observed = float(f1(total_a) - f1(total_b))
+                exact = 2 ** len(groups) <= n_resamples
+                draws = 2 ** len(groups) if exact else n_resamples
+                swaps = itertools.product((0, 1), repeat=len(groups)) if exact else None
+                rng, extreme = np.random.default_rng(seed), 0
+                for start in range(0, draws, 256):
+                    size = min(256, draws - start)
+                    mask = (np.array(list(itertools.islice(swaps, size))) if exact else
+                            rng.integers(0, 2, size=(size, len(groups))))
+                    change = mask @ (b - a)
+                    differences = f1(total_a + change) - f1(total_b - change)
+                    extreme += int(np.count_nonzero(np.abs(differences) >= abs(observed) - 1e-12))
+                records.append(dict(dataset=dataset, method=method, tolerance=tolerance,
+                                    tracks=len(tracks), cases=len(tracks) * len(seeds), source_groups=len(groups),
+                                    attune_f1=100 * float(f1(total_a)), competitor_f1=100 * float(f1(total_b)),
+                                    difference_pp=100 * observed, p_value=extreme / draws if exact else (extreme + 1) / (draws + 1),
+                                    permutations=draws, exact=exact, seed=seed))
+        result = pd.DataFrame(records)
+        ordered = result.p_value.sort_values()
+        adjusted = np.minimum(1, np.maximum.accumulate(ordered.to_numpy() * np.arange(len(ordered), 0, -1)))
+        result['p_holm'] = pd.Series(adjusted, index=ordered.index)
+        result['significant'] = result.p_holm.le(alpha)
+        result['alpha'] = alpha
+        result['holm_family_size'] = len(result)
+        return result, pd.DataFrame(coverage)
+
+    @staticmethod
+    def end_to_end_significance(outputs, *, tolerance=0.1, n_resamples=9999, seed=0, alpha=0.05):
+        """Read saved audio runs; paired source-piece F1 swaps, one four-test Holm family."""
+        import itertools
+        if set(outputs) != {'E', 'E2'} or not isinstance(n_resamples, int) or n_resamples < 99 or not 0 < alpha < 1:
+            raise ValueError('Supply E/E2 outputs, at least 99 permutations and 0 < alpha < 1')
+        records, coverage = [], []
+        for dataset, directory in sorted(outputs.items()):
+            directory = Path(directory)
+            run = json.loads((directory / 'run.json').read_text())
+            if run['status'] != 'complete':
+                raise ValueError(f'{dataset}: incomplete audio run')
+            data = pd.read_csv(directory / 'rows.csv', dtype={'case_id': str, 'group': str, 'piece': str})
+            data = data.loc[data.metric.eq('audio_pitch') & np.isclose(data.tolerance, tolerance)].copy()
+            baseline = 'Attune' if dataset == 'E' else 'Attune (repeat only)'
+            methods = [baseline, 'PolyTune', 'LadderSym']
+            if dataset == 'E':
+                manifest = json.loads((directory / 'manifest.json').read_text())
+                groups_by_case = {c['case_id']: str(c['piece']) for c in manifest['cases']}
+                data = data.loc[data.protocol.eq('common_pooled_events')].copy()
+                data['group'] = data['piece']
+                expected = set(groups_by_case)
+                tracks = len(expected)
+                if not data.group.eq(data.case_id.map(groups_by_case)).all():
+                    raise ValueError('E: inconsistent source-piece groups')
+            else:
+                data = data.loc[data.rate.eq(0.25) & data.input.isin(['detected', 'audio'])].copy()
+                expected_pairs = {(s, int(seed_id)) for s in run['sources'] for seed_id in run['seeds']}
+                metadata = run['source_metadata']
+                data['source_group'] = data.source.map(lambda s: str(metadata[s]['group']))
+                if not data.group.eq(data.source_group).all():
+                    raise ValueError('E2: inconsistent source-piece groups')
+                tracks = len(run['sources'])
+                for method in methods:
+                    selected = data.loc[data.method.eq(method)]
+                    if selected.duplicated(['source', 'seed']).any() or set(zip(selected.source, selected.seed)) != expected_pairs:
+                        raise ValueError(f'E2: missing or duplicate evaluations for {method}')
+                # Cached predictions can retain case IDs from another run.
+                # Pair by the source and seed already validated against the run,
+                # without changing persisted IDs or dropping any evaluations.
+                data['case_id'] = list(zip(data.source, data.seed.astype(int)))
+                expected = expected_pairs
+            data = data.loc[data.method.isin(methods)].copy()
+            if data.duplicated(['case_id', 'method']).any():
+                raise ValueError(f'{dataset}: duplicate paired evaluations')
+            for method in methods:
+                if set(data.loc[data.method.eq(method), 'case_id']) != expected:
+                    raise ValueError(f'{dataset}: incomplete pairing for {method}')
+            counts = data[['tp', 'fp', 'fn']].to_numpy(float)
+            if not np.isfinite(counts).all() or (counts < 0).any() or (counts != np.floor(counts)).any():
+                raise ValueError('Counts must be finite nonnegative integers')
+            data['_truth'] = data.tp + data.fn
+            if data.groupby('case_id')._truth.nunique().gt(1).any() or data._truth.sum() == 0:
+                raise ValueError('Reference counts differ or contain no mistakes')
+            groups = sorted(data.group.unique())
+            if len(groups) < 2:
+                raise ValueError('Need at least two source pieces')
+            coverage.append(dict(dataset=dataset, tracks=tracks, cases=len(expected),
+                                 source_groups=len(groups), methods=len(methods), excluded_cases=0))
+
+            def f1(values):
+                numerator = 2 * values[..., 0]
+                denominator = numerator + values[..., 1] + values[..., 2]
+                return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator > 0)
+
+            for method in methods[1:]:
+                a, b = [data.loc[data.method.eq(m)].groupby('group')[['tp', 'fp', 'fn']]
+                        .sum().loc[groups].to_numpy(float) for m in (baseline, method)]
+                total_a, total_b = a.sum(axis=0), b.sum(axis=0)
+                observed = float(f1(total_a) - f1(total_b))
+                exact = 2 ** len(groups) <= n_resamples
+                draws = 2 ** len(groups) if exact else n_resamples
+                swaps = itertools.product((0, 1), repeat=len(groups)) if exact else None
+                rng, extreme = np.random.default_rng(seed), 0
+                for start in range(0, draws, 256):
+                    size = min(256, draws - start)
+                    mask = (np.array(list(itertools.islice(swaps, size))) if exact else
+                            rng.integers(0, 2, size=(size, len(groups))))
+                    change = mask @ (b - a)
+                    differences = f1(total_a + change) - f1(total_b - change)
+                    extreme += int(np.count_nonzero(np.abs(differences) >= abs(observed) - 1e-12))
+                records.append(dict(dataset=dataset, method=method, tolerance=tolerance,
+                                    tracks=tracks, cases=len(expected), source_groups=len(groups),
+                                    attune_f1=100 * float(f1(total_a)), competitor_f1=100 * float(f1(total_b)),
+                                    difference_pp=100 * observed, p_value=extreme / draws if exact else (extreme + 1) / (draws + 1),
+                                    permutations=draws, exact=exact, seed=seed))
+        result = pd.DataFrame(records)
+        ordered = result.p_value.sort_values()
+        adjusted = np.minimum(1, np.maximum.accumulate(ordered.to_numpy() * np.arange(len(ordered), 0, -1)))
+        result['p_holm'] = pd.Series(adjusted, index=ordered.index)
+        result['significant'] = result.p_holm.le(alpha)
+        result['alpha'] = alpha
+        result['holm_family_size'] = len(result)
+        return result, pd.DataFrame(coverage)
 
     @staticmethod
     def native_midi_events(path, kind):
@@ -576,7 +1422,7 @@ class MistakeBenchmarker(NoteBenchmarker):
         from benchmarks.modules.mistake.MistakeBenchmarker import MistakeBenchmarker
         label_pairs = MistakeBenchmarker.label_pairs
         adapter = Attune()
-        config = adapter.config_for(*adapter.range_from_midi(midi_range), sr=44100, pitch_tolerance=0.5, min_note_length_cap=0.1)
+        config = adapter.config_for(*adapter.range_from_midi(midi_range), sr=44100, pitch_tolerance=0.5)
         score = ScoreData(score_midi)
         channels = [c for c, nd in score.note_datas.items() if c != score.metronome_channel and nd.times]
         if len(channels) != 1:
@@ -624,6 +1470,13 @@ class MistakeBenchmarker(NoteBenchmarker):
         return {'PolyTune': PolyTune(device=device), 'LadderSym': LadderSym(device=device, contiguous_inference=True)}
 
     @staticmethod
+    def cache_runner_identity(value):
+        """Normalize only explicitly audited execution-only runner revisions."""
+        upgrades = Path(__file__).parent / 'provenance' / 'incremental-runner-upgrades.json'
+        mapping = json.loads(upgrades.read_text()) if upgrades.exists() else {}
+        return mapping.get(value, value)
+
+    @staticmethod
     def native_code_identity():
         import ast
         import hashlib
@@ -636,6 +1489,8 @@ class MistakeBenchmarker(NoteBenchmarker):
         source = Path(__file__).read_text()
         semantics = '\n'.join((ast.dump(n, include_attributes=False) for n in ast.walk(ast.parse(source)) if isinstance(n, ast.FunctionDef) and n.name in {'native_' + name for name in functions}))
         identity['NativeComparison.inference'] = hashlib.sha256(semantics.encode()).hexdigest()
+        runner = 'benchmarks/modules/mistake/MistakeBenchmarker.py'
+        identity[runner] = MistakeBenchmarker.cache_runner_identity(identity[runner])
         return identity
 
     @staticmethod
@@ -691,7 +1546,7 @@ class MistakeBenchmarker(NoteBenchmarker):
             list(pool.map(validate_asset, expected_hashes.items()))
             selected_models = [m for m in methods if m in models]
             identities = dict(zip(selected_models, pool.map(lambda m: models[m].preflight(), selected_models)))
-        contract = dict(version=3, attune_analysis_sr=44100, attune_overrides=dict(pitch_tolerance=0.5, min_note_length_cap=0.1), attune_timestamps='substitutions: detected replacement; deletions: original score', range_policy=range_policy, manifest=manifest, methods=list(methods), device=device, midi_range=list(midi_range), tolerances=list(tolerances), models=identities, code=MistakeBenchmarker.native_code_identity(), defaults=asdict(Config()), packages={p: version(p) for p in ('numpy', 'scipy', 'pretty_midi', 'mir_eval', 'music21', 'librosa')}, native_metrics='50ms onset-only mir_eval, semantic classes, per-case macro; not literal upstream MIDI-track evaluator', input_policy='authored audio; Attune resampled to 44100 Hz; ' + ('oracle-assisted correct+extra pitch extrema, padded by 4 semitones' if range_policy == 'performed_notes' else 'fixed pitch range'), attune_scope='CocoChorales-E instrument stems; monophonic frontend', ladder_contiguous_inference=True)
+        contract = dict(version=3, attune_analysis_sr=44100, attune_overrides=dict(pitch_tolerance=0.5), attune_timestamps='substitutions: detected replacement; deletions: original score', range_policy=range_policy, manifest=manifest, methods=list(methods), device=device, midi_range=list(midi_range), tolerances=list(tolerances), models=identities, code=MistakeBenchmarker.native_code_identity(), defaults=asdict(Config()), packages={p: version(p) for p in ('numpy', 'scipy', 'pretty_midi', 'mir_eval', 'music21', 'librosa')}, native_metrics='50ms onset-only mir_eval, semantic classes, per-case macro; not literal upstream MIDI-track evaluator', input_policy='authored audio; Attune resampled to 44100 Hz; ' + ('oracle-assisted correct+extra pitch extrema, padded by 4 semitones' if range_policy == 'performed_notes' else 'fixed pitch range'), attune_scope='CocoChorales-E instrument stems; monophonic frontend', ladder_contiguous_inference=True)
         metadata_path = output / 'run.json'
         if metadata_path.exists():
             prior = json.loads(metadata_path.read_text())
@@ -724,7 +1579,8 @@ class MistakeBenchmarker(NoteBenchmarker):
             progress.update_compact(total, 'cached' if cached else method, f'{method} {track}' if cached else track)
 
         def stage_started(method, count):
-            detail = f'{count} CPU workers' if method == 'Attune' else f'{count} persistent model workers'
+            detail = f'{count} CPU workers' if method == 'Attune' else f'{count} model workers per algorithm × {max(1, ((os.cpu_count() or 4) - 1) // count)} CPU threads'
+            progress.last_render = 0
             progress.update_compact(total, method, detail, count=0)
         progress.update_compact(total, 'starting', f'{workers or 'auto-sized'} CPU then {neural_workers or 'auto-sized'} model workers', count=0)
         try:
@@ -822,7 +1678,8 @@ class MistakeBenchmarker(NoteBenchmarker):
 
     class NeuralPool:
 
-        def __init__(self, config, output, workers, laddersym=None):
+        def __init__(self, config, output, workers, laddersym=None, cpu_threads=1):
+            self.cpu_threads = cpu_threads
             self.config, self.output = (config, Path(output))
             self.laddersym = laddersym
             self.local = threading.local()
@@ -841,7 +1698,8 @@ class MistakeBenchmarker(NoteBenchmarker):
                         self.clients.remove(old)
                 config = self.laddersym or LadderSym() if method == 'LadderSym' else self.config
                 factory = LadderSym.Client if method == 'LadderSym' else PolyTune.Client
-                client = factory(config, self.output / 'models' / method.lower() / threading.current_thread().name)
+                client = factory(config, self.output / 'models' / method.lower() / threading.current_thread().name,
+                                 cpu_threads=self.cpu_threads)
                 self.local.client, self.local.method = (client, method)
                 with self.lock:
                     self.clients.append(client)
@@ -869,6 +1727,84 @@ class MistakeBenchmarker(NoteBenchmarker):
             self.pool.shutdown(wait=True, cancel_futures=True)
             for client in self.clients:
                 client.close()
+
+    @staticmethod
+    def run_neural_jobs(jobs, *, output, polytune, laddersym, workers, on_result,
+                        native=False):
+        """Run model families sequentially, parallelizing tracks within each.
+
+        Each family owns the full worker budget. All its clients close before
+        the next family starts. Only this parent thread delivers results.
+        """
+        jobs = list(jobs)
+        methods = sorted({method for method, _, _ in jobs},
+                         key=lambda method: (method != 'PolyTune', method))
+        if len(methods) > 1:
+            stages = {}
+            for method in methods:
+                stages[method] = MistakeBenchmarker.run_neural_jobs(
+                    [job for job in jobs if job[0] == method],
+                    output=Path(output) / method.lower(), polytune=polytune,
+                    laddersym=laddersym, workers=workers, on_result=on_result,
+                    native=native)
+            return dict(
+                schedule='sequential_models',
+                neural_worker_budget=max(s['neural_worker_budget'] for s in stages.values()),
+                model_threads=min(s['model_threads'] for s in stages.values()),
+                neural_workers={m: s['neural_workers'][m] for m, s in stages.items()},
+                model_stages=stages)
+        from collections import deque
+        queues = {}
+        for method, args, key in jobs:
+            queues.setdefault(method, deque()).append((args, key))
+        if not queues:
+            return dict(neural_worker_budget=0, model_threads=0, neural_workers={})
+        workers = min(workers, len(jobs))
+        if workers < 1:
+            raise ValueError('Neural worker count must be positive')
+        threads = max(1, ((os.cpu_count() or 4) - 1) // workers)
+        factory = (MistakeBenchmarker.native_NativeNeuralPool if native
+                   else MistakeBenchmarker.NeuralPool)
+        pools, futures = [], {}
+        active = {m: 0 for m in queues}
+        peaks = dict(active)
+
+        def submit(slot, method):
+            args, key = queues[method].popleft()
+            future = pools[slot].submit(*args)
+            futures[future] = (slot, method, key)
+            active[method] += 1
+            peaks[method] = max(peaks[method], active[method])
+
+        try:
+            for slot in range(workers):
+                pools.append(factory(polytune, Path(output) / 'slots' / str(slot), 1,
+                                     laddersym=laddersym, cpu_threads=threads))
+                # Give each method a slot before distributing remaining capacity.
+                method = max((m for m in queues if queues[m]),
+                             key=lambda m: (active[m] == 0, len(queues[m]) / (active[m] + 1)))
+                submit(slot, method)
+            while futures:
+                ready, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for future in ready:
+                    slot, method, key = futures.pop(future)
+                    active[method] -= 1
+                    on_result(key, future.result())
+                    if not queues[method]:
+                        method = max(queues, key=lambda m: len(queues[m]))
+                    if queues[method]:
+                        submit(slot, method)
+        finally:
+            for future in futures:
+                future.cancel()
+            for pool in pools:
+                pool.close()
+            # Keep successful in-flight results if another worker failed.
+            for future, (_, _, key) in futures.items():
+                if not future.cancelled() and future.exception() is None:
+                    on_result(key, future.result())
+        return dict(neural_worker_budget=workers, model_threads=threads,
+                    neural_workers=peaks)
 
     @staticmethod
     def run_parallel(tasks, *, output, polytune, workers, neural_workers, on_result, polytune_last=False, on_neural_start=None, laddersym=None):
@@ -930,10 +1866,11 @@ class MistakeBenchmarker(NoteBenchmarker):
                             actual_neural_workers = min(len(deferred), neural_workers)
                         if on_neural_start is not None:
                             on_neural_start(actual_neural_workers)
-                        neural = MistakeBenchmarker.NeuralPool(polytune, output, actual_neural_workers, laddersym=laddersym)
-                        deferred.sort(key=lambda entry: entry[1]['common']['method'])
-                        for task, request, job, checkpoint in deferred:
-                            futures[neural.submit(request, job, checkpoint)] = ('neural', task)
+                        MistakeBenchmarker.run_neural_jobs(
+                            [(request['common']['method'], (request, job, checkpoint), task['key'])
+                             for task, request, job, checkpoint in deferred],
+                            output=output, polytune=polytune, laddersym=laddersym,
+                            workers=actual_neural_workers, on_result=on_result)
                         deferred.clear()
                 drain()
         finally:
@@ -1048,19 +1985,18 @@ class MistakeBenchmarker(NoteBenchmarker):
                 else:
                     pool = ProcessPoolExecutor(max_workers=n, mp_context=mp.get_context('spawn'), initializer=MistakeBenchmarker._init_cpu, initargs=(None,))
                     collect(pool, lambda t: pool.submit(MistakeBenchmarker.native_cpu_worker, t), cpus)
-            for method in ('PolyTune', 'LadderSym'):
-                batch = [t for t in tasks if t['method'] == method]
-                if not batch:
-                    continue
-                n = min(len(batch), neural_workers) if neural_workers is not None else MistakeBenchmarker.staged_neural_limit(len(batch), device=models[method].device)
-                counts['neural_workers'][method] = n
+            batch = [t for t in tasks if t['method'] in ('PolyTune', 'LadderSym')]
+            if batch:
+                device = ('cpu' if all(models[t['method']].device == 'cpu' for t in batch)
+                          else 'accelerator')
+                n = (min(len(batch), neural_workers) if neural_workers is not None
+                     else MistakeBenchmarker.staged_neural_limit(len(batch), device=device))
                 if on_stage is not None:
-                    on_stage(method, n)
-                pool = MistakeBenchmarker.native_NativeNeuralPool(models['PolyTune'], output, n, laddersym=models['LadderSym'])
-                try:
-                    collect(pool.pool, pool.submit, batch)
-                finally:
-                    pool.close()
+                    on_stage('PolyTune then LadderSym', n)
+                counts.update(MistakeBenchmarker.run_neural_jobs(
+                    [(t['method'], (t,), None) for t in batch], output=output,
+                    polytune=models.get('PolyTune'), laddersym=models.get('LadderSym'),
+                    workers=n, on_result=lambda key, payload: on_result(payload), native=True))
         return counts
 
     @staticmethod
@@ -1069,7 +2005,37 @@ class MistakeBenchmarker(NoteBenchmarker):
         return time.process_time() + children.ru_utime + children.ru_stime
 
     @staticmethod
-    def soundfont_prepare(render_workers=None, *, base=SOUNDFONT_BASE, output=SOUNDFONT_OUT):
+    def audio_cohort(manifest_path, tracks=50, *, distinct_pieces=False):
+        """Select a balanced, deterministic subset of a frozen isolated cohort."""
+        from collections import defaultdict
+        manifest = json.loads(Path(manifest_path).read_text())
+        buckets = defaultdict(list)
+        for case in sorted(manifest['cases'], key=lambda c: c['track_id']):
+            buckets[case['instrument']].append(case)
+        selected, groups = [], set()
+        instruments = sorted(buckets, key=(
+            (lambda name: hashlib.sha256(f'0:{name}'.encode()).hexdigest())
+            if distinct_pieces else None))
+        while len(selected) < tracks and any(buckets.values()):
+            for instrument in instruments:
+                if distinct_pieces:
+                    while buckets[instrument] and buckets[instrument][0]['group'] in groups:
+                        buckets[instrument].pop(0)
+                if buckets[instrument] and len(selected) < tracks:
+                    case = buckets[instrument].pop(0)
+                    selected.append(case)
+                    groups.add(case['group'])
+        if tracks < 1 or len(selected) != tracks or len({c['track_id'] for c in selected}) != tracks:
+            raise ValueError(f'Require {tracks} distinct source tracks')
+        for case in selected:
+            for key, source in case['files'].items():
+                if digest(source) != case['hashes'][key]:
+                    raise ValueError(f'Cohort input changed: {source}')
+        return selected
+
+    @staticmethod
+    def soundfont_prepare(render_workers=None, *, base=SOUNDFONT_BASE, output=SOUNDFONT_OUT,
+                          cohort=None, tracks=50, distinct_pieces=False):
         base, output = (Path(base).resolve(), Path(output).resolve())
         import numpy as np
         import pretty_midi
@@ -1078,23 +2044,66 @@ class MistakeBenchmarker(NoteBenchmarker):
         from benchmarks.modules.note.NoteBenchmarker import NoteBenchmarker
         from benchmarks.modules.pitch.PitchBenchmarker import PitchBenchmarker
         PitchBenchmarker = PitchBenchmarker
+        selection = None if cohort is None else dict(
+            manifest=str(Path(cohort).resolve()), sha256=digest(cohort), tracks=tracks,
+            policy=('distinct_piece_seed0_instrument_round_robin_v1' if distinct_pieces
+                    else 'sorted_instrument_round_robin_v1'))
+        saved = None
         if (output / 'manifest.json').exists():
             saved = json.loads((output / 'manifest.json').read_text())
+            prior_selection = saved.get('audio_selection')
+            if prior_selection != selection:
+                if not prior_selection or not selection or any(
+                    prior_selection.get(k) != v for k, v in selection.items() if k != 'tracks'
+                ) or tracks < prior_selection['tracks']:
+                    raise ValueError('Cannot append: selection changed or n decreased')
             for case in saved['cases']:
                 for name, path in case['files'].items():
                     if digest(path) != case['hashes'][name]:
                         raise ValueError('Prepared input changed: ' + path)
-            print('Soundfont inputs already prepared and verified.', flush=True)
-            return
+            if prior_selection == selection:
+                print('Soundfont inputs already prepared and verified.', flush=True)
+                return
         original = json.loads((base / 'run.json').read_text())['contract']['manifest']
         manifest = deepcopy(original)
+        if cohort is not None:
+            frozen = json.loads(Path(cohort).read_text())
+            if frozen['selection']['dataset'] != 'E':
+                raise ValueError('Soundfont preparation requires the E cohort')
+            selected = MistakeBenchmarker.audio_cohort(cohort, tracks, distinct_pieces=distinct_pieces)
+            manifest.update({k: frozen['provenance'][k] for k in ('repo', 'revision', 'split_sha256')})
+            manifest['cases'] = [dict(
+                case_id=c['track_id'], piece=c['group'], stem=c['track_id'].split('/', 1)[1],
+                files={('score_midi' if k == 'score' else k): v for k, v in c['files'].items() if k != 'performed'},
+                hashes={('score_midi' if k == 'score' else k): v for k, v in c['hashes'].items() if k != 'performed'},
+            ) for c in selected]
+            manifest['selected_pieces'] = sorted({c['group'] for c in selected})
+            manifest['max_pieces'] = None
+            manifest['scope'] = 'balanced subset of frozen isolated cohort'
+            manifest['audio_selection'] = selection
+        if saved is not None:
+            old_cases = saved['cases']
+            if [c['case_id'] for c in manifest['cases'][:len(old_cases)]] != [c['case_id'] for c in old_cases]:
+                raise ValueError('Cannot append: previous cases are not the selection prefix')
+            for old, new in zip(old_cases, manifest['cases']):
+                if any(old['hashes'].get(k) != v for k, v in new['hashes'].items()):
+                    raise ValueError('Cannot append: existing source or labels changed')
+            manifest['cases'][:len(old_cases)] = deepcopy(old_cases)
+        pending = [c for c in manifest['cases'] if 'rendering' not in c]
+        original = manifest
         renderer = NoteBenchmarker.__new__(NoteBenchmarker)
+        if saved is not None and digest(renderer.SOUNDFONT_PATH) != saved['intervention']['soundfont_sha256']:
+            raise ValueError('Cannot append: soundfont changed')
+        if saved is not None and (output / 'run.json').exists():
+            prior_run = json.loads((output / 'run.json').read_text())
+            prior_run['status'] = 'preparing'
+            MistakeCache.atomic_json(output / 'run.json', prior_run)
 
         def inventory(piece):
             folder = 'mistake/' + piece + '/stems_midi'
             return (piece, tree(original['repo'], original['revision'], folder, output / 'inventory' / (piece + '.json')))
-        with ThreadPoolExecutor(max_workers=min(8, len(original['selected_pieces']))) as pool:
-            inventories = dict(pool.map(inventory, original['selected_pieces']))
+        with ThreadPoolExecutor(max_workers=max(1, min(8, len(pending)))) as pool:
+            inventories = dict(pool.map(inventory, sorted({c['piece'] for c in pending})))
 
         def render_case(case):
             folder = 'mistake/' + case['piece'] + '/stems_midi'
@@ -1105,8 +2114,11 @@ class MistakeBenchmarker(NoteBenchmarker):
             def notes(path):
                 pm = pretty_midi.PrettyMIDI(str(path))
                 return sorted(((i.program, n.pitch, n.velocity, round(n.start, 6), round(n.end, 6)) for i in pm.instruments for n in i.notes))
-            assert notes(midi) == sorted(notes(case['files']['correct']) + notes(case['files']['extra'])), case['case_id']
-            case['rendering'] = dict(performance_midi=str(midi), performance_midi_sha256=digest(midi), original_audio={k: case['files'][k] for k in ('score_audio', 'performance')}, audio={})
+            case['annotation_audit'] = dict(
+                performed_matches_correct_plus_extra=(
+                    notes(midi) == sorted(notes(case['files']['correct']) + notes(case['files']['extra']))),
+                policy='Render original performed MIDI; preserve author labels unchanged')
+            case['rendering'] = dict(performance_midi=str(midi), performance_midi_sha256=digest(midi), original_audio={k: case['files'][k] for k in ('score_audio', 'performance') if k in case['files']}, audio={})
             for kind, source_midi in [('score_audio', Path(case['files']['score_midi'])), ('performance', midi)]:
                 target = output / 'audio' / case['case_id'] / kind
                 wav = renderer.synth_midi(source_midi, out_dir=target / 'render_44100', force=True)
@@ -1119,12 +2131,12 @@ class MistakeBenchmarker(NoteBenchmarker):
                 case['hashes'][kind] = digest(converted)
                 case['rendering']['audio'][kind] = dict(peak=float(np.max(np.abs(y))), seconds=len(y) / 16000, clipped_samples=int(np.count_nonzero(np.abs(y) >= 1)))
             return case['case_id']
-        n = min(len(manifest['cases']), render_workers or max(1, (os.cpu_count() or 4) - 1))
+        n = max(1, min(len(pending), render_workers or max(1, (os.cpu_count() or 4) - 1)))
         progress = PitchBenchmarker.Progress(enabled=True, compact=True)
-        progress.update_compact(len(manifest['cases']), 'render', f'{n} parallel soundfont workers', count=0)
+        progress.update_compact(len(pending), 'render', f'{n} workers; {len(manifest["cases"]) - len(pending)} cached tracks', count=0)
         try:
             with ThreadPoolExecutor(max_workers=n) as pool:
-                futures = [pool.submit(render_case, case) for case in manifest['cases']]
+                futures = [pool.submit(render_case, case) for case in pending]
                 for future in as_completed(futures):
                     progress.update_compact(len(futures), 'render', future.result())
         finally:
@@ -1133,7 +2145,25 @@ class MistakeBenchmarker(NoteBenchmarker):
         save_json(output / 'manifest.json', manifest)
 
     @staticmethod
-    def soundfont_run(workers=None, neural_workers=None, *, base=SOUNDFONT_BASE, output=SOUNDFONT_OUT):
+    def soundfont_append_contract(previous, current):
+        old, new = deepcopy(previous), deepcopy(current)
+        old_cases = old['intervention'].pop('cases')
+        new_cases = new['intervention'].pop('cases')
+        if new_cases[:len(old_cases)] != old_cases:
+            return False
+        for contract in (old, new):
+            contract['intervention'].pop('selected_pieces', None)
+            selection = contract['intervention'].get('audio_selection')
+            if selection:
+                selection.pop('tracks', None)
+            contract['experiment_sha256'] = MistakeBenchmarker.cache_runner_identity(contract['experiment_sha256'])
+            runner = 'benchmarks/modules/mistake/MistakeBenchmarker.py'
+            if runner in contract['code']:
+                contract['code'][runner] = MistakeBenchmarker.cache_runner_identity(contract['code'][runner])
+        return old == new
+
+    @staticmethod
+    def soundfont_run(workers=None, neural_workers=None, *, base=SOUNDFONT_BASE, output=SOUNDFONT_OUT, reuse_audio_from=None):
         base, output = (Path(base).resolve(), Path(output).resolve())
         import pandas as pd
         from benchmarks.modules.mistake.MistakeBenchmarker import MistakeBenchmarker
@@ -1151,36 +2181,45 @@ class MistakeBenchmarker(NoteBenchmarker):
         for case in manifest['cases']:
             for name, path in case['files'].items():
                 assert digest(path) == case['hashes'][name]
-        contract = dict(source=baseline, intervention=manifest, models=identities, code=code_identity(), experiment_sha256=digest(__file__))
+        contract = dict(source=baseline, intervention=manifest, models=identities, code=code_identity(), defaults=asdict(Config()), experiment_sha256=digest(__file__))
         prior = output / 'run.json'
         if prior.exists():
-            assert json.loads(prior.read_text())['contract'] == contract, 'Run inputs changed; use a new output directory'
-        metadata = dict(status='running', contract=contract)
+            if not MistakeBenchmarker.soundfont_append_contract(json.loads(prior.read_text())['contract'], contract):
+                raise ValueError('Cannot append: inference settings, code, or existing inputs changed')
+        metadata = dict(status='running', contract=contract, execution_code=dict(runner_sha256=digest(__file__)))
         save_json(prior, metadata)
         rows, tasks = ([], [])
         progress = PitchBenchmarker.Progress(enabled=True, compact=True)
         total = len(manifest['cases']) * 3
         progress.update_compact(total, 'starting', 'auto-sized CPU then persistent model workers', count=0)
 
-        def receive(payload):
+        def receive(payload, *, cached=False):
             rows.extend(payload['rows'])
             pd.DataFrame(rows).to_csv(output / 'rows.csv', index=False)
             summarize(rows).to_csv(output / 'summary.csv', index=False)
             first = payload['rows'][0]
             kind = 'detected' if first['method'] == 'Attune' else 'audio'
-            progress.update_compact(total, first['method'], f'{first['case_id']} {kind}')
+            progress.update_compact(total, 'cached' if cached else first['method'],
+                                    f'{first["method"]} {first["case_id"]} {kind}' if cached else f'{first["case_id"]} {kind}')
         for method in ('Attune', 'PolyTune', 'LadderSym'):
             for case in manifest['cases']:
                 directory = output / 'cases' / case['case_id'] / method.lower()
                 checkpoint = directory / 'result.json'
                 if checkpoint.exists():
-                    receive(json.loads(checkpoint.read_text()))
+                    receive(json.loads(checkpoint.read_text()), cached=True)
                 else:
-                    tasks.append(dict(case=case, method=method, dataset='coco', directory=str(directory), midi_range=baseline['midi_range'], tolerances=baseline['tolerances'], range_policy=baseline['range_policy']))
+                    from benchmarks.modules.mistake.MistakeCache import MistakeCache
+                    task = dict(case=case, method=method, dataset='coco', directory=str(directory), midi_range=baseline['midi_range'], tolerances=baseline['tolerances'], range_policy=baseline['range_policy'])
+                    prediction = MistakeCache.reusable_soundfont_prediction(reuse_audio_from, contract, case, method)
+                    if prediction is not None:
+                        receive(MistakeBenchmarker.native_evaluate(task, reused_prediction=prediction), cached=True)
+                    else:
+                        tasks.append(task)
 
         def stage_started(method, n):
             kind = 'CPU workers' if method == 'Attune' else 'persistent model workers'
-            progress.update_compact(total, method, f'{n} {kind}', count=0)
+            progress.last_render = 0
+            progress.update_compact(total, method, f'{n} {kind}' + (f' × {max(1, ((os.cpu_count() or 4) - 1) // n)} CPU threads' if method != 'Attune' else ''), count=0)
         try:
             metadata['parallelism'] = run_tasks(tasks, output=output, models=models, workers=workers, neural_workers=neural_workers, on_result=receive, on_stage=stage_started)
             metadata['status'] = 'complete'
@@ -1600,9 +2639,23 @@ class MistakeBenchmarker(NoteBenchmarker):
         from benchmarks.modules.mistake.competitors.PolyTune import PolyTune
         from benchmarks.modules.mistake.competitors.LadderSym import LadderSym
         atomic_json = MistakeCache.atomic_json
-        saved = MistakeCache.completed_results(request)
-        if saved is not None:
-            return saved
+        append = request.get('append', False)
+        prior_path = Path(request['output']) / 'run.json'
+        if append and prior_path.exists():
+            previous = json.loads(prior_path.read_text())
+            sources = [str(Path(p).resolve()) for p in request['sources']]
+            if sources[:len(previous['sources'])] != previous['sources']:
+                raise ValueError('Cannot append: n decreased or source order changed')
+            for key in ('seeds', 'rates', 'methods', 'tolerances'):
+                if list(request[key]) != previous[key]:
+                    raise ValueError(f'Cannot append: {key} changed')
+            for source in previous['sources']:
+                if request['source_metadata'].get(source) != previous['source_metadata'].get(source):
+                    raise ValueError('Cannot append: source metadata changed')
+        if not append:
+            saved = MistakeCache.completed_results(request)
+            if saved is not None:
+                return saved
         defaults = asdict(Config())
         if defaults != request['expected_defaults']:
             raise ValueError('Production defaults changed after notebook setup; run all cells again.')
@@ -1612,7 +2665,7 @@ class MistakeBenchmarker(NoteBenchmarker):
         if request['stage'] == 'symbolic':
             return run_symbolic_comparison(request['sources'], output, **options)
         if request['stage'] == 'audio':
-            return run_comparison(request['sources'], output, **options, input_kinds=('detected', 'audio'), polytune=PolyTune(device=request['polytune_device']), laddersym=LadderSym(device=request.get('laddersym_device', 'cpu')), neural_workers=request['neural_workers'], polytune_last=request['polytune_last'], force_pitch_detection=request.get('force_pitch_detection', False))
+            return run_comparison(request['sources'], output, **options, input_kinds=('detected', 'audio'), polytune=PolyTune(device=request['polytune_device']), laddersym=LadderSym(device=request.get('laddersym_device', 'cpu')), neural_workers=request['neural_workers'], polytune_last=request['polytune_last'], force_pitch_detection=request.get('force_pitch_detection', False), append=append)
         raise ValueError(f'Unknown stage: {request['stage']}')
 
     @classmethod
@@ -1627,6 +2680,7 @@ class MistakeBenchmarker(NoteBenchmarker):
         commands = parser.add_subparsers(dest='command')
         commands.add_parser('injected', help='Read an injected-run JSON request from stdin')
         commands.add_parser('native', help='Read a native-run JSON request from stdin')
+        commands.add_parser('isolated', help='Read an isolated E/E2 JSON request from stdin')
         soundfont = commands.add_parser('soundfont', help='Prepare or evaluate FluidSynth COCO-E inputs')
         soundfont.add_argument('action', choices=('prepare', 'run'))
         soundfont.add_argument('--base', type=Path, default=SOUNDFONT_BASE)
@@ -1634,6 +2688,10 @@ class MistakeBenchmarker(NoteBenchmarker):
         soundfont.add_argument('--workers', type=int)
         soundfont.add_argument('--neural-workers', type=int)
         soundfont.add_argument('--render-workers', type=int)
+        soundfont.add_argument('--cohort', type=Path)
+        soundfont.add_argument('--reuse-audio-from', type=Path)
+        soundfont.add_argument('--tracks', type=int, default=50)
+        soundfont.add_argument('--distinct-pieces', action='store_true')
         args = parser.parse_args(argv)
         if args.defaults:
             print(json.dumps(asdict(Config()), sort_keys=True))
@@ -1641,14 +2699,18 @@ class MistakeBenchmarker(NoteBenchmarker):
             cls.run_request(json.load(sys.stdin))
         elif args.command == 'native':
             cls.native_run(**json.load(sys.stdin))
+        elif args.command == 'isolated':
+            cls.run_isolated(**json.load(sys.stdin))
         elif args.command == 'soundfont':
             for count in (args.workers, args.neural_workers, args.render_workers):
                 if count is not None and count < 1:
                     parser.error('Worker counts must be positive')
             if args.action == 'prepare':
-                cls.soundfont_prepare(args.render_workers, base=args.base, output=args.output)
+                cls.soundfont_prepare(args.render_workers, base=args.base, output=args.output,
+                                      cohort=args.cohort, tracks=args.tracks,
+                                      distinct_pieces=args.distinct_pieces)
             else:
-                cls.soundfont_run(args.workers, args.neural_workers, base=args.base, output=args.output)
+                cls.soundfont_run(args.workers, args.neural_workers, base=args.base, output=args.output, reuse_audio_from=args.reuse_audio_from)
         elif not sys.stdin.isatty():
             cls.run_request(json.load(sys.stdin))
         else:

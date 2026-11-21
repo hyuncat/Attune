@@ -71,7 +71,7 @@ def _viterbi_0110(
 class PitchSmoother:
     """Production pitch tracking; joint and pitch_only modes support benchmarks."""
 
-    METHOD_VERSION = 'pitch_only_confidence_gap_50ms_support_v2'
+    METHOD_VERSION = 'pitch_only_confidence_gap_50ms_support_final09875_v3'
     RESOLUTION = 0.1
     MAX_TRANSITION_RATE = 35.92
     SWITCH_PROB = 0.01
@@ -184,7 +184,9 @@ class PitchSmoother:
             return self._decode_joint(pitches)
         # States encode unvoiced frames as n_pitch_bins + pitch_bin.
         states = np.full(len(pitches), self.n_pitch_bins, dtype=np.uint16)
-        voiced = VoicingSmoother(config=self.config).decode(pitches)
+        voiced = VoicingSmoother(config=self.config).decode(
+            pitches, unvoiced_threshold=self.config.pitch_tracking_unv_thresh
+        )
         tracking = self._tracking_mask(voiced)
         edges = np.diff(np.r_[False, tracking, False].astype(np.int8))
         tiny = np.finfo(np.float64).tiny
@@ -424,8 +426,12 @@ class VoicingSmoother:
             print(f"Done! Took {time.perf_counter() - started:.2f} sec.")
         return output
 
-    def decode(self, pitches: list[Pitch | None]) -> BoolArray:
-        """Return the global controller's voiced mask."""
+    def decode(
+        self, pitches: list[Pitch | None], *, unvoiced_threshold: float | None = None
+    ) -> BoolArray:
+        """Return the final mask, or the separately configured HMM region mask."""
+        threshold_probability = (self.config.posthoc_unv_thresh
+                                 if unvoiced_threshold is None else unvoiced_threshold)
         if not pitches:
             return np.empty(0, dtype=bool)
         volumes = np.asarray([
@@ -446,7 +452,7 @@ class VoicingSmoother:
             bool(
                 pitch is not None
                 and float(pitch.unvoiced_prob)
-                < float(self.config.posthoc_unv_thresh)
+                < float(threshold_probability)
             )
             for pitch in pitches
         ])

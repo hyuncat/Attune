@@ -145,6 +145,8 @@ class NoteMethods:
         scored as-is: the transition re-median / prune post-pass is deliberately NOT
         applied (per spec, only the CPD families get it)."""
         return {
+            **{name: dict(method=name, postprocess_transitions=False, external_baseline=True, benchmark_group="moreover", base_method=name)
+               for name in ("librosa-flux", "librosa-superflux")},
             "basic-pitch": dict(
                 method="basic_pitch",
                 postprocess_transitions=False,
@@ -183,7 +185,7 @@ _ALL_NOTE_METHODS = {
     **NoteMethods._cpd_note_methods(),
     **NoteMethods._moreover_note_methods(),
 }
-_EXTERNAL_NOTE_METHODS = {"basic-pitch", "tony", "crepe-notes"}
+_EXTERNAL_NOTE_METHODS = {"basic-pitch", "tony", "crepe-notes", "librosa-flux", "librosa-superflux"}
 
 
 class NoteBenchmarker:
@@ -2311,7 +2313,7 @@ class NoteCLI:
 
 
 VERSION = "note-preliminary-v3-repeat-recovery"
-METHODS = ("attune", "basic-pitch", "crepe-notes", "tony")
+METHODS = ("attune", "basic-pitch", "crepe-notes", "tony", "librosa-flux", "librosa-superflux", "mt3", "yourmt3")
 THREAD_ENV = (
     "OMP_NUM_THREADS",
     "OPENBLAS_NUM_THREADS",
@@ -2327,7 +2329,7 @@ THREAD_ENV = (
 class NotebookConfig:
     workers: int = field(default_factory=lambda: max(1, (os.cpu_count() or 4) - 1))
     neural_workers: int = 6
-    preliminary_tracks_per_instrument: int = 2
+    preliminary_tracks_per_instrument: int | None = 2
     seed: int = 0
     max_tracks: int | None = None
     methods: tuple[str, ...] = METHODS
@@ -2338,23 +2340,25 @@ class NotebookConfig:
     force: bool = False
     force_methods: tuple[str, ...] = ()
     use_pitch_cache: bool = True
+    baseline_prediction_runs: tuple[str, ...] = ()
+    cache_only_methods: tuple[str, ...] = ()
     audio_only_fmin: float = 32.7032
     audio_only_fmax: float = 2093.005
     audio_only_min_note: float = 0.03
 
     def __post_init__(self):
-        if (
-            min(
-                self.workers,
-                self.neural_workers,
-                self.preliminary_tracks_per_instrument,
-            )
-            < 1
+        if min(self.workers, self.neural_workers) < 1 or (
+            self.preliminary_tracks_per_instrument is not None
+            and self.preliminary_tracks_per_instrument < 1
         ):
             raise ValueError("Worker and sampling counts must be positive")
-        if set(self.force_methods) - {*METHODS, "attune-audio-only"}:
+        if set(self.cache_only_methods) - set(self.methods):
+            raise ValueError("cache_only_methods must be selected methods")
+        if self.cache_only_methods and (self.force or set(self.force_methods) & set(self.cache_only_methods)):
+            raise ValueError("Cannot force cache-only methods")
+        if set(self.force_methods) - {*METHODS, "attune-audio-only", "mt3"}:
             raise ValueError(f"Unknown forced methods: {self.force_methods}")
-        if not self.methods or set(self.methods) - {*METHODS, "attune-audio-only"}:
+        if not self.methods or set(self.methods) - {*METHODS, "attune-audio-only", "mt3"}:
             raise ValueError(f"Unknown or empty methods: {self.methods}")
 
 
@@ -2520,13 +2524,27 @@ class NoteEvaluation:
         settings = asdict(self.config)
         settings.pop("force")
         settings.pop("force_methods")
+        extra = {}
+        if "yourmt3" in self.config.methods:
+            from benchmarks.modules.note.competitors.YourMT3 import YourMT3
+            extra["yourmt3_runtime"] = YourMT3.runtime_provenance()
+            extra["yourmt3_execution"] = dict(model_processes=2, recordings_per_model=2,
+                cpu_threads_per_recording=1, startup="amortized per model process")
+        if "mt3" in self.config.methods:
+            from benchmarks.modules.note.competitors.MT3 import MT3
+            extra["mt3_runtime"] = MT3.runtime_provenance()
         return dict(
+            **extra,
             version=VERSION,
             config=settings,
             versions=versions,
             sources=sources,
             inputs=inputs,
             cache_functions=NoteCache.function_fingerprints(Path(__file__)),
+            inference_sources=NoteCache.inference_sources(REPO_ROOT),
+            method_dispatch={method: NoteDetectorBase.competitor(method).__module__ + "." +
+                             NoteDetectorBase.competitor(method).__qualname__
+                             for method in self.config.methods},
             python=sys.version,
             platform=platform.platform(),
             cpu_count=os.cpu_count(),
@@ -2542,6 +2560,23 @@ class NoteEvaluation:
             tracks=tracks,
         )
 
+    def plan_preliminary(self, dataset):
+        """Read-only scheduling preview using the same compatibility keys as run."""
+        tracks = self.select_tracks(dataset)
+        provenance = self.provenance(tracks)
+        reusable = {} if self.config.force else NoteCache.checkpoint_index(self.runs_root)
+        frozen = {} if self.config.force else NoteCache.frozen_prediction_index(self.config.baseline_prediction_runs)
+        rows = []
+        for method in self.config.methods:
+            for track in tracks:
+                task = {**track, "method": method}
+                forced = self.config.force or method in self.config.force_methods
+                key = NoteCache.job_key(provenance, task)
+                cached = not forced and (key in reusable or (dataset, track["track_id"], method) in frozen)
+                rows.append(dict(dataset=dataset, method=method, track_id=track["track_id"],
+                                 action="cached" if cached else "pending"))
+        return pd.DataFrame(rows)
+
     def run_preliminary(self, dataset):
         import pandas as pd
         from benchmarks.modules.pitch.PitchBenchmarker import PitchBenchmarker
@@ -2551,6 +2586,7 @@ class NoteEvaluation:
         tracks = self.select_tracks(dataset)
         provenance = self.provenance(tracks)
         reusable = {} if config.force else NoteCache.checkpoint_index(self.runs_root)
+        frozen = {} if config.force else NoteCache.frozen_prediction_index(config.baseline_prediction_runs)
         digest = hashlib.sha256(
             json.dumps(provenance, sort_keys=True).encode()
         ).hexdigest()[:16]
@@ -2585,6 +2621,16 @@ class NoteEvaluation:
                     rows.append(cached)
                     cached_by_method[method].append(cached)
                     continue
+                identity = (task["dataset"], task["track_id"], method)
+                if method not in config.force_methods and identity in frozen:
+                    cached = NoteCache.rescore_frozen_prediction(
+                        frozen[identity], provenance, task, config, output
+                    )
+                    rows.append(cached)
+                    cached_by_method[method].append(cached)
+                    continue
+                if method in config.cache_only_methods:
+                    raise RuntimeError(f"Cache-only method {method}: no saved prediction for {dataset}/{task['track_id']}. No inference launched; restore the pinned run or explicitly change cache_only_methods.")
                 jobs.append((task, config, str(output)))
             jobs_by_method[method] = jobs
         pending = sum((len(jobs) for jobs in jobs_by_method.values()))
@@ -2603,10 +2649,22 @@ class NoteEvaluation:
                     progress.update_compact(total, row["method"], row["track_id"])
                 if not jobs:
                     continue
+                if method == "yourmt3":
+                    from benchmarks.modules.note.experiments.YourMT3Shared import predictions
+                    from contextlib import closing
+                    with closing(predictions(jobs)) as results:
+                        for payload, prediction in results:
+                            row = NoteEvaluation._worker(payload, prepared_prediction=prediction)
+                            rows.append(row)
+                            checkpoint = output / "checkpoints" / f"{row['job_id']}.json"
+                            NoteCache.atomic_json(checkpoint, row)
+                            progress.update_compact(total, row["method"], row["track_id"])
+                    continue
                 workers = (
-                    min(config.workers, config.neural_workers)
-                    if method in ("basic-pitch", "crepe-notes")
-                    else config.workers
+                    1 if method == "mt3" else (
+                        min(config.workers, config.neural_workers)
+                        if method in ("basic-pitch", "crepe-notes") else config.workers
+                    )
                 )
                 with mp.get_context("spawn").Pool(
                     min(workers, len(jobs)), maxtasksperchild=1
@@ -2914,7 +2972,7 @@ class NoteEvaluation:
                         os.close(original)
 
     @staticmethod
-    def _worker(payload):
+    def _worker(payload, prepared_prediction=None):
         task, config, output = payload
         import traceback
         from threadpoolctl import threadpool_limits
@@ -2938,9 +2996,22 @@ class NoteEvaluation:
                 row["reference_notes"] = len(ref_hz)
                 with threadpool_limits(limits=1):
                     cpu, wall = (NoteDetectorBase.cpu_seconds(), time.perf_counter())
-                    iv, hz, timings = NoteEvaluation._predict(task, config)
-                    row["execution_cpu_seconds"] = NoteDetectorBase.cpu_seconds() - cpu
-                    row["wall_seconds"] = time.perf_counter() - wall
+                    if prepared_prediction is None:
+                        iv, hz, timings = NoteEvaluation._predict(task, config)
+                        row["execution_cpu_seconds"] = NoteDetectorBase.cpu_seconds() - cpu
+                        row["wall_seconds"] = time.perf_counter() - wall
+                    else:
+                        if "error" in prepared_prediction:
+                            raise RuntimeError(prepared_prediction["error"])
+                        iv = np.asarray(prepared_prediction["intervals"], float).reshape(-1, 2)
+                        hz = np.asarray(prepared_prediction["frequencies_hz"], float)
+                        timings = {"yourmt3_runtime_cpu_seconds": prepared_prediction["cpu_seconds"]}
+                        row["execution_cpu_seconds"] = prepared_prediction["cpu_seconds"]
+                        row["wall_seconds"] = prepared_prediction["wall_seconds"]
+                        row["compute_clock"] = prepared_prediction["compute_clock"]
+                        row["timing_scope"] = "request thread CPU + amortized shared-model startup"
+                        row["model_pid"] = prepared_prediction["model_pid"]
+                        row["startup_cpu_share"] = prepared_prediction["startup_cpu_share"]
                 row.update(timings)
                 row["cpu_seconds"] = (
                     timings["frontend_cpu_seconds"]

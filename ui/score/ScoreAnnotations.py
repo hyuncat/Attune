@@ -19,8 +19,8 @@ class ScoreAnnotations:
 
         score_notes = score_nd.read(i=0, j=len(score_nd.times))
         score_index = JsonHandler._note_index_maps(score_notes)
-        volume_range = (rec.pitch_data.volume_range_db()
-                        if rec.pitch_data is not None else (None, None))
+        volume_scale = (rec.pitch_data.volume_color_scale()
+                        if rec.pitch_data is not None else None)
 
         def sidx(note):
             return JsonHandler._lookup_note_index(note, score_index)
@@ -38,7 +38,7 @@ class ScoreAnnotations:
                 "midis": [float(m) for m in score_note.midi_num
                           if m is not None and m >= 0],
             }
-            volume = cls._score_note_volume(rec, score_note, volume_range)
+            volume = cls._score_note_volume(rec, score_note, volume_scale)
             if volume is not None:
                 volumes[str(idx)] = volume
 
@@ -75,7 +75,7 @@ class ScoreAnnotations:
                 midi = NotePopupSV.primary_midi(mistake.user_note)
                 if midi is not None:
                     entry["midis"].append(midi)
-                volume = cls._user_note_volume(rec, mistake.user_note, volume_range)
+                volume = cls._user_note_volume(rec, mistake.user_note, volume_scale)
                 if volume is not None:
                     entry["volume"] = volume
                 continue
@@ -106,27 +106,27 @@ class ScoreAnnotations:
         cls,
         rec: Recording,
         score_note,
-        volume_range: tuple[float | None, float | None],
+        volume_scale,
     ) -> dict | None:
         """The volume payload of the user note this score note aligned to."""
         if rec.alignment is None or score_note is None:
             return None
         user_note = rec.alignment.get_match(score_note=score_note)
-        return cls._user_note_volume(rec, user_note, volume_range)
+        return cls._user_note_volume(rec, user_note, volume_scale)
 
     @classmethod
     def _user_note_volume(
         cls,
         rec: Recording,
         user_note,
-        volume_range: tuple[float | None, float | None],
+        volume_scale,
     ) -> dict | None:
         if user_note is None or rec.pitch_data is None:
             return None
-        volume = rec.pitch_data.mean_volume(user_note.start_time, user_note.end_time)
-        if volume <= 0:
+        level = rec.pitch_data.mean_level_db(user_note.start_time, user_note.end_time)
+        frac = volume_scale.fraction_db(level) if volume_scale is not None else None
+        if frac is None:
             return None
-        frac = Colors.volume_frac(volume, *volume_range)
         return {
             "frac": float(frac),
             # score-dimmed (unlike GuitarHero's dots) so the cursor reads on top

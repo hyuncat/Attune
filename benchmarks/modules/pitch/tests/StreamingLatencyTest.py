@@ -1,6 +1,7 @@
 """Latency retention, cache invalidation, and exact pooling without detectors."""
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import unittest
 from pathlib import Path
@@ -97,8 +98,12 @@ class StreamingLatencyTest(unittest.TestCase):
             prepare.assert_not_called()
             self.assertEqual(len(rows), 1)
             Path(row["latency_samples_path"]).unlink()
-            with patch.object(
-                runner, "_prepare_detectors", return_value={}
-            ), patch.object(runner, "_run_example", return_value=[]) as run:
+            # The scheduler now always uses a pool, even for one missing track.
+            # Mock its worker boundary; instance mocks do not cross spawned processes.
+            with patch(
+                "benchmarks.modules.pitch.PitchBenchmarker.ProcessPoolExecutor",
+                side_effect=lambda **kwargs: ThreadPoolExecutor(max_workers=1),
+            ), patch.object(PitchBenchmarker,
+                            "_measured_streaming_example_worker", return_value=([], 0.0)) as run:
                 runner.run([example], methods=["attune"], checkpoint_dir=new)
             run.assert_called_once()

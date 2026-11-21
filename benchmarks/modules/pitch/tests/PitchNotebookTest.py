@@ -16,6 +16,7 @@ from benchmarks.modules.pitch.tests.PitchMetricsTest import counted_rows
 from benchmarks.modules.pitch.PitchCache import PitchCache
 from benchmarks.modules.pitch.PitchNotebook import PitchNotebook
 from benchmarks.modules.pitch.datasets.PitchDataset import PitchTrack
+from benchmarks.modules.pitch.competitors.McLeod import McLeod
 
 
 class PitchNotebookTest(unittest.TestCase):
@@ -31,6 +32,8 @@ class PitchNotebookTest(unittest.TestCase):
                         "dataset": "dataset",
                         "track_id": "track",
                         "Raw Pitch Accuracy": value,
+                        **({"pitch_cache_version": PitchCache.VERSION} if method == "attune" else {}),
+                        **({"adapter_version": McLeod.VERSION} if method == "mcleod" else {}),
                     }
                     for method, value in values.items()
                 ]
@@ -348,7 +351,7 @@ class PitchNotebookTest(unittest.TestCase):
             root = Path(directory)
             path = root / "suite" / "rows.csv"
             path.parent.mkdir(parents=True)
-            old = self.rows({"pyin": 0.8, "attune": 0.1, "praat": 0.9})
+            old = self.rows({"pyin": 0.8, "attune": 0.1, "praat": 0.9}).assign(pitch_cache_version=PitchCache.VERSION - 1)
             old.to_csv(path, index=False)
             notebook = PitchNotebook(
                 PitchNotebook.NotebookConfig(workers=1, methods=methods)
@@ -491,6 +494,35 @@ class PitchNotebookTest(unittest.TestCase):
                 )
         run.assert_not_called()
         self.assertEqual(len(result.rows), len(PitchBenchmarker.PitchStreaming.METHODS))
+
+    def test_streaming_refreshes_mcleod_and_new_crepe_without_running_peers(self):
+        methods = (*PitchBenchmarker.PitchStreaming.METHODS, "crepe_tiny")
+        for stale_mcleod in (True, False):
+            with self.subTest(stale_mcleod=stale_mcleod), tempfile.TemporaryDirectory() as directory:
+                notebook = self.notebook(Path(directory))
+                all_rows = self.rows({method: .9 for method in methods}).assign(
+                    frame_size_samples=4096, integration_size_samples=2048,
+                    hop_size_samples=128, sample_rate_hz=44100, instrument="violin",
+                )
+                cached = all_rows.loc[all_rows.model != "crepe_tiny"].copy()
+                if stale_mcleod:
+                    cached.loc[cached.model == "mcleod", "adapter_version"] = "mpm_fft_v1"
+                selected = ["mcleod", "crepe_tiny"] if stale_mcleod else ["crepe_tiny"]
+                fresh = all_rows.loc[all_rows.model.isin(selected)].copy()
+                with patch.object(notebook, "_read_run", return_value=cached), patch(
+                    "benchmarks.modules.pitch.PitchCache.PitchCache.has_latency_samples", return_value=True
+                ), patch.object(PitchBenchmarker, "tracks", return_value=[]), patch.object(
+                    PitchBenchmarker.PitchStreaming, "run", return_value=fresh
+                ) as run, patch("benchmarks.modules.pitch.PitchNotebook.display"):
+                    result = notebook.run_streaming_comparison(suite_methods=methods)
+                run.assert_called_once()
+                self.assertEqual(run.call_args.kwargs["methods"], selected)
+                self.assertFalse(run.call_args.kwargs["force"])
+                peers = [method for method in methods if method not in selected]
+                pd.testing.assert_frame_equal(
+                    result.rows.loc[result.rows.model.isin(peers)].reset_index(drop=True),
+                    cached.loc[cached.model.isin(peers)].reset_index(drop=True),
+                )
 
     def test_streaming_score_refresh_does_not_rerun_current_peers(self):
         with tempfile.TemporaryDirectory() as directory:

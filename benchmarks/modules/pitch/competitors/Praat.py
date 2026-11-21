@@ -46,6 +46,34 @@ class Praat(PitchDetectorBase):
         freqs = np.asarray(pitch.selected_array["frequency"], dtype=np.float64)
         return (np.asarray(pitch.xs(), dtype=np.float64), freqs)
 
+    class FrameLocal(PitchDetectorBase):
+        """Native one-frame AC decision, with buffer-local silence reference.
+
+        No floor clamp/padding, preprocessing, or cross-frame path costs.
+        Limits: positive floor < ceiling <= Nyquist, at least one sample per hop.
+        """
+        @staticmethod
+        def geometry(sr, floor, ceiling):
+            if not (0 < floor < ceiling <= sr / 2):
+                raise ValueError("Praat requires 0 < floor < ceiling <= Nyquist")
+            size = int(np.ceil(3 * sr / floor))
+            hop = int(round(0.75 * sr / floor))
+            if hop < 1:
+                raise ValueError("Praat native hop is below one sample")
+            return size, hop
+
+        def predict(self, audio, sr, fmin, fmax):
+            import parselmouth
+            size, _ = self.geometry(sr, fmin, fmax)
+            if len(audio) != size:
+                raise ValueError(f"Praat single frame requires {size} samples")
+            pitch = Praat.autocorrelation_pitch(
+                audio, sr, 0.75 / fmin, fmin, fmax, parselmouth=parselmouth)
+            times = np.asarray(pitch.xs())
+            if len(times) != 1:
+                raise ValueError(f"Praat support returned {len(times)} frames; expected one")
+            return times, np.asarray(pitch.selected_array["frequency"])
+
     class Streaming(QObject):
         """Per-buffer Praat baseline with the app's PitchDetector interface.
 

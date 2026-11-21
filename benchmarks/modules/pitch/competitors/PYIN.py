@@ -646,11 +646,13 @@ class PYIN(AttuneRealtime):
         return source.with_name(name)
 
     def cache(self, example: PitchExample) -> PitchCache:
-        return PitchCache(self.variant_cache_path(example.stage_cache_path))
+        # v15 changes only Attune's final gate; this tagged reference pYIN
+        # detector/HMM and its serialized stages are unchanged from v14.
+        return PitchCache(self.variant_cache_path(example.stage_cache_path), compatible_versions=(14,))
 
     def has_cache(self, dataset: Any, track: Any) -> bool:
         cache_path = self.variant_cache_path(dataset.pitch_cache_path(track))
-        return PitchCache(cache_path).has_current_timing(self.stage, self.COMPUTE_CLOCK)
+        return PitchCache(cache_path, compatible_versions=(14,)).has_current_timing(self.stage, self.COMPUTE_CLOCK)
 
     def recording_for(self, config: Config, score_notes=None, score_data=None):
         recording = super().recording_for(

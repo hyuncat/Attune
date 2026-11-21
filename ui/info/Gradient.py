@@ -62,8 +62,10 @@ class VolumeGradient(Gradient):
     """Viridis volume strip (purple = quiet -> yellow-green = loud), flanked by
     the lucide volume / volume-2 icons."""
 
-    HELP = ("How loud each note was played, relative to the rest of this take: "
-            "purple is the quietest, yellow-green the loudest.")
+    HELP = ("Volume relative to the mean voiced-frame level in dB (teal). "
+            "Purple is softer and yellow louder, with equal dB steps on both "
+            "sides. Review uses a symmetric range covering the take. Live colors "
+            "freeze when assigned using the running mean and a +/-12 dB range.")
 
     def anchors(self) -> list:
         return Colors.viridis_anchors(dim=self.dim)
@@ -95,7 +97,7 @@ class VibratoGradient(Gradient):
     """Viridis legend for the metric coloring VibratoWidget's dots."""
 
     HELP = ("Dot color shows the other vibrato measurement: slow to fast when "
-            "the graph displays width, or narrow to wide when it displays speed. "
+            "the graph displays extent, or narrow to wide when it displays rate. "
             "The scale uses the minimum and maximum across the whole recording.")
 
     def __init__(self, low: str, high: str, parent=None):

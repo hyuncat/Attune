@@ -8,7 +8,7 @@ export function getVoicedPitchFrames(pitchFrames, t0, t1) {
         if (!frame) continue;
         const [time, candidates, volume, unvoicedProb, , alignedDistance, isTransition, value] = frame;
         if (time < t0 || time > t1) continue;
-        const voiced = value !== -1 && unvoicedProb < UNVOICED_THRESHOLD;
+        const voiced = value != null && value !== -1 && unvoicedProb < UNVOICED_THRESHOLD;
         if (voiced){
             voicedFrames.push(frame);
         }

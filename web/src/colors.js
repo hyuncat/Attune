@@ -5,6 +5,7 @@
 // part that needs real computation: the take's own loudness range and the
 // viridis ramp built from it.
 import { getVoicedPitchFrames } from "./PitchFrameHandler.js";
+import { volumeLevelStats } from "./noteCurve.js";
 
 // --- ui.Colors.VIRIDIS_ANCHORS / SCORE_DIM / VOL_LIVE_FLOOR_DB ---
 const VIRIDIS_ANCHORS = [
@@ -15,11 +16,6 @@ const VIRIDIS_ANCHORS = [
   [253, 231, 37],
 ];
 const SCORE_DIM = 0.9;
-// Only reachable here when a take's own volume range can't be computed (no
-// voiced frames) - review mode (this app) always has one once there's any
-// voiced audio, so this is a rare fallback, not the common path.
-const VOL_LIVE_FLOOR_DB = -42.0;
-
 function dim(rgb, factor = SCORE_DIM) {
   return rgb.map((c) => Math.round(c * factor));
 }
@@ -42,17 +38,29 @@ export function viridis(frac, dimmed = false) {
   return ramp(VIRIDIS_ANCHORS, frac, dimmed);
 }
 
-// A frame's volume as a 0..1 fraction (quietest..loudest) - ui.Colors.volume_frac.
-export function volumeFrac(volume, vminDb, vmaxDb) {
-  if (!volume || volume <= 0) return 0;
-  const db = 20 * Math.log10(volume);
-  let frac;
-  if (vminDb == null || vmaxDb == null || vmaxDb <= vminDb) {
-    frac = (db - VOL_LIVE_FLOOR_DB) / (0 - VOL_LIVE_FLOOR_DB);
-  } else {
-    frac = (db - vminDb) / (vmaxDb - vminDb);
-  }
-  return Math.max(0, Math.min(1, frac));
+// Review uses the same symmetric, linear-dB mapping as VolumeColorScale.
+export function volumeColorScale(pitchFrames) {
+  const stats = volumeLevelStats(pitchFrames);
+  if (!stats) return null;
+  return { referenceDb: stats.referenceDb,
+           halfRangeDb: Math.max(stats.referenceDb - stats.min, stats.max - stats.referenceDb) };
+}
+
+export function volumeFractionDb(db, scale) {
+  if (!scale || db == null || !Number.isFinite(db)) return null;
+  const { referenceDb, halfRangeDb } = scale;
+  if (halfRangeDb <= 1e-10) return 0.5;
+  return Math.max(0, Math.min(1, 0.5 + (db - referenceDb) / (2 * halfRangeDb)));
+}
+
+export function volumeFrac(volume, scale) {
+  return Number.isFinite(volume) && volume > 0
+    ? volumeFractionDb(20 * Math.log10(volume), scale) : null;
+}
+
+export function meanLevelDb(pitchFrames, startTime, endTime) {
+  const volumes = voicedVolumes(pitchFrames, startTime, endTime);
+  return volumes.length ? volumes.reduce((sum, v) => sum + 20 * Math.log10(v), 0) / volumes.length : null;
 }
 
 // Voiced frames' volumes in [startTime, endTime] - mirrors PitchData.read(clean=True).
@@ -60,7 +68,7 @@ function voicedVolumes(pitchFrames, startTime = -Infinity, endTime = Infinity) {
   const vols = [];
   for (const frame of getVoicedPitchFrames(pitchFrames, startTime, endTime)) {
     const [, , volume] = frame;
-    if (volume > 0) vols.push(volume);
+    if (Number.isFinite(volume) && volume > 0) vols.push(volume);
   }
   return vols;
 }

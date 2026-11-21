@@ -136,6 +136,7 @@ class PitchNotebook:
         include_slow_methods: bool = False
         use_cache: bool = True
         force_rerun: bool = False
+        attune_only_refresh: bool = False
         degradation_snrs: tuple[float, ...] = (math.inf, 20.0, 15.0, 10.0, 5.0)
 
     @dataclass(frozen=True)
@@ -2214,7 +2215,70 @@ class PitchNotebook:
                 )
             ):
                 stale.append("attune")
+        if "mcleod" in methods:
+            from benchmarks.modules.pitch.competitors.McLeod import McLeod
+
+            group = rows.loc[rows["model"] == "mcleod"]
+            if (group.empty or "adapter_version" not in group
+                    or not group["adapter_version"].eq(McLeod.VERSION).all()):
+                stale.append("mcleod")
         return stale
+
+    def _recover_frozen_rows(self, path, rows, options, methods, *, streaming=False):
+        """Recover preliminary subsets from the matching expanded clean suite."""
+        if not self.config.attune_only_refresh:
+            return rows
+        benchmarker = PitchBenchmarker(options)
+        tracks = benchmarker.tracks()
+        keys = {(track.dataset, track.track_id) for track in tracks}
+        dataset = options.datasets[0]
+        per_instrument = 20 if dataset == CocoChorales.name else None
+        donor = None
+        if streaming:
+            # Only sampling differs; preserve methods, geometry, duration and seed.
+            import re
+            donor = path.parent.with_name(re.sub(
+                r"__per_instrument_[^_]+__", f"__per_instrument_{per_instrument}__",
+                path.parent.name,
+            )) / "rows.csv"
+        elif path.is_relative_to(self.runs_root / ("preliminary_" + dataset)) or (
+                dataset == Bach10.name and "preliminary_bach10_original" in path.parts):
+            donor = (self.runs_root / ("paper_offline_" + dataset)
+                     / f"seed_{self.config.seed}__per_instrument_{per_instrument}" / "rows.csv")
+        saved = self._read_run(donor) if donor is not None and donor != path else None
+        if saved is not None:
+            saved = saved.loc[[key in keys for key in zip(saved.dataset, saved.track_id)]]
+            rows = pd.concat([rows, saved], ignore_index=True).drop_duplicates(
+                ["model", "dataset", "track_id"], keep="first")
+        if rows is not None:
+            for method in methods:
+                if method == "attune":
+                    continue
+                group = rows.loc[rows.model.eq(method)]
+                if set(zip(group.dataset, group.track_id)) != keys:
+                    raise RuntimeError(f"Attune-only refresh: incomplete saved {method} track coverage; no competitor detection allowed")
+        return rows
+
+    def _require_frozen_competitors(self, rows, methods, *, streaming=False):
+        """Fail closed before any inference when the protected baseline is absent."""
+        from benchmarks.modules.pitch.PitchCache import PitchCache
+
+        if not self.config.attune_only_refresh:
+            return
+        if self.config.force_rerun or not self.config.use_cache:
+            raise ValueError("Attune-only refresh requires cache reuse and force_rerun=False")
+        for method in methods:
+            if method == "attune":
+                continue
+            group = (rows.loc[rows["model"].eq(method)]
+                     if rows is not None and "model" in rows else pd.DataFrame())
+            if (group.empty or not PitchBenchmarker.current_scores(group)
+                    or (streaming and not all(PitchCache.has_latency_samples(row)
+                                             for row in group.to_dict("records")))):
+                raise RuntimeError(
+                    f"Attune-only refresh: missing/incompatible saved {method} rows. "
+                    "Stopped without running competitor detection; restore the existing suite results."
+                )
 
     def _run_methods(
         self,
@@ -2295,7 +2359,18 @@ class PitchNotebook:
             raise ValueError("methods is only meaningful with force=True")
         forced_methods = self._resolve_methods(methods, all_methods)
         cached_rows = self._read_run(path)
+        cached_rows = self._recover_frozen_rows(
+            path, cached_rows, self.options(datasets=datasets, max_tracks=max_tracks,
+                                           **option_overrides), all_methods)
+        self._require_frozen_competitors(cached_rows, all_methods)
+        if self.config.attune_only_refresh and force:
+            raise ValueError("Attune-only refresh does not allow force=True")
         stale_methods = self._stale_cached_methods(cached_rows, all_methods)
+        if cached_rows is not None and not force:
+            present = set(cached_rows["model"]) if "model" in cached_rows else set()
+            stale_methods = list(dict.fromkeys(
+                stale_methods + [method for method in all_methods if method not in present]
+            ))
         unscored_methods = (
             []
             if cached_rows is None
@@ -2306,6 +2381,9 @@ class PitchNotebook:
                 and (not PitchBenchmarker.current_scores(group))
             ]
         )
+        if self.config.attune_only_refresh:
+            stale_methods = [m for m in stale_methods if m == "attune"]
+            unscored_methods = [m for m in unscored_methods if m == "attune"]
         if (
             not force
             and cached_rows is not None
@@ -2321,7 +2399,7 @@ class PitchNotebook:
                 else (
                     list(dict.fromkeys(stale_methods + unscored_methods))
                     if cached_rows is not None
-                    else all_methods
+                    else (["attune"] if self.config.attune_only_refresh else all_methods)
                 )
             )
             if force and set(run_methods) != set(all_methods):
@@ -2451,8 +2529,12 @@ class PitchNotebook:
         max_seconds: float = math.inf,
         force: bool = False,
         methods: Collection[str] | None = None,
+        suite_methods: Collection[str] | None = None,
     ) -> SuiteResult:
         """Low-latency replay of Attune, frame-restarted pYIN, and peers.
+
+        ``suite_methods`` selects membership without forcing a rerun. Adding
+        a method reuses compatible per-track checkpoints from sibling suites.
 
         Full audio is replayed by default; set ``max_seconds`` to cap each track.
 
@@ -2471,7 +2553,10 @@ class PitchNotebook:
         from benchmarks.modules.pitch.PitchBenchmarker import PitchBenchmarker
         from benchmarks.modules.pitch.PitchCache import PitchCache
 
-        all_methods = list(PitchBenchmarker.PitchStreaming.METHODS)
+        all_methods = self._resolve_methods(
+            PitchBenchmarker.PitchStreaming.METHODS if suite_methods is None else suite_methods,
+            PitchBenchmarker.PitchStreaming.SUPPORTED_METHODS,
+        )
         options = self.options(
             datasets=(dataset,),
             materialize=dataset == CocoChorales.name,
@@ -2480,7 +2565,8 @@ class PitchNotebook:
             max_tracks=None,
         )
         instrument_tag = "all" if not instruments else "-".join(instruments)
-        variant = f"{PitchBenchmarker.PitchStreaming.VERSION}__methods_{'+'.join(all_methods)}__instruments_{instrument_tag}__per_instrument_{tracks_per_instrument}__seed_{self.config.seed}__max_{max_seconds:g}s__unv_{PYIN_DEFAULT_UNV_THRESH:g}__dynamic_floor_{PYIN_DEFAULT_MIN_VOLUME:g}".replace(
+        # Preserve historical suite paths; version Attune checkpoints independently.
+        variant = f"{PitchBenchmarker.PitchStreaming.VERSION}__methods_{'+'.join(all_methods)}__instruments_{instrument_tag}__per_instrument_{tracks_per_instrument}__seed_{self.config.seed}__max_{max_seconds:g}s__unv_{PYIN_DEFAULT_UNV_THRESH:g}__dynamic_floor_{0.03:g}".replace(
             ".", "p"
         )
         path = self.runs_root / f"streaming_{dataset}" / variant / "rows.csv"
@@ -2489,6 +2575,11 @@ class PitchNotebook:
             raise ValueError("methods is only meaningful with force=True")
         forced_methods = self._resolve_methods(methods, all_methods)
         cached_rows = self._read_run(path)
+        cached_rows = self._recover_frozen_rows(
+            path, cached_rows, options, all_methods, streaming=True)
+        self._require_frozen_competitors(cached_rows, all_methods, streaming=True)
+        if self.config.attune_only_refresh and force:
+            raise ValueError("Attune-only refresh does not allow force=True")
         stale_scores = (
             []
             if cached_rows is None
@@ -2504,6 +2595,15 @@ class PitchNotebook:
                 )
             ]
         )
+        stale_scores += self._stale_cached_methods(cached_rows, ["attune"] if "attune" in all_methods else [])
+        if "mcleod" in all_methods:
+            stale_scores += self._stale_cached_methods(cached_rows, ["mcleod"])
+        if cached_rows is not None:
+            present = set(cached_rows["model"]) if "model" in cached_rows else set()
+            stale_scores += [method for method in all_methods if method not in present]
+        if self.config.attune_only_refresh:
+            stale_scores = [m for m in stale_scores if m == "attune"]
+        stale_scores = list(dict.fromkeys(stale_scores))
         if not force and cached_rows is not None and (not stale_scores):
             rows = cached_rows
             print("Reusing completed run:", path.parent)
@@ -2518,7 +2618,7 @@ class PitchNotebook:
                     (
                         forced_methods
                         if force
-                        else stale_scores if cached_rows is not None else all_methods
+                        else stale_scores if cached_rows is not None else (["attune"] if self.config.attune_only_refresh else all_methods)
                     )
                     + stale_scores
                 )
@@ -2589,6 +2689,8 @@ class PitchNotebook:
                     PitchBenchmarker.PitchStreaming.MATCHED_METHODS
                 )
             ]
+            if matched.empty:
+                continue
             if any(
                 (matched[column].nunique() != 1 for column in matched_geometry_columns)
             ):
@@ -3168,7 +3270,19 @@ class PitchNotebook:
         display(table)
         return table
 
-    def run_paper_evaluation(self, mode: str) -> tuple[SuiteResult, ...]:
+    def run_native_feedback_evaluation(self, *, dry_run=True):
+        """449-track native geometry experiment; unchanged methods are cache-only.
+
+        Dry run returns the exact method/track plan. Execution returns
+        ``(suite_results, comparison_table)`` and always repeats preflight.
+        This explicit policy is independent of the legacy Attune-only refresh.
+        """
+        from benchmarks.modules.pitch.NativeFeedbackExperiment import run
+        return run(self, dry_run=dry_run)
+
+    def run_paper_evaluation(
+        self, mode: str, *, streaming_methods: Collection[str] | None = None
+    ) -> tuple[SuiteResult, ...]:
         """Recommended clean 449-track selection, shared by offline/online runs.
 
         Explicitly invoked by an opt-in notebook cell; never starts implicitly
@@ -3187,6 +3301,7 @@ class PitchNotebook:
                     dataset=dataset,
                     instruments=(),
                     tracks_per_instrument=per_instrument,
+                    suite_methods=streaming_methods,
                 )
             else:
                 result = self.run_suite(

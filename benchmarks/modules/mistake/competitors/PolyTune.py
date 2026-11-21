@@ -135,14 +135,16 @@ class PolyTune(MistakeDetectorBase):
         return digest.hexdigest()
 
     class Client:
-        """One isolated, single-threaded model process reused by one pool slot."""
+        """One isolated model process reused by one pool slot."""
 
-        def __init__(self, config, directory):
+        def __init__(self, config, directory, *, cpu_threads=1):
             import os
             from benchmarks.modules.mistake.MistakeDetectorBase import (
                 MistakeDetectorBase,
             )
 
+            if cpu_threads < 1:
+                raise ValueError("CPU threads must be positive")
             self.config = config
             directory = Path(directory).resolve()
             directory.mkdir(parents=True, exist_ok=True)
@@ -161,6 +163,8 @@ class PolyTune(MistakeDetectorBase):
                     str(config.checkpoint),
                     "--device",
                     config.device,
+                    "--threads",
+                    str(cpu_threads if config.device == "cpu" else 1),
                     "--serve",
                     "--output",
                     str(directory / "ready.json"),
@@ -329,7 +333,10 @@ class PolyTune(MistakeDetectorBase):
         parser.add_argument("--device", default="cpu", choices=("cpu", "cuda", "mps"))
         parser.add_argument("--check", action="store_true")
         parser.add_argument("--serve", action="store_true")
+        parser.add_argument("--threads", type=int, default=1)
         args = parser.parse_args()
+        if args.threads < 1:
+            parser.error("--threads must be positive")
         repo = Path(args.repo).resolve()
         cache = repo.parent / "runtime_cache"
         os.environ.setdefault("HF_HOME", str(cache / "huggingface"))
@@ -372,7 +379,7 @@ class PolyTune(MistakeDetectorBase):
         if args.check:
             output.write_text(json.dumps(packages))
             return
-        torch.set_num_threads(1)
+        torch.set_num_threads(args.threads)
         torch.set_num_interop_threads(1)
         start = perf_counter()
         config = OmegaConf.load(Path(args.repo) / "config/model/polytune.yaml")

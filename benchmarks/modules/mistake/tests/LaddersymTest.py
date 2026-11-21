@@ -121,7 +121,7 @@ class LadderSymTests(unittest.TestCase):
 
         class Client:
 
-            def __init__(self, config, directory):
+            def __init__(self, config, directory, *, cpu_threads=1):
                 self.method = config
 
             def predict(self, audio, score, directory, **kwargs):
@@ -191,7 +191,7 @@ class LadderSymTests(unittest.TestCase):
 
         class FakeClient:
 
-            def __init__(self, config, directory):
+            def __init__(self, config, directory, *, cpu_threads=1):
                 assert all(
                     (c.closed for c in clients)
                 ), "Two models resident in one slot"

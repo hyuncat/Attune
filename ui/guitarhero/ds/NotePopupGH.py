@@ -78,9 +78,10 @@ class NotePopupGH(QFrame):
         rows.append(self._label(duration))
 
         if chars.vibrato_rate_hz is not None:
-            rate_text = format(chars.vibrato_rate_hz, ".3g")
-            rows.append(self._label(f"<b>Vibrato:</b> f={rate_text}Hz, "
-                                    f"W={chars.vibrato_width_cents:.0f}¢ peak-to-peak"))
+            # Stored width is peak-to-peak; ± shows the one-sided amplitude.
+            amplitude = chars.vibrato_width_cents / 2.0
+            rows.append(self._label(f"<b>Vibrato:</b> ±{amplitude:.0f}¢, "
+                                    f"{chars.vibrato_rate_hz:.1f} Hz"))
         else:
             rows.append(self._label("<b>Vibrato:</b> —"))
 

@@ -8,7 +8,7 @@ range plumbing, and the melody conversion mir_eval wants.
 
 The detector computes ordinary pYIN candidates once. The benchmark reports the
 completed-audio global-confidence result, while the raw cache stage retains the
-causal confidence/running-peak path used by Practice. Both modes share the same
+causal confidence/running-p95 path used by Practice. Both modes share the same
 frontend pass.
 """
 

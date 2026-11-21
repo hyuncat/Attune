@@ -265,6 +265,45 @@ class MistakeCache:
         return previous == current
 
     @staticmethod
+    def reusable_soundfont_prediction(source, contract, case, method):
+        """Reuse only neural predictions whose model and actual inputs match."""
+        if source is None or method == "Attune":
+            return None
+        if method not in ("PolyTune", "LadderSym"):
+            raise ValueError(f"Unsupported neural method: {method}")
+        source = Path(source).resolve()
+        previous = json.loads((source / "run.json").read_text())["contract"]
+        for key in ("device", "packages", "ladder_contiguous_inference"):
+            if previous["source"].get(key) != contract["source"].get(key):
+                raise ValueError(f"Cannot reuse {method}: changed {key}")
+        if previous["models"].get(method) != contract["models"].get(method):
+            raise ValueError(f"Cannot reuse {method}: model identity changed")
+        for name in {method, "PolyTune"}:
+            path = f"benchmarks/modules/mistake/competitors/{name}.py"
+            if previous["code"].get(path) != contract["code"].get(path):
+                raise ValueError(f"Cannot reuse {method}: adapter changed: {path}")
+        old = next((c for c in previous["intervention"]["cases"]
+                    if c["case_id"] == case["case_id"]), None)
+        if old is None:
+            return None  # Newly appended tracks genuinely require inference.
+        inputs = ("performance", "score_audio", "score_midi")
+        for name in inputs:
+            expected = old["hashes"][name]
+            if (case["hashes"][name] != expected
+                    or digest(case["files"][name]) != expected
+                    or digest(old["files"][name]) != expected):
+                raise ValueError(f"Cannot reuse {method}: changed {name}")
+        checkpoint = source / "cases" / case["case_id"] / method.lower() / "result.json"
+        if not checkpoint.is_file():
+            raise FileNotFoundError(f"Missing expected neural result: {checkpoint}")
+        prediction = deepcopy(json.loads(checkpoint.read_text())["prediction"])
+        if not isinstance(prediction.get("events"), list):
+            raise ValueError(f"Invalid neural prediction: {checkpoint}")
+        prediction.update(inference_cache_hit=True, execution_cpu_seconds=0.0,
+                          inference_cache_source=str(checkpoint))
+        return prediction
+
+    @staticmethod
     def reusable_audio_prediction(source, contract, case, method):
         """Reuse neural inference only, validating inputs, weights, environments and adapter code.
 

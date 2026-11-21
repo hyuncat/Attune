@@ -85,7 +85,7 @@ class Colors:
     ALIGN_MAX_MULT = 4.0        # live/review ramp ends at this multiple of the tolerance
 
     # --- volume ramp ---
-    VOLUME_BUCKETS = 48
+    VOLUME_BUCKETS = 49
     VOL_LIVE_FLOOR_DB = -42.0  # live: this far below full-scale (0 dBFS) => quietest
 
     # --- MIDI background stripes: one color per letter name, sharps darkened ---
@@ -221,7 +221,7 @@ class Colors:
 
     @staticmethod
     def viridis(frac: float, dim: bool = False) -> tuple[int, int, int]:
-        """RGB along the truncated viridis ramp for a 0..1 volume fraction."""
+        """RGB along the viridis ramp for a 0..1 volume fraction."""
         return Colors.ramp(Colors.VIRIDIS_ANCHORS, frac, dim=dim)
 
     @staticmethod
@@ -252,19 +252,9 @@ class Colors:
             [Colors.magma(i / (n - 1)) for i in range(n)], dtype=np.ubyte)
 
     @staticmethod
-    def volume_frac(volume: float, vmin_db: float = None, vmax_db: float = None) -> float:
-        """A frame's volume as a 0..1 fraction (quietest..loudest). With a take's
-        own [vmin_db, vmax_db] dBFS range, interpolate across it; without one
-        (live recording) use the fixed [VOL_LIVE_FLOOR_DB, 0] window so a dot's
-        color locks the moment it's drawn."""
-        if not volume or volume <= 0:
-            return 0.0
-        db = 20.0 * math.log10(volume)  # dBFS, ref = 1.0 (full scale)
-        if vmin_db is None or vmax_db is None or vmax_db <= vmin_db:
-            frac = (db - Colors.VOL_LIVE_FLOOR_DB) / (0.0 - Colors.VOL_LIVE_FLOOR_DB)
-        else:
-            frac = (db - vmin_db) / (vmax_db - vmin_db)
-        return max(0.0, min(1.0, frac))
+    def volume_frac(volume: float, scale) -> float | None:
+        """Symmetric mean-relative dB position; None = no data."""
+        return scale.fraction(volume)
 
     # --- pitch-distance ---
     @staticmethod

@@ -105,7 +105,6 @@ class NoteResultCacheTest(unittest.TestCase):
             for path in (
                 f"benchmarks/modules/note/competitors/{competitor}.py",
                 "benchmarks/modules/note/NoteDetectorBase.py",
-                "benchmarks/modules/note/NoteCache.py",
             ):
                 changed = copy.deepcopy(provenance)
                 changed["sources"][path] = "changed"

@@ -62,7 +62,7 @@ class ParallelTest(unittest.TestCase):
 
         class FakeModel:
 
-            def __init__(self, config, directory):
+            def __init__(self, config, directory, *, cpu_threads=1):
                 self.calls = 0
                 self.closed = False
                 clients.append(self)

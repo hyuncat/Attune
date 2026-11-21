@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
-
 
 @dataclass
 class NoteInfo:
@@ -13,7 +11,7 @@ class NoteInfo:
     # A computer mic's level is uncalibrated (mic gain/distance/AGC all unknown),
     # and an absolute dBFS reading disagrees with the color ramp (a note can be
     # loud FOR THIS TAKE yet low in absolute dBFS). Normalizing to the take's own
-    # [quietest, loudest] is gain-invariant and matches the ramp, so volume_frac
+    # symmetric mean-relative dB range is gain-invariant, so volume_frac
     # is the only volume descriptor — the readout is the color bar, no number.
 
     note_name: str
@@ -24,7 +22,7 @@ class NoteInfo:
     duration_mistake: str | None = None     # "long" / "short" / None
     vibrato_rate_hz: float | None = None
     vibrato_width_cents: float | None = None  # full peak-to-peak sinusoid width
-    volume_frac: float | None = None        # 0..1 bar position in the take's dBFS range; None = no data
+    volume_frac: float | None = None        # 0..1 symmetric mean-relative dB position; None = no data
 
     @classmethod
     def analyze(cls, recording, note) -> "NoteInfo":
@@ -66,15 +64,9 @@ class NoteInfo:
 
     @classmethod
     def _volume(cls, recording, note) -> float | None:
-        """0..1 bar position within the take's dBFS range (None when the note
-        carries no measurable volume): the note's mean level placed across the
-        take's [quietest, loudest] frame dBFS — the same normalization the plot
-        dots and ScoreViewer dots color across (mirrored inline here since
-        app_logic can't import ui.Colors)."""
+        """The note's mean voiced-frame dB on the shared symmetric dB scale."""
         pd = recording.pitch_data
-        vol = pd.mean_volume(note.start_time, note.end_time)
-        vmin, vmax = pd.volume_range_db()
-        if vol <= 0 or vmin is None or vmax is None or vmax <= vmin:
+        if pd is None:
             return None
-        frac = (20.0 * np.log10(vol) - vmin) / (vmax - vmin)
-        return float(min(max(frac, 0.0), 1.0))
+        return pd.volume_color_scale().fraction_db(
+            pd.mean_level_db(note.start_time, note.end_time))

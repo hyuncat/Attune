@@ -1,0 +1,144 @@
+{
+  "verification": "Exact serial-output equality; two processes; one model identity per overlapping request pair",
+  "model_processes": 2,
+  "recordings_per_model": 2,
+  "full_benchmark_started": false,
+  "results": [
+    {
+      "job_id": "2",
+      "intervals": [],
+      "frequencies_hz": [],
+      "programs": [],
+      "cpu_seconds": 3.659996416,
+      "wall_seconds": 1.4242264999775216,
+      "segments": 1,
+      "decoding_channels": 13,
+      "token_shapes": [
+        [
+          1,
+          13,
+          2
+        ]
+      ],
+      "decoding_errors": {},
+      "parameters": 47078022,
+      "strict_checkpoint_load": true,
+      "startup_cpu_share": 2.464606,
+      "compute_clock": "thread+amortized_model_startup",
+      "model_pid": 86564,
+      "model_identity": 5468115968,
+      "started_monotonic": 338284.043658791,
+      "finished_monotonic": 338285.467886666
+    },
+    {
+      "job_id": "1",
+      "intervals": [],
+      "frequencies_hz": [],
+      "programs": [],
+      "cpu_seconds": 3.6423570830000003,
+      "wall_seconds": 1.3961115410202183,
+      "segments": 1,
+      "decoding_channels": 13,
+      "token_shapes": [
+        [
+          1,
+          13,
+          2
+        ]
+      ],
+      "decoding_errors": {},
+      "parameters": 47078022,
+      "strict_checkpoint_load": true,
+      "startup_cpu_share": 2.459994,
+      "compute_clock": "thread+amortized_model_startup",
+      "model_pid": 86565,
+      "model_identity": 6394439936,
+      "started_monotonic": 338284.045560875,
+      "finished_monotonic": 338285.441673958
+    },
+    {
+      "job_id": "0",
+      "intervals": [
+        [
+          0.02,
+          2.0479375
+        ]
+      ],
+      "frequencies_hz": [
+        329.6275569128699
+      ],
+      "programs": [
+        56
+      ],
+      "cpu_seconds": 4.778057457999999,
+      "wall_seconds": 3.935390540980734,
+      "segments": 2,
+      "decoding_channels": 13,
+      "token_shapes": [
+        [
+          1,
+          13,
+          6
+        ],
+        [
+          1,
+          13,
+          2
+        ]
+      ],
+      "decoding_errors": {
+        "Err/merging segment tie": 1
+      },
+      "parameters": 47078022,
+      "strict_checkpoint_load": true,
+      "startup_cpu_share": 2.464606,
+      "compute_clock": "thread+amortized_model_startup",
+      "model_pid": 86564,
+      "model_identity": 5468115968,
+      "started_monotonic": 338284.043318125,
+      "finished_monotonic": 338287.978710208
+    },
+    {
+      "job_id": "3",
+      "intervals": [
+        [
+          0.02,
+          2.0479375
+        ]
+      ],
+      "frequencies_hz": [
+        329.6275569128699
+      ],
+      "programs": [
+        56
+      ],
+      "cpu_seconds": 4.862097917,
+      "wall_seconds": 3.9618153749615885,
+      "segments": 2,
+      "decoding_channels": 13,
+      "token_shapes": [
+        [
+          1,
+          13,
+          6
+        ],
+        [
+          1,
+          13,
+          2
+        ]
+      ],
+      "decoding_errors": {
+        "Err/merging segment tie": 1
+      },
+      "parameters": 47078022,
+      "strict_checkpoint_load": true,
+      "startup_cpu_share": 2.459994,
+      "compute_clock": "thread+amortized_model_startup",
+      "model_pid": 86565,
+      "model_identity": 6394439936,
+      "started_monotonic": 338284.045811875,
+      "finished_monotonic": 338288.007634
+    }
+  ]
+}

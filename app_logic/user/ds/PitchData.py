@@ -231,7 +231,15 @@ class PitchData:
     
     def read_pitch(self, start_time: float=0) -> Pitch:
         """returns the closest pitch to the start_time"""
-        i = self.time_to_index(start_time)
+        # Match write()'s frame addressing. Flooring a nearly-integral float
+        # can read the preceding slot forever while Practice overwrites the
+        # current slot waiting for a correct pitch.
+        if start_time < self.t_origin:
+            return None
+        i = int(round(
+            (start_time - self.t_origin)
+            * (self.config.sr / self.config.h1)
+        ))
         if i < 0 or i >= len(self.data):
             return None
         return self.data[i]
@@ -319,6 +327,20 @@ class PitchData:
             dbs[k] = (max(float(floor_db), 20.0 * np.log10(vol))
                       if vol > 0 else float(floor_db))
         return times, dbs
+
+    def volume_color_scale(self):
+        """Symmetric mean-relative dB scale over the written voiced frames."""
+        from app_logic.user.VolumeLevel import RelativeLevelStats
+        stats = RelativeLevelStats()
+        stats.sync(self)
+        return stats.color_scale
+
+    def mean_level_db(self, start_time: float, end_time: float):
+        """Mean voiced-frame dB in a note, using the panel's level definition."""
+        frames = self.read(start_time=start_time, end_time=end_time, clean=True)
+        levels = [20.0 * np.log10(p.volume) for p in frames
+                  if np.isfinite(p.volume) and p.volume > 0]
+        return float(np.mean(levels)) if levels else None
 
     def volume_range_db(self) -> tuple[float | None, float | None]:
         """(min_dBFS, max_dBFS) over the voiced frames' volumes, or (None, None)

@@ -328,11 +328,20 @@ class NoteDetectorBase:
         from benchmarks.modules.note.competitors.SlopeWindow import SlopeWindow
         from benchmarks.modules.note.competitors.Tony import Tony
 
+        from benchmarks.modules.note.competitors.LibrosaFlux import LibrosaFlux
+        from benchmarks.modules.note.competitors.LibrosaSuperFlux import LibrosaSuperFlux
+
         key = NoteDetectorBase._normalize_method(method)
+        if key == "yourmt3":
+            from benchmarks.modules.note.competitors.YourMT3 import YourMT3
+            return YourMT3
         if key == "mt3":
-            raise NotImplementedError("MT3 requires a separate model/runtime setup")
+            from benchmarks.modules.note.competitors.MT3 import MT3
+            return MT3
         try:
             return {
+                "librosa-flux": LibrosaFlux,
+                "librosa-superflux": LibrosaSuperFlux,
                 "attune": Attune,
                 "attune-audio-only": Attune,
                 "ruptures": Ruptures,

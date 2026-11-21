@@ -301,6 +301,7 @@ class MistakeWidget(QWidget):
         self.tree.itemClicked.connect(self._on_item_clicked)
         # clicking empty space in the tree should clear the selection (and thus the
         # GuitarHero highlight); QTreeWidget doesn't do this on its own
+        self.tree.setMouseTracking(True)
         self.tree.viewport().installEventFilter(self)
 
     # --- PUBLIC API ---
@@ -483,6 +484,15 @@ class MistakeWidget(QWidget):
             self.tree.setColumnWidth(col, w)
 
     def eventFilter(self, obj, event):
+        if obj is self.tree.viewport():
+            if event.type() == QEvent.Type.MouseMove:
+                index = self.tree.indexAt(event.position().toPoint())
+                if index.isValid() and index.column() == self._OVERRIDE_COL:
+                    obj.setCursor(Qt.CursorShape.PointingHandCursor)
+                else:
+                    obj.unsetCursor()
+            elif event.type() == QEvent.Type.Leave:
+                obj.unsetCursor()
         # a press on empty tree space (no item under the cursor) clears the
         # selection, which fires _on_selection_changed -> `cleared`
         if (obj is self.tree.viewport()

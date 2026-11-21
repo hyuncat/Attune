@@ -29,6 +29,65 @@ NOTEBOOK_PATH = "benchmarks/modules/note/NoteNotebook.py"
 class NoteCache:
 
     @staticmethod
+    def inference_source_fingerprint(path, source):
+        """Exclude registry/scheduling code, retaining shared inference helpers."""
+        tree = ast.parse(source)
+        name = Path(path).stem
+        classes = {
+            "NoteBenchmarker": {"NoteBenchmarker", "OneInstrumentScoreData"},
+            "NoteDetectorBase": {"NoteDetectorBase"},
+            "NoteCache": {"NoteCache"},
+        }
+        if name not in classes:
+            return hashlib.sha256(source.encode()).hexdigest()
+        excluded = {
+            "NoteDetectorBase": {"competitor"},
+            "NoteCache": {
+                "inference_source_fingerprint", "inference_sources", "scoped_sources",
+                "function_fingerprints", "job_key", "checkpoint_index",
+                "frozen_prediction_index", "rescore_frozen_prediction",
+                "atomic_json", "reuse_checkpoint",
+            },
+        }.get(name, set())
+        kept = []
+        for node in tree.body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                kept.append(node)
+            elif isinstance(node, ast.ClassDef) and node.name in classes[name]:
+                node.body = [item for item in node.body
+                             if not isinstance(item, ast.FunctionDef) or item.name not in excluded]
+                kept.append(node)
+            elif name == "NoteCache" and isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == "NOTE_CACHE_VERSION" for t in node.targets):
+                kept.append(node)
+        return hashlib.sha256(ast.dump(ast.Module(body=kept, type_ignores=[]),
+                                       include_attributes=False).encode()).hexdigest()
+
+    @staticmethod
+    def inference_sources(root):
+        result = {}
+        for name in ("NoteBenchmarker", "NoteDetectorBase", "NoteCache"):
+            relative = f"benchmarks/modules/note/{name}.py"
+            source = (Path(root) / relative).read_text()
+            result[relative] = dict(raw_sha256=hashlib.sha256(source.encode()).hexdigest(),
+                semantic_sha256=NoteCache.inference_source_fingerprint(relative, source))
+        return result
+
+    @staticmethod
+    def scoped_sources(provenance):
+        result = dict(provenance["sources"])
+        migration = Path(__file__).with_name("provenance") / "inference-source-scopes.json"
+        aliases = json.loads(migration.read_text()) if migration.exists() else {}
+        recorded = provenance.get("inference_sources", {})
+        for path, raw in result.items():
+            scoped = recorded.get(path, {})
+            if scoped.get("raw_sha256") == raw:
+                result[path] = scoped["semantic_sha256"]
+            elif raw in aliases.get(path, {}):
+                result[path] = aliases[path][raw]
+        return result
+
+    @staticmethod
     def function_fingerprints(path):
         """Fingerprint scoring and shared adapter helpers at their class-owned locations."""
         paths = [Path(path), Path(__file__).with_name("NoteDetectorBase.py")]
@@ -43,7 +102,7 @@ class NoteCache:
         return result
 
     @staticmethod
-    def job_key(provenance, task):
+    def job_key(provenance, task, *, legacy_scope=False, source_scope=True):
         """Conservative semantic key; never use worker count, method list or git HEAD."""
         sources = provenance["sources"]
         functions = provenance.get("cache_functions")
@@ -96,6 +155,10 @@ class NoteCache:
                 "basic-pitch": "BasicPitch",
                 "crepe-notes": "CrepeNotes",
                 "tony": "Tony",
+                "mt3": "MT3",
+                "yourmt3": "YourMT3",
+                "librosa-flux": "LibrosaFlux",
+                "librosa-superflux": "LibrosaSuperFlux",
             }.get(method)
             if competitor is None:
                 return None
@@ -106,6 +169,21 @@ class NoteCache:
                     f"benchmarks/modules/note/competitors/{competitor}.py",
                 }
             )
+        if not legacy_scope and method in ("basic-pitch", "crepe-notes", "tony", "mt3", "yourmt3"):
+            # These baselines never consume Attune pitch/voicing settings.
+            # Cache orchestration is not model inference or scoring; those
+            # semantics remain covered by adapter sources and function hashes.
+            dependencies.difference_update({
+                "algorithms/Config.py",
+                "benchmarks/modules/pitch/competitors/Attune.py",
+                "benchmarks/modules/note/NoteCache.py",
+            })
+        if method == "yourmt3":
+            dependencies.add("benchmarks/modules/note/experiments/YourMT3Direct.py")
+        if method == "mt3":
+            dependencies.add("benchmarks/modules/note/experiments/MT3Direct.py")
+        if method.startswith("librosa-"):
+            dependencies.add("benchmarks/modules/note/competitors/LibrosaFlux.py")
         if any((p not in sources for p in dependencies)):
             return None
         settings = provenance["config"]
@@ -135,11 +213,12 @@ class NoteCache:
                 "crepe-notes": {"crepe", "crepe-notes", "tensorflow"},
             }.get(method, set())
         )
+        identity_sources = NoteCache.scoped_sources(provenance) if source_scope else sources
         identity = dict(
             schema="note-result-v1",
             method=method,
             functions=functions,
-            sources={p: sources[p] for p in sorted(dependencies)},
+            sources={p: identity_sources[p] for p in sorted(dependencies)},
             settings={k: settings[k] for k in config_keys},
             inputs={k: provenance["inputs"][task[k]] for k in input_keys},
             task={k: task.get(k) for k in task_keys},
@@ -149,6 +228,17 @@ class NoteCache:
             threads=provenance["threads"],
             device=provenance["device"],
         )
+        if source_scope and "benchmarks/modules/note/NoteDetectorBase.py" in sources:
+            identity["dispatch"] = provenance.get("method_dispatch", {}).get(
+                method, f"benchmarks.modules.note.competitors.{competitor}.{competitor}")
+        if method == "yourmt3":
+            if "yourmt3_runtime" not in provenance:
+                return None
+            identity["yourmt3_runtime"] = provenance["yourmt3_runtime"]
+        if method == "mt3":
+            if "mt3_runtime" not in provenance:
+                return None
+            identity["mt3_runtime"] = provenance["mt3_runtime"]
         return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
     @staticmethod
@@ -175,13 +265,78 @@ class NoteCache:
                         if not {"intervals", "frequencies_hz"} <= data.keys():
                             continue
                         key = NoteCache.job_key(metadata, row)
-                        if key and row.get("cache_key", key) == key:
+                        previous_keys = (
+                            key, NoteCache.job_key(metadata, row, legacy_scope=True),
+                            NoteCache.job_key(metadata, row, source_scope=False),
+                            NoteCache.job_key(metadata, row, legacy_scope=True, source_scope=False),
+                        )
+                        # Explicitly rescored historical predictions keep their
+                        # inference provenance; their current scoring is reusable.
+                        rescored = row.get("cache_key") is None and bool(row.get("inference_provenance"))
+                        if key and (row.get("cache_key", key) in previous_keys or rescored):
                             result.setdefault(key, (checkpoint, prediction, row))
                     except (OSError, ValueError, KeyError, TypeError):
                         continue
             except (OSError, ValueError, KeyError, TypeError):
                 continue
         return result
+
+    @staticmethod
+    def frozen_prediction_index(run_paths):
+        """Explicitly pin baseline inference while allowing fresh scoring code.
+
+        Unlike exact result reuse, these artifacts retain their original model
+        provenance and timings. They are never presented as current inference.
+        """
+        result = {}
+        for run_path in run_paths:
+            run = Path(run_path)
+            metadata = json.loads((run / "metadata.json").read_text())
+            for checkpoint in (run / "checkpoints").glob("*.json"):
+                row = json.loads(checkpoint.read_text())
+                if row.get("method") not in ("basic-pitch", "crepe-notes", "tony"):
+                    continue
+                if row.get("status") != "ok":
+                    continue
+                prediction = run / "predictions" / f"{row['job_id']}.json"
+                data = json.loads(prediction.read_text())
+                if not {"intervals", "frequencies_hz"} <= data.keys():
+                    raise ValueError(f"Incomplete baseline prediction: {prediction}")
+                identity = (row["dataset"], row["track_id"], row["method"])
+                if identity in result:
+                    raise ValueError(f"Duplicate pinned baseline prediction: {identity}")
+                result[identity] = (checkpoint, prediction, row, metadata)
+        return result
+
+    @staticmethod
+    def rescore_frozen_prediction(candidate, provenance, task, config, output):
+        import numpy as np
+        from benchmarks.modules.note.NoteBenchmarker import NoteEvaluation
+
+        checkpoint, prediction, original, metadata = candidate
+        if task["method"] not in ("basic-pitch", "crepe-notes", "tony"):
+            raise ValueError("Frozen baseline predictions cannot be used for Attune")
+        if metadata["inputs"][original["audio"]] != provenance["inputs"][task["audio"]]:
+            raise ValueError(f"Pinned baseline audio changed: {task['track_id']}")
+        # Check the actual input too, so stale provenance cannot bless changed audio.
+        if hashlib.sha256(Path(task["audio"]).read_bytes()).hexdigest() != metadata["inputs"][original["audio"]]:
+            raise ValueError(f"Pinned baseline audio changed: {task['track_id']}")
+        data = json.loads(prediction.read_text())
+        iv = np.asarray(data["intervals"], dtype=float).reshape(-1, 2)
+        hz = np.asarray(data["frequencies_hz"], dtype=float)
+        if len(iv) != len(hz) or not np.isfinite(iv).all() or not np.isfinite(hz).all():
+            raise ValueError(f"Invalid baseline predictions: {prediction}")
+        ref_iv, ref_hz = NoteEvaluation.reference_notes(task)
+        row = {**original, **task, "cache_key": None,
+               "inference_reused_from": str(prediction),
+               "inference_provenance": str(checkpoint.parent.parent / "metadata.json"),
+               "execution_cpu_seconds": 0.0, "wall_seconds": 0.0,
+               "reference_notes": len(ref_hz), "estimated_notes": len(hz)}
+        row.update(NoteEvaluation.score_predictions(ref_iv, ref_hz, iv, hz, config))
+        row.update(NoteEvaluation.note_event_counts(row))
+        NoteCache.atomic_json(Path(output) / "predictions" / f"{task['job_id']}.json", data)
+        NoteCache.atomic_json(Path(output) / "checkpoints" / f"{task['job_id']}.json", row)
+        return row
 
     @staticmethod
     def atomic_json(path, value):

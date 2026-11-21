@@ -38,7 +38,7 @@ def fake_neural_evaluate(task, client):
 
 class NativeParallelTests(unittest.TestCase):
 
-    def test_spawned_cpu_and_grouped_persistent_models(self):
+    def test_spawned_cpu_and_concurrent_persistent_models(self):
         from benchmarks.modules.mistake.MistakeBenchmarker import MistakeBenchmarker
 
         clients, results = ([], [])
@@ -46,10 +46,9 @@ class NativeParallelTests(unittest.TestCase):
 
         class Model:
 
-            def __init__(self, config, directory):
+            def __init__(self, config, directory, *, cpu_threads=1):
                 self.method, self.calls, self.closed = (config.name, 0, False)
-                if self.method == "LadderSym":
-                    assert all((c.closed for c in clients if c.method == "PolyTune"))
+                self.cpu_threads = cpu_threads
                 clients.append(self)
 
             def predict(self, task):
@@ -61,6 +60,7 @@ class NativeParallelTests(unittest.TestCase):
                     raise AssertionError("CPU processes must exit before neural stage")
                 self.calls += 1
                 barrier.wait(timeout=20)
+                assert {c.method for c in clients if not c.closed} == {"PolyTune", "LadderSym"}
                 return dict(method=self.method)
 
             def close(self):
@@ -98,12 +98,13 @@ class NativeParallelTests(unittest.TestCase):
                     neural_workers=2,
                     on_result=results.append,
                 )
+        self.assertEqual(counts['cpu_workers'], 2)
+        self.assertEqual(counts['neural_worker_budget'], 2)
+        self.assertEqual(counts['neural_workers'], {"PolyTune": 1, "LadderSym": 1})
+        self.assertLessEqual(2 * counts['model_threads'], max(2, (os.cpu_count() or 4) - 1))
         self.assertEqual(
-            counts, dict(cpu_workers=2, neural_workers={"PolyTune": 2, "LadderSym": 2})
-        )
-        self.assertEqual(
-            [r["method"] for r in results],
-            ["Attune"] * 2 + ["PolyTune"] * 4 + ["LadderSym"] * 4,
+            sorted(r["method"] for r in results),
+            sorted(["Attune"] * 2 + ["PolyTune"] * 4 + ["LadderSym"] * 4),
         )
         self.assertEqual(len({r["pid"] for r in results[:2]}), 2)
         self.assertTrue(
@@ -114,8 +115,8 @@ class NativeParallelTests(unittest.TestCase):
                 )
             )
         )
-        self.assertEqual(len(clients), 4)
-        self.assertTrue(all((c.closed and c.calls == 2 for c in clients)))
+        self.assertEqual(len(clients), 2)
+        self.assertTrue(all((c.closed and c.calls == 4 for c in clients)))
 
     def test_no_pending_jobs_load_no_models(self):
         from benchmarks.modules.mistake.MistakeBenchmarker import MistakeBenchmarker
@@ -213,7 +214,7 @@ class NativeParallelTests(unittest.TestCase):
                     stream.getvalue(),
                 )
                 self.assertIn(
-                    "[   0/36] PolyTune: 2 persistent model workers", stream.getvalue()
+                    "[   0/36] PolyTune: 2 shared model workers", stream.getvalue()
                 )
                 self.assertIn("[   1/36] Attune: 0 detected", stream.getvalue())
                 self.assertIn("[  13/36] PolyTune: 0 audio", stream.getvalue())

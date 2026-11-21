@@ -2,6 +2,7 @@ import pyqtgraph as pg
 
 from app_logic.user.ds.PitchData import PitchData, Pitch
 from ui.Colors import Colors
+from app_logic.user.VolumeLevel import RelativeLevelStats
 
 
 class PitchDataUI(pg.ScatterPlotItem):
@@ -14,10 +15,9 @@ class PitchDataUI(pg.ScatterPlotItem):
           red at four times that tolerance. Both live and post-analysis frames
           use this adaptive scale; `aligned_distance` takes precedence over
           `live_distance` when available. Transitions are grey.
-        - "volume": along the truncated viridis ramp (purple = quiet ->
-          sea-green = loud). Live recording normalizes against a FIXED absolute
-          dBFS window (a dot's color locks the moment it's drawn); in review
-          it's remapped against the take's own quietest/loudest frame.
+        - "volume": purple -> teal -> yellow, using a symmetric dB range centered
+          on mean voiced-frame dB. Live colors freeze against the running mean
+          and a fixed +/-12 dB range. Review uses the final take-wide range.
     """
 
     def __init__(self):
@@ -30,7 +30,7 @@ class PitchDataUI(pg.ScatterPlotItem):
         self.live = False               # recording right now? (see set_live)
         self.max_volume = 0.0            # loudest centered-RMS frame seen
         self._volume_frames_seen = 0
-        self._vol_range: tuple | None = None  # cached per-take (min, max) dBFS
+        self._level_stats = RelativeLevelStats()
 
         self.rest_brush = colors['rest']  # transition frames in pitch mode
         self.distance_brushes: list = []
@@ -52,7 +52,7 @@ class PitchDataUI(pg.ScatterPlotItem):
         self.pitch_data = pitch_data
         self.max_volume = 0.0
         self._volume_frames_seen = 0
-        self._vol_range = None
+        self._level_stats.reset()
         self._sync_max_volume()
         if tolerance is not None:
             self.set_tolerance(tolerance)
@@ -71,12 +71,9 @@ class PitchDataUI(pg.ScatterPlotItem):
         self.distance_brushes[:] = brushes
 
     def set_live(self, live: bool):
-        """Toggle live-recording mode for volume coloring. Live => normalize
-        each frame against a fixed absolute dBFS window (its color locks when
-        drawn, no re-shade as later notes arrive); review => normalize against
-        the take's own quietest/loudest frame."""
+        """Reset the voiced-level statistics on a live/review transition."""
         self.live = live
-        self._vol_range = None  # recompute the take's range on the next redraw
+        self._level_stats.reset()
 
     def read(self, start_time: float, end_time: float) -> list[Pitch | None]:
         """The written pitch frames in view.
@@ -130,9 +127,11 @@ class PitchDataUI(pg.ScatterPlotItem):
         is the hovered note's time span, whose frames are knocked back so the
         note being pointed at reads apart from the rest of the track."""
         volume_mode = mode == "volume"
-        vmin_db, vmax_db = (None, None)
-        if volume_mode and not self.live:
-            vmin_db, vmax_db = self._review_vol_range()
+        volume_scale = None
+        if (volume_mode or self.live) and self.pitch_data is not None:
+            self._level_stats.sync(self.pitch_data)
+            if not self.live:
+                volume_scale = self._level_stats.color_scale
 
         self._sync_max_volume()
         pitches = self.read(start_time, end_time)
@@ -152,18 +151,19 @@ class PitchDataUI(pg.ScatterPlotItem):
                 continue
             xs.append(p.time)
             ys.append(p.value)  # primary pitch value
-            brush = self._brush_for(p, volume_mode, vmin_db, vmax_db)
+            brush = self._brush_for(p, volume_mode, volume_scale)
             if hover is not None and hover[0] <= p.time <= hover[1]:
                 brush = self.hover_brush(brush)
             brushes.append(brush)
 
         self.setData(x=xs, y=ys, brush=brushes)
 
-    def _brush_for(self, p: Pitch, volume_mode: bool, vmin_db, vmax_db):
+    def _brush_for(self, p: Pitch, volume_mode: bool, volume_scale):
         """The brush a frame draws with, before any hover knock-back."""
         if volume_mode:
-            frac = Colors.volume_frac(getattr(p, "volume", 0.0), vmin_db, vmax_db)
-            return self.get_volume_brush(frac)
+            frac = (self._level_stats.live_fractions.get(id(p)) if self.live else
+                    Colors.volume_frac(getattr(p, "volume", 0.0), volume_scale))
+            return self.get_volume_brush(frac) if frac is not None else self.rest_brush
         if getattr(p, "is_transition", False):
             return self.rest_brush
         ad = getattr(p, "aligned_distance", None)
@@ -187,7 +187,8 @@ class PitchDataUI(pg.ScatterPlotItem):
             self.pitch_data = None
             self.max_volume = 0.0
             self._volume_frames_seen = 0
-            self._vol_range = None
+            if hasattr(self, "_level_stats"):
+                self._level_stats.reset()
         super().clear()
 
     # --- brush lookups ---
@@ -204,7 +205,7 @@ class PitchDataUI(pg.ScatterPlotItem):
 
     def get_volume_brush(self, frac: float):
         """Pooled brush for a 0..1 volume fraction."""
-        idx = int(max(0.0, min(1.0, frac)) * (len(self.volume_brushes) - 1))
+        idx = round(max(0.0, min(1.0, frac)) * (len(self.volume_brushes) - 1))
         return self.volume_brushes[idx]
 
     def hover_brush(self, brush):
@@ -217,13 +218,3 @@ class PitchDataUI(pg.ScatterPlotItem):
             twin = Colors.hover_brush(brush)
             self._hover_brushes[key] = twin
         return twin
-
-    def _review_vol_range(self) -> tuple[float, float] | tuple[None, None]:
-        """The take's (min_dBFS, max_dBFS) from PitchData.volume_range_db,
-        cached per take. Post-recording the quietest frame maps to the purple
-        end of the ramp and the loudest to sea-green; (None, None) falls back
-        to the absolute window."""
-        if self._vol_range is None:
-            self._vol_range = (self.pitch_data.volume_range_db()
-                               if self.pitch_data else (None, None))
-        return self._vol_range

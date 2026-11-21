@@ -15,7 +15,7 @@
   //     (GuitarHero.timeline, pg.InfiniteLine, colors['timeline'] =
   //     mkPen(0, 255, 0, 255))
   import { noteFromArray, noteName } from "./mistakes.js";
-  import { meanVolume, volumeFrac, volumeRangeDb, viridis, cssRgb } from "./colors.js";
+  import { meanLevelDb, volumeFrac, volumeFractionDb, volumeColorScale, viridis, cssRgb } from "./colors.js";
   import { vibratoNoteSummary } from "./noteCurve.js";
   import { getVoicedPitchFrames } from "./PitchFrameHandler.js";
 
@@ -95,11 +95,11 @@
 
   // --- GuitarHero's own "Colors:" dropdown (color_mode) - independent of
   // ScoreViewer's scoreColorMode: pitch (distance-from-target ramp, default)
-  // or volume (viridis ramp over this take's own loudest/quietest frame).
+  // or volume (symmetric mean-relative dB ramp).
   // Only the pitch-frame scatter dots recolor - note bars always stay on the
   // mistake-based coloring above (PitchDataUI.update_view, ported).
   let colorMode = $state("pitch");
-  let volumeRange = $derived(pitchFrames ? volumeRangeDb(pitchFrames) : [null, null]);
+  let volumeScale = $derived(volumeColorScale(pitchFrames));
 
   let pitchPoints = $derived.by(() => {
     if (!pitchFrames) return [];
@@ -110,8 +110,8 @@
       const midi = candidates[0][0];
       let color;
       if (colorMode === "volume") {
-        const frac = volumeFrac(volume, volumeRange[0], volumeRange[1]);
-        color = cssRgb(viridis(frac));
+        const frac = volumeFrac(volume, volumeScale);
+        color = frac == null ? REST_COLOR : cssRgb(viridis(frac));
       } else {
         color = isTransition
           ? REST_COLOR
@@ -270,9 +270,8 @@
   // (not a color) when nothing voiced was measured, matching NoteInfo._volume.
   function noteVolumeFrac(note) {
     if (!pitchFrames || !note) return null;
-    const volume = meanVolume(pitchFrames, note.startTime, note.endTime);
-    if (volume <= 0) return null;
-    return volumeFrac(volume, volumeRange[0], volumeRange[1]);
+    const level = meanLevelDb(pitchFrames, note.startTime, note.endTime);
+    return volumeFractionDb(level, volumeScale);
   }
 
   let noteInfo = $derived.by(() => {

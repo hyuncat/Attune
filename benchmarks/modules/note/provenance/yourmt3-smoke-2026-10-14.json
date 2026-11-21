@@ -1,0 +1,43 @@
+{
+  "intervals": [
+    [
+      0.02,
+      2.0479375
+    ]
+  ],
+  "frequencies_hz": [
+    329.6275569128699
+  ],
+  "programs": [
+    56
+  ],
+  "cpu_seconds": 6.6353230000000005,
+  "wall_seconds": 7.396258875029162,
+  "segments": 2,
+  "decoding_channels": 13,
+  "token_shapes": [
+    [
+      1,
+      13,
+      6
+    ],
+    [
+      1,
+      13,
+      2
+    ]
+  ],
+  "decoding_errors": {
+    "Err/merging segment tie": 1
+  },
+  "parameters": 47078022,
+  "strict_checkpoint_load": true,
+  "source_revision": "5e66c1ea173a8186e0d20432b841d3180cc015b5",
+  "checkpoint_sha256": "ae38e415c79efd5592dcb9b658cdb99ddb11d4c4e1eaa364cab04a052473fc25",
+  "variant": "YPTF.MoE+Multi (noPS)",
+  "device": "cpu",
+  "precision": "float32",
+  "input": "Coco test/brass_track222029/stems_audio/3_trombone.wav: first 32768 samples at 16000 Hz",
+  "input_sha256": "c61f9c9d46599064dc68645ce663987591ef9d6c55922f9d7436a5f88ef93b6c",
+  "scope": "Bounded execution smoke only; not an accuracy evaluation"
+}
