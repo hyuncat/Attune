@@ -45,3 +45,5 @@ If you find an issue or want to contribute, contact:
 - hyuncat3@gmail.com
 - gbciaobella@gmail.com
 
+
+Research notebooks, datasets, competitor implementations, and results are indexed in [experiments/README.md](experiments/README.md). Paper-facing exports live in [experiments/results/](experiments/results/); experiments and results do not ship with the app.

@@ -2,6 +2,9 @@
 at-venv*/
 /venv/
 .venv/
+.venv-build/
+/build/
+/dist/
 .DS_Store
 *__pycache__/
 *.pyc
@@ -10,16 +13,23 @@ at-venv*/
 .ruff_cache/
 .ipynb_checkpoints/
 
-# Downloaded benchmark inputs and generated results (keep source/notebooks)
-benchmarks/datasets/*
-!benchmarks/datasets/.gitkeep
-benchmarks/results/*
-!benchmarks/results/.gitkeep
-# Legacy output locations; current runs belong under benchmarks/results/.
-/benchmarks/sweeps/results/
-/benchmarks/notebooks/sweeps/results/
+/experiments/results/caches/
+/experiments/modules/*/competitors/data/
+# Preserve the small Yang baseline assets already distributed with the code.
+!/experiments/modules/vibrato/competitors/data/
+/experiments/modules/vibrato/competitors/data/*
+!/experiments/modules/vibrato/competitors/data/yang/
+/experiments/modules/vibrato/competitors/data/yang/*
+!/experiments/modules/vibrato/competitors/data/yang/ava_br_kde_models_plain.mat
+!/experiments/modules/vibrato/competitors/data/yang/ava_br_model_provenance.json
+/experiments/datasets/bach10/*
+/experiments/datasets/urmp/*
+/experiments/datasets/coco/*/
+/experiments/datasets/coco-e2/benchmark/
+/experiments/datasets/coco-e2/sweeps/
+/experiments/datasets/coco-e2/mistake-db/
+!/experiments/datasets/*/.gitkeep
 
-# Machine-local configuration
 .env
 .env.*
 !.env.example
@@ -29,8 +39,7 @@ AGENTS.md
 .claude/
 .vscode*
 
-# Local archives, papers, and downloaded soundfont libraries
 docs/archive*
 paper*
-benchmarks/archive*
+/experiments/archive*
 resources/soundfonts*

@@ -1,0 +1,63 @@
+{
+  "limitation": "Excludes current frozen tuning cohort; does not undo historical dataset consultation",
+  "policy": "exclude exact Bach10/URMP tuning recordings; Coco evaluation unchanged",
+  "removed": [
+    {
+      "dataset": "urmp",
+      "track_id": "04_Allegro_fl_fl/AuSep_1_fl_04_Allegro"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "11_Maria_ob_vc/AuSep_1_ob_11_Maria"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "14_Waltz_fl_fl_cl/AuSep_3_cl_14_Waltz"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "16_Surprise_tpt_tpt_sax/AuSep_3_sax_16_Surprise"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "22_Rejouissance_sax_tbn_tba/AuSep_3_tba_22_Rejouissance"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "26_King_vn_vn_va_vc/AuSep_2_vn_26_King"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "26_King_vn_vn_va_vc/AuSep_4_vc_26_King"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "31_Slavonic_tpt_tpt_hn_tbn/AuSep_2_tpt_31_Slavonic"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "33_Elise_tpt_tpt_hn_tbn/AuSep_3_hn_33_Elise"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "38_Jerusalem_vn_vn_va_vc_db/AuSep_3_va_38_Jerusalem"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "38_Jerusalem_vn_vn_va_vc_db/AuSep_5_db_38_Jerusalem"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "40_Miserere_fl_fl_ob_cl_bn/AuSep_5_bn_40_Miserere"
+    },
+    {
+      "dataset": "urmp",
+      "track_id": "42_Arioso_tpt_tpt_hn_tbn_tba/AuSep_4_tbn_42_Arioso"
+    }
+  ],
+  "report_only": true,
+  "source_rows": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/pitch/notebook_runs/streaming_urmp/native_feedback_2026_11_v1/rows.csv",
+  "source_rows_sha256": "7344f9925806433094f9daa16380774457ca60aeaa6f3802e14a255c928e999d",
+  "tuning_manifest": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/cohort.json",
+  "tuning_sha256": "2701e06f5580a8402110304de2ff9c0a236dd8357f9206e6b5f7708a032b30ba"
+}

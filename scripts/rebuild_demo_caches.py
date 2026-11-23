@@ -9,7 +9,7 @@ CPU-bound).
 
 Benchmark pitch caches are NOT touched here — rebuild those with the harness's
 own rewrite path, e.g.:
-    python benchmarks/scripts/benchmark_pitch.py --no-cache --models pyin
+    python experiments/scripts/benchmark_pitch.py --no-cache --models pyin
 """
 from __future__ import annotations
 

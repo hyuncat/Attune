@@ -1,0 +1,27 @@
+{
+  "limitation": "Excludes current frozen tuning cohort; does not undo historical dataset consultation",
+  "policy": "exclude exact Bach10/URMP tuning recordings; Coco evaluation unchanged",
+  "removed": [
+    {
+      "dataset": "bach10-original",
+      "track_id": "02-AchLiebenChristen-bassoon"
+    },
+    {
+      "dataset": "bach10-original",
+      "track_id": "02-AchLiebenChristen-clarinet"
+    },
+    {
+      "dataset": "bach10-original",
+      "track_id": "08-FuerDeinenThron-saxphone"
+    },
+    {
+      "dataset": "bach10-original",
+      "track_id": "08-FuerDeinenThron-violin"
+    }
+  ],
+  "report_only": true,
+  "source_rows": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/pitch/notebook_runs/streaming_bach10-original/native_feedback_2026_11_v1/rows.csv",
+  "source_rows_sha256": "7ce4ba1b4bea0f05c8836ccf54e9f8b042f84dce97245786929f223cf4359a56",
+  "tuning_manifest": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/cohort.json",
+  "tuning_sha256": "2701e06f5580a8402110304de2ff9c0a236dd8357f9206e6b5f7708a032b30ba"
+}

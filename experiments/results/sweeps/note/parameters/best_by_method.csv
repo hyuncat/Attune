@@ -1,0 +1,2 @@
+Method,Onset Precision,Onset Recall,Onset F1,Transcription Precision,Transcription Recall,Transcription F1,fn,fp_offset,tp,fn_offset,fp,tp_offset,Min Pause (ms),Min Note Factor,Min Note Cap (s),Min Pitch Distance (semitones),Audio (s) / Compute (s)
+KernelCPD (linear),0.9252745748043193,0.9128363439294797,0.9189834242644387,0.8948009932621241,0.8829647810968012,0.8888143043659023,536,603,6936,674,465,6798,20.0,0.75,0.2,0.6,45.472273804729184

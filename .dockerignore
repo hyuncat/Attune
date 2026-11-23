@@ -16,7 +16,8 @@ node_modules/
 # Desktop-only and dev-tooling directories the API never imports.
 ui/
 resources/
-benchmarks/
+experiments/
+data/
 notebooks/
 component_tests/
 docs/

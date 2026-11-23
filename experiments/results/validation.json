@@ -1,0 +1,34 @@
+{
+  "offline_rows": 3888,
+  "offline_tracks": {
+    "bach10-original": 36,
+    "urmp": 136,
+    "coco": 260
+  },
+  "online_rows": 3024,
+  "online_tracks": {
+    "bach10-original": 36,
+    "urmp": 136,
+    "coco": 260
+  },
+  "note_tracks": {
+    "bach10-original": 36,
+    "urmp": 136,
+    "coco": 260
+  },
+  "note_tuning_track_overlap": 0,
+  "mistake_attune_f1": {
+    "end_to_end_E2": 86.22,
+    "end_to_end_E": 57.81,
+    "isolated_E2": 99.08,
+    "isolated_E": 97.58
+  },
+  "isolated_mean_attune_f1": 98.33,
+  "sweep_pitch_configurations": 36,
+  "sweep_note/parameters_configurations": 225,
+  "sweep_note/methods_configurations": 6,
+  "sweep_mistake/weights_configurations": 34,
+  "sweep_mistake/gap_penalty_configurations": 5,
+  "verified_copied_files": 90,
+  "cohort_policy": "Exclude exact tuning recordings; retain other stems of tuning pieces."
+}

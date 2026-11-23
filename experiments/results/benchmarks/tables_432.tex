@@ -1,0 +1,66 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrr@{}}
+\toprule
+Method & \shortstack{Overall\\accuracy} & \shortstack{Raw pitch\\accuracy} & \shortstack{Raw chroma\\accuracy} & \shortstack{Voicing\\recall} & \shortstack{Voicing false-\\alarm rate} & \shortstack{P95 feedback\\latency (ms)} & $p_{\mathrm{adj}}$ \\
+\midrule
+\sys & \textbf{93.37} & 94.88 & 95.76 & 97.47 & 13.29 & 49.61 & --- \\
+PYIN (no HMM)~\cite{mauch2014pyin} & 82.36 & \textbf{95.97} & \textbf{96.82} & \textbf{99.94} & 78.02 & 69.04 & 0.0006 \\
+Praat~\cite{praat} & 91.51 & 95.39 & 96.39 & 99.40 & 25.73 & \textbf{27.18} & 0.0006 \\
+SwiftF0~\cite{nieradzik2025swiftf0} & 85.65 & 86.55 & 86.85 & 88.67 & 18.32 & 175.18 & 0.0006 \\
+SPICE~\cite{gfeller2020spice} & 85.69 & 88.60 & 89.78 & 94.07 & 27.22 & 66.10 & 0.0006 \\
+Tartini~\cite{mcleod2008fast} & 89.48 & 91.85 & 93.03 & 94.89 & 21.03 & 45.37 & 0.0006 \\
+CREPE-tiny~\cite{kim2018crepe} & 91.60 & 92.53 & 93.88 & 95.54 & \textbf{12.49} & 44.00 & 0.0006 \\
+\bottomrule
+\end{tabular*}
+\caption{Online pitch-detection metrics (\%) pooled across 432 tracks: 36 from \emph{Bach10}, 136 from \emph{URMP}, and 260 from \emph{CocoChorales}. Only the exact recordings used for parameter tuning are excluded; other stems of the same source pieces are retained. Adjusted p-values compare overall accuracy against \sys using paired source-piece permutation tests, with Holm correction across six comparisons. P95 feedback latency measures the delay between the current audio and the latest available pitch estimate; 95\% of evaluated feedback delays were at or below the reported value.}
+\label{tab:online-pitch-detection}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrr@{}}
+\toprule
+Method & \shortstack{Overall\\accuracy} & \shortstack{Raw pitch\\accuracy} & \shortstack{Raw chroma\\accuracy} & \shortstack{Voicing\\recall} & \shortstack{Voicing false-\\alarm rate} & $p_{\mathrm{adj}}$ \\
+\midrule
+\sys & \textbf{93.79} & 95.19 & 95.87 & 97.36 & 12.44 & --- \\
+PYIN~\cite{mauch2014pyin} & 89.39 & \textbf{96.22} & \textbf{96.91} & 98.67 & 40.91 & 0.0008 \\
+Praat~\cite{praat} & 93.36 & 93.66 & 94.74 & 96.37 & \textbf{7.96} & 0.0808 \\
+Basic Pitch~\cite{bittner2022basicpitch} & 90.93 & 93.70 & 94.02 & \textbf{98.70} & 21.36 & 0.0008 \\
+SwiftF0~\cite{nieradzik2025swiftf0} & 85.74 & 86.87 & 87.18 & 89.06 & 19.28 & 0.0008 \\
+CREPE~\cite{kim2018crepe} & 93.65 & 95.14 & 95.60 & 97.02 & 12.94 & 0.3679 \\
+SPICE~\cite{gfeller2020spice} & 88.67 & 91.28 & 91.68 & 96.21 & 22.92 & 0.0008 \\
+RMVPE~\cite{wei2023rmvpe} & 90.17 & 92.81 & 94.28 & 97.03 & 21.53 & 0.0008 \\
+Tartini~\cite{mcleod2008fast} & 89.68 & 92.17 & 93.31 & 94.97 & 21.39 & 0.0008 \\
+\bottomrule
+\end{tabular*}
+\caption{Offline pitch-detection metrics (\%) pooled across 432 tracks: 36 from \emph{Bach10}, 136 from \emph{URMP}, and 260 from \emph{CocoChorales}. Only the exact recordings used for parameter tuning are excluded; other stems of the same source pieces are retained. Adjusted p-values compare overall accuracy against \sys using paired source-piece permutation tests, with Holm correction across eight comparisons.}
+\label{tab:offline-pitch}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}l ccc @{\hspace{1em}} ccc c@{}}
+\toprule
+\multirow{2}{*}{Method} & \multicolumn{3}{c}{Transcription} & \multicolumn{3}{c}{Onset} & \multirow{2}{*}{\shortstack{Audio (s) /\\Compute (s)}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+ & F1 & Precision & Recall & F1 & Precision & Recall & \\
+\midrule
+\sys & \textbf{87.15} & \textbf{87.58} & \textbf{86.73} & 90.13 & 90.57 & 89.70 & 6.53 \\
+YourMT3+~\cite{chang2024yourmt3} & 83.46 & 84.77 & 82.19 & \textbf{91.09} & \textbf{92.51} & 89.70 & 0.98 \\
+MT3~\cite{gardner2022mt3} & 78.66 & 72.63 & 85.77 & 85.44 & 78.90 & \textbf{93.16} & 2.24 \\
+CREPE Notes~\cite{riley2023crepenotes} & 76.78 & 71.77 & 82.54 & 83.68 & 78.23 & 89.96 & 0.19 \\
+Basic Pitch~\cite{bittner2022basicpitch} & 63.56 & 56.97 & 71.87 & 77.48 & 69.45 & 87.61 & 7.98 \\
+Tony~\cite{mauch2015tony} & 57.19 & 73.95 & 46.62 & 62.68 & 81.06 & 51.09 & \textbf{23.87} \\
+\bottomrule
+\end{tabular}
+\caption{Note-detection metrics (\%) pooled across the same 432 evaluation tracks as the pitch benchmarks. Onset metrics require onset and pitch agreement; transcription metrics additionally require offset agreement. Audio (s) / Compute (s) measures audio seconds processed per second of CPU compute time, including frontend processing. Bold indicates the best result in each column.}
+\label{tab:note-detection}
+\end{table}

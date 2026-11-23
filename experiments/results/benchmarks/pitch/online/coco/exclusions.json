@@ -1,0 +1,10 @@
+{
+  "limitation": "Excludes current frozen tuning cohort; does not undo historical dataset consultation",
+  "policy": "exclude exact Bach10/URMP tuning recordings; Coco evaluation unchanged",
+  "removed": [],
+  "report_only": true,
+  "source_rows": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/pitch/notebook_runs/streaming_coco/native_feedback_2026_11_v1/rows.csv",
+  "source_rows_sha256": "d39fb2ab270d61ea2d23216e9f77e379d453b73c2857aaf6058130e678142627",
+  "tuning_manifest": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/cohort.json",
+  "tuning_sha256": "2701e06f5580a8402110304de2ff9c0a236dd8357f9206e6b5f7708a032b30ba"
+}

@@ -1,0 +1,795 @@
+{
+  "artifacts": {
+    "test__brass_track222037__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222037__4_tuba/6051e05198c69ae8.json",
+      "sha256": "eec083365bd8a3c2c6db1cfbb37eb429488893d4d439bf29c42e3979d3d52a2b"
+    },
+    "test__brass_track222070__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222070__3_trombone/6051e05198c69ae8.json",
+      "sha256": "541ce35d4d6123386f88a475f0ecf85039333c81142cb3213dab2cc98ac4faa5"
+    },
+    "test__brass_track222182__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222182__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "9bd7c81b74e88e2afddd7809cdf5d12826c30ef798886ba226fc34c3f0006f42"
+    },
+    "test__brass_track222207__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222207__2_horn/6051e05198c69ae8.json",
+      "sha256": "3935ecd9c56e230ebe287d7d0a10a858dd2336fa0ea5d0bd216a8c35eff72388"
+    },
+    "test__brass_track222209__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222209__2_horn/6051e05198c69ae8.json",
+      "sha256": "c8ad19d1530f4fbb96a87ffd52ed293a6f1c690814de663ffa93d310a93ea8e3"
+    },
+    "test__brass_track222303__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222303__2_horn/6051e05198c69ae8.json",
+      "sha256": "b1bd33bb302e3adc7f4d5167892a670a6a1a9ee862de224603c63d6a8c5b97e9"
+    },
+    "test__brass_track222344__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222344__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "23d277949f15389a4b0d4117bef4ce8938c0526891286f382f6373a695a0a61c"
+    },
+    "test__brass_track222374__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222374__4_tuba/6051e05198c69ae8.json",
+      "sha256": "8a5d6c67699b1e54888c3897a9134822b44d7c00fd1f5e07526938ce0608380b"
+    },
+    "test__brass_track222379__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222379__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "96be8ca927853559f735e7217e275278333f29f20b6a94bbf733ffbf69204279"
+    },
+    "test__brass_track222424__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222424__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "5c2778dd1068823479bc5b76108f1530f536f7621ef771613715eec913c07e65"
+    },
+    "test__brass_track222456__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222456__3_trombone/6051e05198c69ae8.json",
+      "sha256": "54ea528228aeb17dd33178e8b7d065b23cfc829e6c64675645d21da8f4cdac96"
+    },
+    "test__brass_track222493__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222493__2_horn/6051e05198c69ae8.json",
+      "sha256": "a02797cdc8a83d6913e207833517961b763fed050d6305f14e55d0494c945cb3"
+    },
+    "test__brass_track222591__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222591__4_tuba/6051e05198c69ae8.json",
+      "sha256": "040188e56db651af7b76231a96ba6d4f786ca8945f599b88250e8a7f1b1cd7e4"
+    },
+    "test__brass_track222621__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222621__3_trombone/6051e05198c69ae8.json",
+      "sha256": "cc6bfbe1b9df60acd75be413b3507df6d5e7f4fbeb416d5c49b5eb1c52b33a3a"
+    },
+    "test__brass_track222661__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222661__3_trombone/6051e05198c69ae8.json",
+      "sha256": "223f6753d325b3e73ba6e824b576146985565ef6dff88b928cd2fb113bc9e5bd"
+    },
+    "test__brass_track222697__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222697__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "0ad3320d373ba5508161cf01f735a3147ab67a4587c3768ce9f5940ff8179729"
+    },
+    "test__brass_track222710__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222710__2_horn/6051e05198c69ae8.json",
+      "sha256": "1186a5ad380e5e2fb0ed1af4b714eb874632f5e8ed17b17f06939fdd6d8cc7b7"
+    },
+    "test__brass_track222724__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222724__3_trombone/6051e05198c69ae8.json",
+      "sha256": "29ef77515231841f1d2fcf01620073a04e82145c831a6312486df6b9e2a8a8cc"
+    },
+    "test__brass_track222754__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222754__4_tuba/6051e05198c69ae8.json",
+      "sha256": "6787195022076346d9a544fab5ca7cd32a5ceb74fe46d012403914d95fddda6e"
+    },
+    "test__brass_track222830__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222830__3_trombone/6051e05198c69ae8.json",
+      "sha256": "b43fab85dfdca6650628cbc9994561b41d42d53bf73a04c6ca9ea9765c84f524"
+    },
+    "test__brass_track222843__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222843__3_trombone/6051e05198c69ae8.json",
+      "sha256": "033bec9445270e319deef24bd9a5906d13f8a799bf6d4df3e71949c772810cb6"
+    },
+    "test__brass_track222904__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222904__3_trombone/6051e05198c69ae8.json",
+      "sha256": "f1466a465d5b217d38452970c6698df0c30d4548b0f3ec98edf78d3da49a0378"
+    },
+    "test__brass_track222909__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222909__3_trombone/6051e05198c69ae8.json",
+      "sha256": "c9236858a54e60d2b29ec148caae481b9a04e058c797d0db0b1503ae17ff6421"
+    },
+    "test__brass_track222930__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222930__4_tuba/6051e05198c69ae8.json",
+      "sha256": "1e52c04a1d9373ee7a5c91b59d36567cb9eb5d7647e34c8e15d40bd32abe6bd8"
+    },
+    "test__brass_track222990__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track222990__3_trombone/6051e05198c69ae8.json",
+      "sha256": "d1956868f703feb9f7e388da57456aee12db9508f9e69b2adbbb7fffac85acdc"
+    },
+    "test__brass_track223103__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223103__2_horn/6051e05198c69ae8.json",
+      "sha256": "48d82a6fa3e0f88bcf8b9e594fc6312b48da125cccd84673f8b0342085151da2"
+    },
+    "test__brass_track223117__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223117__3_trombone/6051e05198c69ae8.json",
+      "sha256": "9e29cab8b2d0e03ab6ede9ad1372793ebb474462f48c3d5ee5c0f164ca0fed5b"
+    },
+    "test__brass_track223178__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223178__2_horn/6051e05198c69ae8.json",
+      "sha256": "a57390ed6ce26c35bdf541ec71e6aeee9942c1e60dcf491e60e3a98a352f0dc8"
+    },
+    "test__brass_track223233__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223233__3_trombone/6051e05198c69ae8.json",
+      "sha256": "ece9d3ea11c5a386b867947176577083b462983b8319da0c535514755cd4e1d0"
+    },
+    "test__brass_track223341__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223341__2_horn/6051e05198c69ae8.json",
+      "sha256": "954fb2c19d47447510ca8133eeeb95a904532854b986c58a37ab8ea3fcfc3ba0"
+    },
+    "test__brass_track223359__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223359__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "e5548df703102fb29f618179e3f09bcef707d0e20e97c7fc75457722011f646b"
+    },
+    "test__brass_track223385__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223385__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "025e8bbe97d9ebe281f4fe481c712c2e3b3d0561861a79d1aab8c483c82d7dbb"
+    },
+    "test__brass_track223439__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223439__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "45f146a733786e23fcc445fe3dea3873fc3269cf4f819b521dd24a8f316b2768"
+    },
+    "test__brass_track223453__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223453__4_tuba/6051e05198c69ae8.json",
+      "sha256": "be8208e427a0d78abdcf2d38975968c003007cb6323878e199892f71fd7648b6"
+    },
+    "test__brass_track223469__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223469__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "28cc356fcbe2117fc87768c09d9511ac263af355c82effe47a1d26b348c72bc0"
+    },
+    "test__brass_track223498__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223498__4_tuba/6051e05198c69ae8.json",
+      "sha256": "a57cb103197caf6effbd22cec2af7b4cc319dc0fce5b82c089c6199a99cfd9dc"
+    },
+    "test__brass_track223538__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223538__3_trombone/6051e05198c69ae8.json",
+      "sha256": "90231d2360c29e8c6b38b0e70582b8e6955bd23490253aa28ca2de9c4fccb1b0"
+    },
+    "test__brass_track223568__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223568__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "fe611c71cb09dfefe02a2bb8ae9d9c12fcf14e3ac3108789466b88155c9c33bc"
+    },
+    "test__brass_track223667__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223667__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "1e033ce347b2d07910ec380ccb4640ab96164ceb71e646a0748164b7e563f6e3"
+    },
+    "test__brass_track223719__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223719__4_tuba/6051e05198c69ae8.json",
+      "sha256": "de3ddbb65830155aee03161d3f42f42072672b739b3f02848b8cb02ee931f831"
+    },
+    "test__brass_track223733__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223733__2_horn/6051e05198c69ae8.json",
+      "sha256": "f63ca7f1de65e5fdd782d7d0932c1d1e5b758a0eb44d5add97d88b11e603a9f7"
+    },
+    "test__brass_track223736__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223736__4_tuba/6051e05198c69ae8.json",
+      "sha256": "c51c3e287e1f65aaa2961fe0090c234ed75057fc21e1bc29ef83f0f5a2f6d1f9"
+    },
+    "test__brass_track223737__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223737__3_trombone/6051e05198c69ae8.json",
+      "sha256": "7bdca75e57ca921a036d7407a7c6d46ef1037060e694a66d3e5555d8c00d1329"
+    },
+    "test__brass_track223794__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223794__2_horn/6051e05198c69ae8.json",
+      "sha256": "8f2369c870c76b71a9dce69bec1f12e3399396f08389d73be9c6d0dd1c80cb6e"
+    },
+    "test__brass_track223797__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223797__4_tuba/6051e05198c69ae8.json",
+      "sha256": "5d50347cea4219e9cdb9351d6065bd4047e644a3dc35c64edf2fdb9d88ed1f56"
+    },
+    "test__brass_track223828__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223828__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "4e1886e07689a827e0ffc10f85e5b2d65f8aa55b8bdd3e6e442a5791ae645ad2"
+    },
+    "test__brass_track223831__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223831__2_horn/6051e05198c69ae8.json",
+      "sha256": "bec6f5ca010fd49a6f5ef79bd86fa77d3885280bd8ab4b138b6bd942ea184cec"
+    },
+    "test__brass_track223841__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223841__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "adcc016aa7cb44e68d2106d6b99c193f6cb9bba94fde9baa70365f692da48cb1"
+    },
+    "test__brass_track223868__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223868__4_tuba/6051e05198c69ae8.json",
+      "sha256": "56ef7eb9dc23a07e25b90d8f7cdfb1806d678d71c3c23a55c24c9e4bfc3aca1b"
+    },
+    "test__brass_track223898__3_trombone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223898__3_trombone/6051e05198c69ae8.json",
+      "sha256": "81cf3f8b076cc93c5ce60ee2420eeeaaa1bf7b810617f3cf4b9e103e61950063"
+    },
+    "test__brass_track223902__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223902__2_horn/6051e05198c69ae8.json",
+      "sha256": "f0f41d066af511fd6f0bf1dcefcb4d62feb65d49377c2be9ab63b9210598415f"
+    },
+    "test__brass_track223946__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223946__4_tuba/6051e05198c69ae8.json",
+      "sha256": "356a8290df7928a624b6ea6a97ab8635134c699bc0cfe9c8167bf62f9000a8c1"
+    },
+    "test__brass_track223968__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223968__4_tuba/6051e05198c69ae8.json",
+      "sha256": "d56b594314ea1e9df522b2f18e08fbb620765b8838e60a9ce76a8237811c2586"
+    },
+    "test__brass_track223983__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__brass_track223983__2_horn/6051e05198c69ae8.json",
+      "sha256": "b5aab2d3f1b1f0843dced451e47472c8b58cf1d3fb974d361854648dde5021a4"
+    },
+    "test__random_track234016__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234016__4_double bass/6051e05198c69ae8.json",
+      "sha256": "1fca0169ca0da364eba7e3a7469dbc44a3189bd8850cf84f9f939bd3cbe26d40"
+    },
+    "test__random_track234133__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234133__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "864b926a4b215b207169645815485c29f9927090a54ac30b43bcff3b5aa98b5e"
+    },
+    "test__random_track234151__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234151__4_tuba/6051e05198c69ae8.json",
+      "sha256": "35205cc713b6b25c0d9555eeb4c46f1e5d406a710389b211978ffb7f01398dbe"
+    },
+    "test__random_track234318__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234318__4_double bass/6051e05198c69ae8.json",
+      "sha256": "fa0cdabc91b325aa23b1bcf1e82559c1a796454586a59ebbbce674b33ab7d698"
+    },
+    "test__random_track234333__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234333__4_cello/6051e05198c69ae8.json",
+      "sha256": "20e7619a6d82a4be9d97646eeaa3d0aaee6514a5a15bd74c5d12e1a48004e3ed"
+    },
+    "test__random_track234395__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234395__4_double bass/6051e05198c69ae8.json",
+      "sha256": "188f3b51731f15fc380c48223c17500582004f4262818efe888bcedf602f7fe4"
+    },
+    "test__random_track234516__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234516__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "595f5542ff7c0e1cb6cf2eea24120c6abb30120bf93f461b852fec70da3ef7c5"
+    },
+    "test__random_track234558__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234558__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "323a8710459938af0c1bfabea5733693d86899b5cc6e157b2c36f79de1618273"
+    },
+    "test__random_track234564__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234564__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "18cbc2a9ea925f8b47ebe7ed26082706ea6456eaa57e0e5acf065134837ad7ee"
+    },
+    "test__random_track234565__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234565__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "4d15f8005b0e902ba40aa7ab6d004f3ec5d36d2ea1d282ee1113fbe6016e96b0"
+    },
+    "test__random_track234647__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234647__1_violin/6051e05198c69ae8.json",
+      "sha256": "cf84fce7b3d277851b72c9bdafd6893f197cd9783e0740084f16ac760c892b38"
+    },
+    "test__random_track234657__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234657__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "22c4809cc7b3e31570553e2ece08f7bc26721ce0ae04cd17fffa7f91d1a462f5"
+    },
+    "test__random_track234659__3_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234659__3_cello/6051e05198c69ae8.json",
+      "sha256": "994d3cfc5ba1c0b9d73bb966bd21fcf450902fa321ac036e8f964534680a9d94"
+    },
+    "test__random_track234660__2_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234660__2_flute/6051e05198c69ae8.json",
+      "sha256": "719def039bebb23e306684d06a646ccf0692e22ac95cea756adbf791428275f1"
+    },
+    "test__random_track234730__1_trumpet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234730__1_trumpet/6051e05198c69ae8.json",
+      "sha256": "be12c89f341f8ae23e651c1ca8db0a0782cf96b5abcdfc89b2391ccc8f82c083"
+    },
+    "test__random_track234815__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234815__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "6ff649129e1ca3a9f21f8976505f59d5aa6c442a06a213d44dcb0321f0476949"
+    },
+    "test__random_track234833__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234833__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "21f80ea73f76153703598fd28607e8e7f39661795721680c013b90eda72a2b08"
+    },
+    "test__random_track234840__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234840__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "378348a700ce4a77cc18895ad6e6e3ff672eea9acd92415597ca9af8aed564f0"
+    },
+    "test__random_track234843__3_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234843__3_horn/6051e05198c69ae8.json",
+      "sha256": "d51b418fa9d12ab1b69ff17bb813d0d71e8c6936a6ff60fcdee69b19988bdd0d"
+    },
+    "test__random_track234857__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234857__4_double bass/6051e05198c69ae8.json",
+      "sha256": "195e5bf8b1bce3279ce7c389df0efd4d12ccd168f5c044eea1d3e40fb975fea3"
+    },
+    "test__random_track234882__2_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234882__2_clarinet/6051e05198c69ae8.json",
+      "sha256": "3f37b9f9cc0fe22a10485473bb3e74c83610f68be5a1f6e67faef40584525156"
+    },
+    "test__random_track234886__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234886__2_oboe/6051e05198c69ae8.json",
+      "sha256": "a792d89445c3eafef717d3988953443818ff292dc176e68dc8dd2078da52b47d"
+    },
+    "test__random_track234943__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234943__4_double bass/6051e05198c69ae8.json",
+      "sha256": "aa005b4547fb4484c720141798e9e3fb074315f6030589fa83db6554249b2217"
+    },
+    "test__random_track234978__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track234978__4_double bass/6051e05198c69ae8.json",
+      "sha256": "e50c3ecbf926457f85ba1d864849f4f51993178584851a32b88dfa99bb55e9f0"
+    },
+    "test__random_track235049__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235049__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "1028cfe99411be96575c1b21cdeaafa3d7aab7f123e723dd291b6215e46df595"
+    },
+    "test__random_track235134__4_tuba": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235134__4_tuba/6051e05198c69ae8.json",
+      "sha256": "f9be0d7b16308c83ec735000218a75ee444857228c4f427f7af97910819e07f5"
+    },
+    "test__random_track235140__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235140__4_double bass/6051e05198c69ae8.json",
+      "sha256": "53f35959c0c34e573a9aaf28532335f9246efa53d0319855f7385359878d99cf"
+    },
+    "test__random_track235143__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235143__4_double bass/6051e05198c69ae8.json",
+      "sha256": "5a655b8b346e9d1e517528472719eb1d1fa0a116e9f924aa5eedcb5fad204c23"
+    },
+    "test__random_track235145__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235145__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "235f1b7ed469fa884f3520f77c427ef18344636fa3b250ab41fa04cabb115234"
+    },
+    "test__random_track235176__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235176__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "3a1a4c2ecc2c196c291edfadd99d3d80d29f85042c6dafe32c932ab52fb67d1d"
+    },
+    "test__random_track235217__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235217__2_oboe/6051e05198c69ae8.json",
+      "sha256": "0830ea347ba8c662f4d98ce65f65c8d856858ea44c77edccf868ce339edb58f8"
+    },
+    "test__random_track235247__1_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235247__1_oboe/6051e05198c69ae8.json",
+      "sha256": "bac339431d5bc0ff6aade6ef2a51d675ce49f7c1f3b12ca2b641a5fc07f00e78"
+    },
+    "test__random_track235254__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235254__4_double bass/6051e05198c69ae8.json",
+      "sha256": "ce2fbf7a392018482ee5378c47292795c92ad9ac341a44ff1f6bac52ed1f4bc4"
+    },
+    "test__random_track235347__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235347__4_double bass/6051e05198c69ae8.json",
+      "sha256": "0bf03692f8712dff773bface85483ef75bef1ca73e527749f355f275d5e2000c"
+    },
+    "test__random_track235367__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235367__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "53433703f2ab329cd438129cfe6cf9983b7c16a42f81b958c7704ae7e0396728"
+    },
+    "test__random_track235420__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235420__4_double bass/6051e05198c69ae8.json",
+      "sha256": "b2f774ffcac0ce4f331685401b37a5626b2d91d507bc776f13729cca8d9aea96"
+    },
+    "test__random_track235435__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235435__1_flute/6051e05198c69ae8.json",
+      "sha256": "da62ec932572fe551a6dd56568bd946d8ed5c5cb9ecfe5d46532c3e23ae2c84d"
+    },
+    "test__random_track235438__2_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235438__2_viola/6051e05198c69ae8.json",
+      "sha256": "f88de461d0bcc0b8f0b8f1385abeb4c013f3c0c0e83a7aab224a65c4396654e3"
+    },
+    "test__random_track235455__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235455__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "2688d83651dcbc79592ce925b5a5c31e26726c14a7cc2dd1ab6cf4cc7f62e000"
+    },
+    "test__random_track235474__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235474__4_double bass/6051e05198c69ae8.json",
+      "sha256": "fca7e244b07e0cfedd84509c4513bdcb6de8c5ccf7dd9a4fc820e5cfa19d215a"
+    },
+    "test__random_track235496__2_horn": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235496__2_horn/6051e05198c69ae8.json",
+      "sha256": "d3cabd4b99b4d78772f49179ef63a9ce2009573acd075aaa750ed0b7b48d8450"
+    },
+    "test__random_track235546__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235546__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "46f19f9acb3910c51c960d0d409ed10cde65f708493337f610f2f9115aeb71ac"
+    },
+    "test__random_track235562__3_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235562__3_cello/6051e05198c69ae8.json",
+      "sha256": "a70fb6fecfc527df8df103d30b443ee16af98d3e9c50c29b44ee73d80de9847c"
+    },
+    "test__random_track235565__1_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235565__1_oboe/6051e05198c69ae8.json",
+      "sha256": "3aeafa7133d4041ecea62fd40b5d5f5c48b0b25f67fd615f2ee34f4c88181d69"
+    },
+    "test__random_track235596__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235596__4_double bass/6051e05198c69ae8.json",
+      "sha256": "6621ae2a59daa43307b629e0d765d09e5768ee88acd6d898a596dff87ce54a4a"
+    },
+    "test__random_track235724__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235724__4_double bass/6051e05198c69ae8.json",
+      "sha256": "9b0fb7b1d595371ed9710eb9baf19119b0cbb38373785729fbde376004206f2d"
+    },
+    "test__random_track235750__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235750__1_flute/6051e05198c69ae8.json",
+      "sha256": "15911e0cd38acde61c57dca520aa5880d73d6369bde8efef79bdfc48c9911e7f"
+    },
+    "test__random_track235766__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235766__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "5d8f36271d9b1401d286d3c3d41d4e1af6e705a4d796a2d175bb8a97ea0c1bb2"
+    },
+    "test__random_track235797__2_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235797__2_violin/6051e05198c69ae8.json",
+      "sha256": "5e940cd2ba04e7598b2bceebd29595064fde92f57e6346b4408fe72671053298"
+    },
+    "test__random_track235797__4_double bass": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235797__4_double bass/6051e05198c69ae8.json",
+      "sha256": "16cad5b4822b93855ca342c75f4012a376acf10b3f0abb704d658236fa80e76b"
+    },
+    "test__random_track235818__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235818__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "1211208a8d3646e29f5ea44af35d01f41c6f31b4906b34a4901a1bb52682fb9e"
+    },
+    "test__random_track235825__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235825__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "732dadb87ac8741d1d818a32c6b144d7df73d7441d482081276f85658d00a360"
+    },
+    "test__random_track235851__2_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235851__2_saxophone/6051e05198c69ae8.json",
+      "sha256": "8dd6a7201144672bc1954782d5e50687140325d82e856f4a00158894a54b031e"
+    },
+    "test__random_track235923__1_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235923__1_oboe/6051e05198c69ae8.json",
+      "sha256": "1f625234188226bf8a24db4620f811866f8b5a8dad916d19b2500b784369a7ce"
+    },
+    "test__random_track235934__3_saxophone": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__random_track235934__3_saxophone/6051e05198c69ae8.json",
+      "sha256": "f198dafcee7098ffce62f70e6455ac4cc651b78b0edf0211fe8b4c6f11139569"
+    },
+    "test__string_track216050__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216050__4_cello/6051e05198c69ae8.json",
+      "sha256": "4fedd4b6fcf1d60a3f73878a15f4dbcd35ca99e579600fb23ce007e28d25de59"
+    },
+    "test__string_track216062__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216062__1_violin/6051e05198c69ae8.json",
+      "sha256": "c98eb78163335a032f6d3d267623c4c1c410e127d574b842bd7bec40c1563825"
+    },
+    "test__string_track216067__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216067__1_violin/6051e05198c69ae8.json",
+      "sha256": "d72b98b5e1916d8b1528f247d4337a5eb04ef33b297d9d68b3f01520b63a92a6"
+    },
+    "test__string_track216067__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216067__3_viola/6051e05198c69ae8.json",
+      "sha256": "361be292976ba71aaafed79d8fd4268576bb1e8a836ebdef0d33163db6907d43"
+    },
+    "test__string_track216138__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216138__4_cello/6051e05198c69ae8.json",
+      "sha256": "e6958ba82c4bb0d80a49ef966fb479809f287a36de1e7debd01f9eaada89a096"
+    },
+    "test__string_track216159__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216159__3_viola/6051e05198c69ae8.json",
+      "sha256": "bce17852b57349eb3327f262a5f7448daf1e8e7dd6c0efbbe7d647401158c554"
+    },
+    "test__string_track216178__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216178__3_viola/6051e05198c69ae8.json",
+      "sha256": "fac622cdeb61eb6f375e7a1212f8a12ee2a98ceb311e34b822eb9ce93f152fbb"
+    },
+    "test__string_track216180__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216180__3_viola/6051e05198c69ae8.json",
+      "sha256": "45266f062fba5c86b14b3f8eb09afe582703b59ed2e3cd3137f32aba65ceb7f8"
+    },
+    "test__string_track216256__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216256__3_viola/6051e05198c69ae8.json",
+      "sha256": "a07c550fcfe7af60915a5e26e8d4937f22add1cb18f1c557cb32e0c636eeca45"
+    },
+    "test__string_track216277__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216277__4_cello/6051e05198c69ae8.json",
+      "sha256": "a18457ec934994a8c3f6e48359319e815e24f44fb82cfcc173ae9ea75a54b1d6"
+    },
+    "test__string_track216305__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216305__3_viola/6051e05198c69ae8.json",
+      "sha256": "44e9d0ec4285115963b609f612fa12eb58f8c2f4f70573cb783abe0acfb08065"
+    },
+    "test__string_track216466__2_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216466__2_violin/6051e05198c69ae8.json",
+      "sha256": "9c777638dc333e6987d0c1ef4142de7eb3f3a5f8de517dbedd861da3cd417801"
+    },
+    "test__string_track216509__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216509__3_viola/6051e05198c69ae8.json",
+      "sha256": "6ba586c990c60f2b46e6ae6d6cf9c6603e5f75fbcebce19d6490bfbba38b09e4"
+    },
+    "test__string_track216522__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216522__4_cello/6051e05198c69ae8.json",
+      "sha256": "346e60aa8994d848e772779dc6590b5e3f4743190b8747013ab7764baf5fb34b"
+    },
+    "test__string_track216528__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216528__1_violin/6051e05198c69ae8.json",
+      "sha256": "6d324af2f4262a25bd8d6384467de737b45b61b115008bdb66aaf48efbc62de7"
+    },
+    "test__string_track216544__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216544__4_cello/6051e05198c69ae8.json",
+      "sha256": "e9e1787b4f21721a778c7b0f4b939f0bed965b7f700b47eee202ab7cd9f234db"
+    },
+    "test__string_track216657__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216657__4_cello/6051e05198c69ae8.json",
+      "sha256": "a42887da0df3d7baa73b60294e0e623fd3bb9ef1965f4827961c0789ce45c9d3"
+    },
+    "test__string_track216815__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216815__4_cello/6051e05198c69ae8.json",
+      "sha256": "79a795845044bc604c6856afc95860a37e016663aa2796da9e51ad315dbeb0ae"
+    },
+    "test__string_track216820__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216820__1_violin/6051e05198c69ae8.json",
+      "sha256": "4621440bd5ea15160d90da91ea79bab328f779c3bad3e9a4d6015e13ad81c840"
+    },
+    "test__string_track216852__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216852__3_viola/6051e05198c69ae8.json",
+      "sha256": "bb42d6ec9431c061225b0c302821deddc572845695adfacee8dff5210fd2891c"
+    },
+    "test__string_track216875__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216875__1_violin/6051e05198c69ae8.json",
+      "sha256": "2f0db5b7554f09b9b501c17549ae34a342e31449b3d0c124ee4b29f51fbdd221"
+    },
+    "test__string_track216907__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216907__3_viola/6051e05198c69ae8.json",
+      "sha256": "af0652c84e06403bdae30b845883c076645059c1de43ec68a42f6657b146d9b2"
+    },
+    "test__string_track216952__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track216952__3_viola/6051e05198c69ae8.json",
+      "sha256": "3524b00ab5bebf64c112d8c25c94033947c6bae2ad384377fede926ceb8789b3"
+    },
+    "test__string_track217018__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217018__4_cello/6051e05198c69ae8.json",
+      "sha256": "274f196a4dcf71f2b49eef2db44e5ab1fec028f773567a45c9c6b66e456a9d40"
+    },
+    "test__string_track217044__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217044__3_viola/6051e05198c69ae8.json",
+      "sha256": "ea83088ca20032baa2bc62152392e224d4e3d7cd90ef0bbf832fdfe52bba8f29"
+    },
+    "test__string_track217133__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217133__3_viola/6051e05198c69ae8.json",
+      "sha256": "3932cf8750f85e1d674523a2628f6d6ba0984cd8447bf6150bfb35298a391496"
+    },
+    "test__string_track217204__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217204__1_violin/6051e05198c69ae8.json",
+      "sha256": "58c0c3e37017bb70678ea4b318687ecbf53c0ec741c03e33818d3e7e8923e511"
+    },
+    "test__string_track217242__2_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217242__2_violin/6051e05198c69ae8.json",
+      "sha256": "43423ef426a425a73e0977107ccd4bd487234a2676170ffc042455165a8f1b0e"
+    },
+    "test__string_track217361__2_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217361__2_violin/6051e05198c69ae8.json",
+      "sha256": "48d288235ee7f0ded84d97ec801f424f868f08f59b5f9f77c75d20ac5383d91d"
+    },
+    "test__string_track217413__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217413__3_viola/6051e05198c69ae8.json",
+      "sha256": "3fb8c02f5f314cd6ecc3cd329055369a08efe523f0c1a91bbe207d4cc94634d2"
+    },
+    "test__string_track217417__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217417__4_cello/6051e05198c69ae8.json",
+      "sha256": "a6c514a3d2776a8dc28e61783b4c7e02e242b56148b42078f015b801039bd68c"
+    },
+    "test__string_track217492__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217492__4_cello/6051e05198c69ae8.json",
+      "sha256": "99304ccc034197c5446f679f9dfda7edbd954f26077da9591fc7159d8ec11d5f"
+    },
+    "test__string_track217531__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217531__4_cello/6051e05198c69ae8.json",
+      "sha256": "a13fe4eef5b96fc724214b2ff4dd3cb1c52809abfd091a863e9c4c34b0779b79"
+    },
+    "test__string_track217559__2_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217559__2_violin/6051e05198c69ae8.json",
+      "sha256": "6d56843de2c6092c72cb2319890be435dbf2518744d38277413588c2bec44559"
+    },
+    "test__string_track217655__3_viola": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217655__3_viola/6051e05198c69ae8.json",
+      "sha256": "fe9751cbff958d22ec6681cc33aa679d41c628737377529110e77491db18910d"
+    },
+    "test__string_track217690__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217690__1_violin/6051e05198c69ae8.json",
+      "sha256": "e4c8032b7acb916e26b61993d7772202912d56138abf5591a6fd21f19ebde36c"
+    },
+    "test__string_track217767__4_cello": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217767__4_cello/6051e05198c69ae8.json",
+      "sha256": "5f3a3af85283129f905b7cede6edea918f0cc4da57838929f09da5546faa69f4"
+    },
+    "test__string_track217836__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217836__1_violin/6051e05198c69ae8.json",
+      "sha256": "be2f3789deff629fba7b0480b9c859997c15d606bec754532b90c5ad974ed4c6"
+    },
+    "test__string_track217931__1_violin": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__string_track217931__1_violin/6051e05198c69ae8.json",
+      "sha256": "73c95cf99d6acb5d915e42c2acc03d6946129c1729886af891473f26dc2528f0"
+    },
+    "test__woodwind_track228022__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228022__2_oboe/6051e05198c69ae8.json",
+      "sha256": "51fa339d6047054fd66aa52215d41ad194110e2ec3b0cb99e75d3c0f5f47e3fb"
+    },
+    "test__woodwind_track228023__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228023__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "5c9242de7105a9b29d8756328856be4fc570d9bda54a95451286f690980e24b7"
+    },
+    "test__woodwind_track228117__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228117__2_oboe/6051e05198c69ae8.json",
+      "sha256": "31c6ef3ab4e70b709cbf7b71c7a7be9bb66f68fe052cd51f6703215006632584"
+    },
+    "test__woodwind_track228138__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228138__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "a1d12d6ebfd2bf5a570e27e3efcee98b48fa4adb2e8fc77c8ebadf8f3eb2c80b"
+    },
+    "test__woodwind_track228235__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228235__2_oboe/6051e05198c69ae8.json",
+      "sha256": "6250bcd94ee5ab2cbb38eba66583106085b496fabe0bf96c15c6022f333bb110"
+    },
+    "test__woodwind_track228236__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228236__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "8424d26fc30c48666768f8a8072762448687c67e6f7233875af90d0bad5dcdde"
+    },
+    "test__woodwind_track228308__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228308__1_flute/6051e05198c69ae8.json",
+      "sha256": "1fa90d9f22279efe87193632e057313a2448b48ff6a6d80b1cb468bd60f89c68"
+    },
+    "test__woodwind_track228314__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228314__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "5070c4d0c99c62591136e515b0196891c87dc77477396842966e917880c85797"
+    },
+    "test__woodwind_track228369__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228369__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "9c98eadae68fb460907aa4f3968aedd62e862cc0f58ccbcb16dc8a72f9f2d125"
+    },
+    "test__woodwind_track228450__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228450__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "d7da6a0b6f7dafab16da673e5ef71e9458109fa8e5aa86a559f95f3ee133c9b7"
+    },
+    "test__woodwind_track228559__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228559__1_flute/6051e05198c69ae8.json",
+      "sha256": "3ffde330eaf43c03c10d04de8bbe4f0abceb1b28a16653bfa4df36191d38ad77"
+    },
+    "test__woodwind_track228660__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228660__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "d054f398f0ea19e567887c181508207aa71501e83fcce8daef6fdf6c3575e10c"
+    },
+    "test__woodwind_track228664__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228664__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "c28ad52dd44bf0bfe8b94f06bd13b4060cd6ea6e1a1317432adb8b42d0f0b0ba"
+    },
+    "test__woodwind_track228703__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228703__2_oboe/6051e05198c69ae8.json",
+      "sha256": "7edd0f73e411b2d45e51b0785a0e0a856cf176b80ecc30f9e055ea70cdb47fbe"
+    },
+    "test__woodwind_track228708__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228708__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "2b77d1f27d324a65f7b9a228b408b2c9409df86ada88ac77f2e2333fd9f70100"
+    },
+    "test__woodwind_track228726__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228726__1_flute/6051e05198c69ae8.json",
+      "sha256": "b0d3376b9d31e1b5afccc58659ea05c4691ee332f23f38eb8d687064c1f5d11e"
+    },
+    "test__woodwind_track228745__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228745__1_flute/6051e05198c69ae8.json",
+      "sha256": "f1f2dc739f4ba617b25e7dee20f87941453b574d70cb0ca1e3d8fc0ad139d0e9"
+    },
+    "test__woodwind_track228745__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228745__2_oboe/6051e05198c69ae8.json",
+      "sha256": "b648ef47ff46abbd0005e9d7cea7a1410c8162c95d8a3d16d38cee6ff3574c8b"
+    },
+    "test__woodwind_track228774__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228774__2_oboe/6051e05198c69ae8.json",
+      "sha256": "654fb68e1d100f4c2f5ab8d144bd26d622e02757cb6b3c4c1fa960fc358f8324"
+    },
+    "test__woodwind_track228817__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228817__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "82184af128a818a187aff0c9fccfc1d533767e1c9083e6bf3a3656d8e2bee9f5"
+    },
+    "test__woodwind_track228818__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228818__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "748f87be1753bdb00830bf44ee436f614a042f4506cba079ed1a84e8fb10c80b"
+    },
+    "test__woodwind_track228820__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228820__2_oboe/6051e05198c69ae8.json",
+      "sha256": "c012200bf70b067a9c7d53a19ff309119092a79c5f5eda86db772b27a5c756c4"
+    },
+    "test__woodwind_track228946__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track228946__2_oboe/6051e05198c69ae8.json",
+      "sha256": "2970aed157113f7e7347add82d1cdb27be7d5c93e191b6756757c479946e2b53"
+    },
+    "test__woodwind_track229107__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229107__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "624a9e2df6457bc2bc265c804c11a5ced3051053a577a218f40f50dca99ccb3f"
+    },
+    "test__woodwind_track229138__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229138__1_flute/6051e05198c69ae8.json",
+      "sha256": "5a005c615b2fcbc3ca8b2f1c8710552ba72d61c05f8f384410be0d62c69bc44d"
+    },
+    "test__woodwind_track229211__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229211__1_flute/6051e05198c69ae8.json",
+      "sha256": "57218b51a82012ca422e2c0d90047d76971dd4fb46d33d43e38cbaedbd178b33"
+    },
+    "test__woodwind_track229235__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229235__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "d8926c2d813ecc5dcb31447bbdeafb850bf8dc1b950be546cc44db92d6777b18"
+    },
+    "test__woodwind_track229329__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229329__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "53e6125c0b506b30876f6b097039a08b131559a4815a54c7d182d4e242ecebf6"
+    },
+    "test__woodwind_track229334__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229334__1_flute/6051e05198c69ae8.json",
+      "sha256": "b365ea56ad1d3df13324d5b361b5f4f071f153162e7ca85ee7acaa3b35b757c0"
+    },
+    "test__woodwind_track229336__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229336__1_flute/6051e05198c69ae8.json",
+      "sha256": "4a2b6210e809dfb26f4c18b0fdd60d829c1400353fa8ce1e4a6ac5012614f2b5"
+    },
+    "test__woodwind_track229337__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229337__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "4bd292db68b4146c132a72e73daec97da76b26b3f64b5905eda1b2e2ec9544ce"
+    },
+    "test__woodwind_track229407__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229407__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "435b2f1db69b0687080668a2673126bf7e5a49a71fa2917e561340a9503e2a94"
+    },
+    "test__woodwind_track229452__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229452__1_flute/6051e05198c69ae8.json",
+      "sha256": "a2e753d5ec8f65033ae2669492110ff41079277c5aa36dbc09e3c8529e9fbfdb"
+    },
+    "test__woodwind_track229535__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229535__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "5d3f03a728aed88f33994d1fdb67ce03d862c3c0b946135965b97e384ff4519d"
+    },
+    "test__woodwind_track229617__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229617__2_oboe/6051e05198c69ae8.json",
+      "sha256": "1746f5273d5d71b86e49b1dbc50b2df1163251497e68a2c5704704a5ceae0864"
+    },
+    "test__woodwind_track229681__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229681__1_flute/6051e05198c69ae8.json",
+      "sha256": "173ee2618261d006e8b4220a1e908adf6ff2c69f7758432699a1fabbd3ee3a6d"
+    },
+    "test__woodwind_track229683__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229683__1_flute/6051e05198c69ae8.json",
+      "sha256": "4cde5e472bd3a6df2dca9653d7350f76d2ba7edb39ab343514c2cfa754a21310"
+    },
+    "test__woodwind_track229747__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229747__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "f38d2665b634f46e930af43af969e5452121356b7808e5ffb77d7df4d8574b1c"
+    },
+    "test__woodwind_track229776__2_oboe": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229776__2_oboe/6051e05198c69ae8.json",
+      "sha256": "970f4a36a340d95900ff70f8c3438851614bdc079cbc14b6c1832c7e86a59198"
+    },
+    "test__woodwind_track229833__1_flute": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229833__1_flute/6051e05198c69ae8.json",
+      "sha256": "8983cd35a8b6a79916372f1ebb200aba351af0a267b2043f774b922bfe586803"
+    },
+    "test__woodwind_track229866__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229866__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "e9033c1a7263a05007b785da1f639969879f6a669d6db89e8a8ded04cb13dbf7"
+    },
+    "test__woodwind_track229866__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229866__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "922addfda8445502e6aafddb963139b1513d5bb873ddf0e8dfc9e598b235cfab"
+    },
+    "test__woodwind_track229874__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229874__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "5a8cc45912e8f4e27797fed51ed6909373b273e163688e01e5e3311a4b8f3352"
+    },
+    "test__woodwind_track229903__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229903__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "4821006b167023be52bf522efb4fd5e70eb2751b7cfeb6d080578ca8ef299634"
+    },
+    "test__woodwind_track229964__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229964__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "5813412824d54d2464c364dfa343abdff2f58608073728fa4d732d52623c10d3"
+    },
+    "test__woodwind_track229979__4_bassoon": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229979__4_bassoon/6051e05198c69ae8.json",
+      "sha256": "42e87949354769e798b99c5437c271e455ce57fe571cbca3757458aaa59ad5a7"
+    },
+    "test__woodwind_track229985__3_clarinet": {
+      "path": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/sweeps/balanced_212_v3/mistake_fixed_rho/18bcbf948082833a/predictions/test__woodwind_track229985__3_clarinet/6051e05198c69ae8.json",
+      "sha256": "f3c97070cfc8cb41a03359d3af4e6d7e50429ab0dd6225a7b0aa17b9d687bb1a"
+    }
+  },
+  "contract_sha256": "18bcbf948082833a7ffc4c2c5f41881036ed87ef4117f648ec6f468289b655b3",
+  "interpretation": "development selection, not held-out evaluation",
+  "params": {
+    "alignment_gamma_pitch": 6.0,
+    "alignment_gamma_time": 2.0,
+    "del_cost": 5.0,
+    "ins_cost": 5.0
+  },
+  "score": 0.8650021159542954,
+  "stage": "mistake",
+  "variant": "6051e05198c69ae8"
+}

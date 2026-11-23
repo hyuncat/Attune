@@ -65,7 +65,7 @@ RUN pip install --no-cache-dir -r web/api/requirements.txt
 # (the FastAPI adapter). Deliberately excludes ui/ (desktop PyQt
 # widgets/WebEngine - never imported by this path, confirmed via grep),
 # resources/ (demo fixtures), web/src + web-resources/ (the frontend,
-# deployed separately), notebooks/, benchmarks/.
+# deployed separately), notebooks/, experiments/, data/.
 COPY algorithms/ algorithms/
 COPY app_logic/ app_logic/
 COPY web/api/ web/api/

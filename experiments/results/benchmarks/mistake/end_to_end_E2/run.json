@@ -1,0 +1,2248 @@
+{
+  "attune_defaults": {
+    "alignment_alpha_duration": 1.0,
+    "alignment_alpha_onset": 0.0,
+    "alignment_gamma_pitch": 6.0,
+    "alignment_gamma_time": 2.0,
+    "cqt_midi_max": 108,
+    "cqt_midi_min": 36,
+    "del_cost": 5,
+    "fmax": 3000.0,
+    "fmin": 196.0,
+    "h1": 128,
+    "ins_cost": 5,
+    "min_note_length": 0.03,
+    "min_note_length_cap": 0.2,
+    "min_note_length_factor": 0.75,
+    "min_silence_duration_ms": 20.0,
+    "min_volume": 0.06,
+    "mistake_correction_min_length": 0.15,
+    "pitch_thresh": 0.6,
+    "pitch_tolerance": 0.5,
+    "pitch_tracking_unv_thresh": 0.99,
+    "posthoc_min_volume": 0.06,
+    "posthoc_unv_thresh": 0.9875,
+    "repeat_split_timing_slack": 0.1,
+    "sr": 44100,
+    "timing_tolerance": 0.25,
+    "tuning": 440.0,
+    "unv_thresh": 0.9875,
+    "verbose": false,
+    "vib2_center_smoothness": 200.0,
+    "vib2_curve_sec": 0.1,
+    "vib2_fit_amplitude_max_semitones": 1.25,
+    "vib2_fit_rate_max_hz": 10.0,
+    "vib2_fit_rate_min_hz": 3.0,
+    "vib2_hold_edge_values": true,
+    "vib2_live_analysis_hz": 20.0,
+    "vib2_live_rate_scan_bins": 32,
+    "vib2_live_sec": 0.4,
+    "vib2_max_nfev": 24,
+    "vib2_max_rate_hz": 10.0,
+    "vib2_max_rms_ratio": 0.75,
+    "vib2_min_rate_hz": 3.0,
+    "vib2_min_width_cents": 10.0,
+    "vib2_onset_taper_floor": 0.25,
+    "vib2_onset_taper_max_fraction": 0.25,
+    "vib2_onset_taper_seconds": 0.0,
+    "vib2_phase_smoothness": 20.0,
+    "vib2_rate_scan_bins": 100,
+    "vib2_seed_amplitude_max_semitones": 1.0,
+    "vib2_seed_amplitude_min_semitones": 0.15,
+    "vib2_seed_candidate_amplitude_max_semitones": 1.25,
+    "vib2_seed_candidate_amplitude_min_semitones": 0.05,
+    "vib2_width_smoothness": 1.0,
+    "vib_max_gap_sec": 0.06,
+    "vib_min_cycles": 1.0,
+    "vib_min_quality": 0.3,
+    "vib_order": 2,
+    "vib_win_sec": 0.4,
+    "w1": 4096
+  },
+  "checkpoint_schema": 1,
+  "code": {
+    "algorithms/Config.py": "56ca80f26c9002f97fc2d0b519f5e1a4dc25e79e5d1684356fbc26c39497017c",
+    "algorithms/MistakeDetector.py": "30b889f6753f5511848f0c2a5bf70b400b274302c445eecec7bbce11830da307",
+    "algorithms/NoteDetector.py": "dd25d0ae138cb9f5c0edd40e1cfabe5d5d5e75f1004cffecb21e06da734a0992",
+    "algorithms/RepeatSplitter.py": "26ac24e70523fcdbdcf5e336c5abc4b3982beb66c04d495cbcc00a8600a8d936",
+    "app_logic/user/ds/Recording.py": "13d3583c657ec64b33be41f83d058f896d33fc6a21e7cf5c59b0a909cfeb1460",
+    "benchmarks/modules/mistake/MistakeBenchmarker.py": "e05d3d59688d5ca9da88827099d97a52439c35e26c36439da6b2d4243712152e",
+    "benchmarks/modules/mistake/MistakeDetectorBase.py": "47c9375202921c0bd77068004aa7012abf54b41bba320b8ba2622f53f06237f9",
+    "benchmarks/modules/mistake/competitors/LadderSym.py": "198236af93630b7861b205ba60df64a5062e79353289bbf10a17d536a1adc16d",
+    "benchmarks/modules/mistake/competitors/Nakamura.py": "b3a4634a20d0a8433682e2832a24a90412ef716177593ee557fdc63c1d915ce6",
+    "benchmarks/modules/mistake/competitors/PolyTune.py": "d66d2b114a25be5cd302f7132a77e978588cd1d77f2e1aa4a8c5ddb698513c18",
+    "benchmarks/modules/mistake/datasets/MistakeCases.py": "73a573705be003024541aedcf2b5b73c034a9050f99a9e719f94747a28287054",
+    "benchmarks/modules/mistake/datasets/MistakeInjector.py": "d2f41a7eb81834d370e7c2ac3d0690f18a7c1fbcc7c760b5ac31abb8ba7023df",
+    "benchmarks/modules/mistake/sweeps/RefinementComparison.py": "2606361370e761b14ad15ea96cfb0047f9bca3ce1b01aa5633fdedcfe2e968a6",
+    "notebooks/archive/MistakeChecker2.py": "3065a833d3174daf400ae94fb232e179620f7a85a49b2a60267e1a14a94fbc7c",
+    "notebooks/archive/MistakeChecker3.py": "a3c659ed6e7a1a192eacafb6c8d9a5541f39c29dadbce815da3c2c0fca6ccedf"
+  },
+  "execution_code": {
+    "refresh_sha256": "85165f9b2498236902a3b5e98fe62f63e50ac5125947a2bea0178e3ac64c176a"
+  },
+  "force_pitch_detection": false,
+  "frozen_competitors": {
+    "rows_sha256": "63176fd1f97936171f1b53e784202f8c216c35a64ed4a540c1482bb5e82ce87a",
+    "source": "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/coco_e2_final09875_distinct_pieces_seed0_2026-10-08"
+  },
+  "input_kinds": [
+    "detected",
+    "audio"
+  ],
+  "ladder_contiguous_inference": false,
+  "methods": [
+    "Attune (repeat only)",
+    "PolyTune",
+    "LadderSym"
+  ],
+  "packages": {
+    "LadderSym": {
+      "checkpoint_sha256": "c28b4e43cb9dbf56e0fd68c9d647c24decbc6a89d08ded022bd704751109ef33",
+      "device": "cpu",
+      "packages": {
+        "immutabledict": "4.2.0",
+        "librosa": "0.10.1",
+        "note-seq": "0.0.5",
+        "numpy": "1.26.4",
+        "omegaconf": "2.3.0",
+        "scipy": "1.13.0",
+        "setuptools": "70.0.0",
+        "timm": "0.9.16",
+        "torch": "2.3.0",
+        "torchaudio": "2.3.0",
+        "transformers": "4.40.1"
+      },
+      "revision": "381179754cf6bcb435f9decf0d5e24eada6c68ec"
+    },
+    "PolyTune": {
+      "checkpoint_sha256": "9ed49dcdf864cb4957facf6d0ecfed944ea0484a5a69bccf1a7b0ed0c222f207",
+      "device": "cpu",
+      "packages": {
+        "librosa": "0.10.1",
+        "note-seq": "0.0.5",
+        "numpy": "1.26.4",
+        "omegaconf": "2.3.0",
+        "scipy": "1.13.0",
+        "setuptools": "70.0.0",
+        "timm": "0.9.16",
+        "torch": "2.3.0",
+        "torchaudio": "2.3.0",
+        "transformers": "4.40.1"
+      },
+      "revision": "d2055bb21759d457c8f21c1cf2e47c79af6248f5"
+    },
+    "mir_eval": "0.8.2",
+    "numpy": "1.26.4",
+    "scipy": "1.16.2"
+  },
+  "parallelism": {
+    "cpu_workers": 9,
+    "model_threads": 3,
+    "neural_workers": 3,
+    "numerical_threads": 1,
+    "persistent_models": true,
+    "schedule": "cpu_then_audio_models"
+  },
+  "pipeline": "aligners: shared pitches/fresh unmodified notes, no truth boundary correction; PolyTune/LadderSym: raw shared performance audio + clean score audio; LadderSym also uses clean score MIDI prompt; oracle input skips refinement",
+  "rates": [
+    0.0,
+    0.25
+  ],
+  "rows_sha256": "06af21cac64d0c08418bd34dfbedd3ea59027b835bab7d5e42a9727cb1507f1b",
+  "score_fit_protocol": "matched_onsets_once_v1",
+  "scoring": "primary audio_pitch: canonical missed/extra with one-to-one onset+pitch matching; pitch: legacy ID diagnostic; duration separate",
+  "seeds": [
+    0
+  ],
+  "source_metadata": {
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222029/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track222029",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track222029__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222052/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222052",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222052__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222073/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222073",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222073__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222106/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222106",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222106__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222119/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222119",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222119__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222154/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222154",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222154__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222238/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222238",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222238__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222261/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222261",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222261__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222331/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222331",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222331__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222345/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222345",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222345__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222373/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222373",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222373__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222428/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222428",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222428__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222492/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222492",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222492__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222506/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222506",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222506__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222545/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222545",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222545__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222547/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222547",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222547__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222567/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222567",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222567__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222589/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222589",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222589__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222688/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track222688",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track222688__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222714/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track222714",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track222714__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222781/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222781",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222781__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222845/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track222845",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track222845__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222861/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222861",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222861__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222887/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222887",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222887__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222911/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track222911",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track222911__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222924/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track222924",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track222924__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222926/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222926",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222926__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222970/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track222970",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track222970__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223018/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223018",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223018__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223044/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223044",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223044__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223078/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223078",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223078__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223079/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223079",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223079__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223093/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223093",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223093__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223095/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223095",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223095__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223102/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223102",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223102__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223149/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223149",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223149__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223176/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223176",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223176__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223182/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223182",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223182__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223188/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223188",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223188__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223245/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223245",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223245__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223258/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223258",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223258__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223302/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223302",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223302__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223327/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223327",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223327__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223425/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223425",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223425__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223441/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223441",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223441__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223449/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223449",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223449__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223492/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223492",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223492__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223493/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223493",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223493__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223518/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223518",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223518__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223532/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223532",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223532__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223536/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223536",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223536__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223571/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223571",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223571__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223650/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223650",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223650__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223694/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223694",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223694__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223696/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223696",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223696__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223710/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223710",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223710__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223721/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223721",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223721__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223724/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223724",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223724__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223727/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223727",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223727__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223771/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223771",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223771__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223807/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223807",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223807__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223823/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "brass_track223823",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__brass_track223823__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223903/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223903",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223903__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223920/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223920",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223920__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223927/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223927",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223927__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223949/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "brass_track223949",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__brass_track223949__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223950/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "brass_track223950",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__brass_track223950__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223988/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "brass_track223988",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__brass_track223988__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234004/stems_midi/3_horn.mid": {
+      "dataset": "coco",
+      "group": "random_track234004",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__random_track234004__3_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234005/stems_midi/2_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234005",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234005__2_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234017/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "random_track234017",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__random_track234017__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234028/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234028",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234028__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234031/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234031",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234031__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234043/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234043",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234043__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234086/stems_midi/2_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234086",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234086__2_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234183/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234183",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234183__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/1_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234215",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234215__1_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234215",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234215__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234254/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "random_track234254",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__random_track234254__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234304/stems_midi/1_trumpet.mid": {
+      "dataset": "coco",
+      "group": "random_track234304",
+      "instrument": "trumpet",
+      "split": "test",
+      "track_id": "test__random_track234304__1_trumpet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234311/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234311",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234311__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234353/stems_midi/2_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track234353",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track234353__2_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234394/stems_midi/2_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234394",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234394__2_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234424/stems_midi/3_horn.mid": {
+      "dataset": "coco",
+      "group": "random_track234424",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__random_track234424__3_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234460/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234460",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234460__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234477/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234477",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234477__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234488/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234488",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234488__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234497/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234497",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234497__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234522/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234522",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234522__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234528/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234528",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234528__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234535/stems_midi/2_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track234535",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track234535__2_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "random_track234537",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__random_track234537__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234537",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234537__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234551/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234551",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234551__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234589/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234589",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234589__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234620/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234620",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234620__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234626/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track234626",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track234626__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234629/stems_midi/2_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track234629",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track234629__2_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234701/stems_midi/2_horn.mid": {
+      "dataset": "coco",
+      "group": "random_track234701",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__random_track234701__2_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234711/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234711",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234711__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234715/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234715",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234715__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234745/stems_midi/2_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track234745",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track234745__2_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234762/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track234762",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track234762__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234793/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234793",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234793__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234837/stems_midi/2_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234837",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234837__2_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234845/stems_midi/2_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track234845",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track234845__2_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234855/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234855",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234855__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234858/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234858",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234858__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234885/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track234885",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track234885__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234894/stems_midi/2_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234894",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234894__2_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234897/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track234897",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track234897__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234926/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "random_track234926",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__random_track234926__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234933/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track234933",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track234933__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234945/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234945",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234945__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234955/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track234955",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track234955__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235046/stems_midi/2_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track235046",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track235046__2_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235052/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "random_track235052",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__random_track235052__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235057/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235057",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235057__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235127/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235127",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235127__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235154/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235154",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235154__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235167/stems_midi/2_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235167",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235167__2_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235169/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "random_track235169",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__random_track235169__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235221/stems_midi/2_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track235221",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track235221__2_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235253/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235253",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235253__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235273/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track235273",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track235273__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235303/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "random_track235303",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__random_track235303__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235324/stems_midi/3_horn.mid": {
+      "dataset": "coco",
+      "group": "random_track235324",
+      "instrument": "horn",
+      "split": "test",
+      "track_id": "test__random_track235324__3_horn"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235326/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "random_track235326",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__random_track235326__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235362/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235362",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235362__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235379/stems_midi/3_cello.mid": {
+      "dataset": "coco",
+      "group": "random_track235379",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__random_track235379__3_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235432/stems_midi/3_trombone.mid": {
+      "dataset": "coco",
+      "group": "random_track235432",
+      "instrument": "trombone",
+      "split": "test",
+      "track_id": "test__random_track235432__3_trombone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235480",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235480__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "random_track235480",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__random_track235480__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235499/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track235499",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track235499__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235553/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track235553",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track235553__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235559/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235559",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235559__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235572/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235572",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235572__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235645/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235645",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235645__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235676/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235676",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235676__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235678/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track235678",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track235678__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235691/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235691",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235691__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235737/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track235737",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track235737__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235829/stems_midi/2_flute.mid": {
+      "dataset": "coco",
+      "group": "random_track235829",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__random_track235829__2_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235835/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track235835",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track235835__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235843/stems_midi/4_double bass.mid": {
+      "dataset": "coco",
+      "group": "random_track235843",
+      "instrument": "double_bass",
+      "split": "test",
+      "track_id": "test__random_track235843__4_double bass"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235844/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235844",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235844__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235859/stems_midi/3_cello.mid": {
+      "dataset": "coco",
+      "group": "random_track235859",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__random_track235859__3_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235869/stems_midi/4_tuba.mid": {
+      "dataset": "coco",
+      "group": "random_track235869",
+      "instrument": "tuba",
+      "split": "test",
+      "track_id": "test__random_track235869__4_tuba"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235874/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track235874",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track235874__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235878/stems_midi/2_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track235878",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track235878__2_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235886/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235886",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235886__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235904/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "random_track235904",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__random_track235904__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235915/stems_midi/3_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235915",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235915__3_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235928/stems_midi/1_oboe.mid": {
+      "dataset": "coco",
+      "group": "random_track235928",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__random_track235928__1_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235941/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "random_track235941",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__random_track235941__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235946/stems_midi/2_saxophone.mid": {
+      "dataset": "coco",
+      "group": "random_track235946",
+      "instrument": "saxophone",
+      "split": "test",
+      "track_id": "test__random_track235946__2_saxophone"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "random_track235959",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__random_track235959__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "random_track235959",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__random_track235959__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216031/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216031",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216031__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216042/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216042",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216042__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216049/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216049",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216049__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216108/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216108",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216108__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216119/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216119",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216119__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216127/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216127",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216127__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216129/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216129",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216129__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216134/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216134",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216134__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216152/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216152",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216152__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216168/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216168",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216168__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216192/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216192",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216192__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216227/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216227",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216227__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216315/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216315",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216315__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216456/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216456",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216456__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216482/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216482",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216482__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216484/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216484",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216484__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216525/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216525",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216525__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216578/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216578",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216578__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216622/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216622",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216622__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216722/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216722",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216722__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216735/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216735",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216735__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216742/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216742",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216742__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216812/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216812",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216812__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216825/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216825",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216825__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216860/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216860",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216860__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216861/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216861",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216861__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216876/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216876",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216876__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216892/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track216892",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track216892__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216923/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track216923",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track216923__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216994/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track216994",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track216994__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217262/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217262",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217262__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217297/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track217297",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track217297__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217302/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217302",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217302__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217326/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217326",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217326__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217333/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217333",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217333__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217370/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217370",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217370__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217449/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track217449",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track217449__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217573/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217573",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217573__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217574/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217574",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217574__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217671/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217671",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217671__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217679/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217679",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217679__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217702/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217702",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217702__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217706/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217706",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217706__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217710/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track217710",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track217710__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217832/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217832",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217832__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217837/stems_midi/4_cello.mid": {
+      "dataset": "coco",
+      "group": "string_track217837",
+      "instrument": "cello",
+      "split": "test",
+      "track_id": "test__string_track217837__4_cello"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217907/stems_midi/1_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217907",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217907__1_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217933/stems_midi/2_violin.mid": {
+      "dataset": "coco",
+      "group": "string_track217933",
+      "instrument": "violin",
+      "split": "test",
+      "track_id": "test__string_track217933__2_violin"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217945/stems_midi/3_viola.mid": {
+      "dataset": "coco",
+      "group": "string_track217945",
+      "instrument": "viola",
+      "split": "test",
+      "track_id": "test__string_track217945__3_viola"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228039/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228039",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track228039__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228087/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228087",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228087__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228141/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228141",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228141__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228214/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228214",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228214__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228242/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228242",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track228242__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228257/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228257",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228257__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228275/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228275",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228275__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228361/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228361",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228361__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228429/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228429",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track228429__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228561/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228561",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228561__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228586/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228586",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track228586__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228635/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228635",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228635__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228699/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228699",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228699__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228702/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228702",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track228702__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228737/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228737",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track228737__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228799/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228799",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228799__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228829/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228829",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228829__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228830/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228830",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228830__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228857/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228857",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228857__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228859/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228859",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track228859__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228860/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228860",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track228860__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228864/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228864",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track228864__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228883/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228883",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228883__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228948/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228948",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228948__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228951/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228951",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track228951__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228997/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track228997",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track228997__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229042/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229042",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229042__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229091/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229091",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229091__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229093/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229093",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track229093__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229135/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229135",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track229135__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229162/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229162",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229162__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229194/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229194",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track229194__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229219/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229219",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229219__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229285/stems_midi/1_flute.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229285",
+      "instrument": "flute",
+      "split": "test",
+      "track_id": "test__woodwind_track229285__1_flute"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229312/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229312",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track229312__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229394/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229394",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track229394__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229437/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229437",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229437__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229498/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229498",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229498__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229522/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229522",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track229522__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229587/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229587",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229587__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229623/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229623",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229623__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229648/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229648",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229648__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229675/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229675",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229675__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229698/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229698",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229698__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229719/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229719",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229719__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229761/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229761",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229761__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229793/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229793",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229793__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229821/stems_midi/3_clarinet.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229821",
+      "instrument": "clarinet",
+      "split": "test",
+      "track_id": "test__woodwind_track229821__3_clarinet"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229876/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229876",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229876__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229912/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229912",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229912__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229944/stems_midi/2_oboe.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229944",
+      "instrument": "oboe",
+      "split": "test",
+      "track_id": "test__woodwind_track229944__2_oboe"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229950/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229950",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229950__4_bassoon"
+    },
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229974/stems_midi/4_bassoon.mid": {
+      "dataset": "coco",
+      "group": "woodwind_track229974",
+      "instrument": "bassoon",
+      "split": "test",
+      "track_id": "test__woodwind_track229974__4_bassoon"
+    }
+  },
+  "sources": [
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234626/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234254/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234086/stems_midi/2_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234028/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234353/stems_midi/2_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222154/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235052/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234005/stems_midi/2_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222029/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222073/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222052/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234745/stems_midi/2_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216031/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234933/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235303/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/1_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234031/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234535/stems_midi/2_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222261/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235928/stems_midi/1_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222688/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222238/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222106/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234845/stems_midi/2_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216119/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235499/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235379/stems_midi/3_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234394/stems_midi/2_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234043/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234629/stems_midi/2_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222492/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234460/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222714/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222331/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222119/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235046/stems_midi/2_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216129/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235737/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234488/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234183/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234762/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222861/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228141/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234477/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222911/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222345/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222373/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235221/stems_midi/2_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216134/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235874/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235859/stems_midi/3_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234522/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234311/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235273/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222887/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228635/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234497/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223149/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222545/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222428/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235678/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216168/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235941/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216108/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234551/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235553/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222924/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228699/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234528/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223176/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222567/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222506/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216227/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228039/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216192/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234855/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234589/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235829/stems_midi/2_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223044/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228829/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234620/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223302/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222589/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222547/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216042/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216722/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228586/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216456/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234897/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234711/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228087/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223093/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228830/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234837/stems_midi/2_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223425/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222781/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222845/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216049/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216735/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228737/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216482/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235835/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234715/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228214/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223188/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228857/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234858/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223441/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222926/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223018/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216127/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216742/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228864/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216876/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235878/stems_midi/2_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234793/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228257/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223245/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228859/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234894/stems_midi/2_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223492/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222970/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223078/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216152/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216812/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228997/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216994/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235904/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234885/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228275/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223493/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229091/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234945/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223518/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223102/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223079/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216315/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216825/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229042/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217326/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228242/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235057/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228361/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223724/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229498/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234955/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223694/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223182/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223095/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216484/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216860/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229162/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217370/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228429/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235154/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228561/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223727/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229587/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235127/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223696/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223327/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223258/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216525/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216861/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229219/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217573/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228702/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235253/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228799/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223903/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229623/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235167/stems_midi/2_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223721/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223532/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223449/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216578/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216923/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229437/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217574/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228860/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235362/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228883/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223920/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229675/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223988/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223571/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223536/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216622/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217262/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229648/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217671/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229194/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235572/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228948/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223950/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229719/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235559/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234017/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223650/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223710/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216892/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217302/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229698/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217702/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229312/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235645/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228951/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234004/stems_midi/3_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229793/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235844/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223807/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223771/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217297/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217333/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229761/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217706/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229394/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235676/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229093/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234424/stems_midi/3_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229876/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235886/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234926/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223927/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223823/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217449/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217679/stems_midi/2_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229950/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217832/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229522/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235691/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229135/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234701/stems_midi/2_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229912/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235915/stems_midi/3_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235169/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223949/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235326/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217710/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217907/stems_midi/1_violin.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229974/stems_midi/4_bassoon.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217837/stems_midi/4_cello.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229821/stems_midi/3_clarinet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235843/stems_midi/4_double bass.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229285/stems_midi/1_flute.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235324/stems_midi/3_horn.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229944/stems_midi/2_oboe.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235946/stems_midi/2_saxophone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235432/stems_midi/3_trombone.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234304/stems_midi/1_trumpet.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235869/stems_midi/4_tuba.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217945/stems_midi/3_viola.mid",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217933/stems_midi/2_violin.mid"
+  ],
+  "status": "complete",
+  "timeline_protocol": "monophonic_edits_v3",
+  "tolerances": [
+    0.05,
+    0.1,
+    0.2
+  ]
+}

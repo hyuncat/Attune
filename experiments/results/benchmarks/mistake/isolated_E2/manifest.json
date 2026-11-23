@@ -1,0 +1,2874 @@
+{
+  "cases": [
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222029/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track222029",
+      "hashes": {
+        "score": "6ada17f5db81f3502cf14a139c5df66112e43a881438662b2f3527a1a4220d97"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track222029__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222052/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222052",
+      "hashes": {
+        "score": "a1a456454f626540997598f2670f236099d31c2088991f59d060ef2943e24965"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222052__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222073/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222073",
+      "hashes": {
+        "score": "04473796b01a6f329080114165f3c908e7930fe5eb8d2bea3d682e6eea4580a1"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222073__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222106/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222106",
+      "hashes": {
+        "score": "4c30996269f87e717761c32c51b3135d7a0a48db042157f5d18d713a3dfbb137"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222106__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222119/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222119",
+      "hashes": {
+        "score": "229d329bcc7b83bed6df6ced6ce3d863e221d6d140f26340e4d31ec2329d01f3"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222119__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222154/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222154",
+      "hashes": {
+        "score": "67ec53cf4be6a0f0d28864998587002897eddb690b6aec1c4a57ce97a6f9b167"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222154__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222238/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222238",
+      "hashes": {
+        "score": "19eb31becc8beae665c6f0fa3703cb66846d90bde4dd8951dbccba8857cf6790"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222238__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222261/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222261",
+      "hashes": {
+        "score": "b966912958b59a5bb346c38030cd82428ba67815eb4c31d710ae5e42b6605b5c"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222261__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222331/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222331",
+      "hashes": {
+        "score": "5f8b4bc1b4764f0efbb886b20d967d664c512768b9915484b2333966ebfef50f"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222331__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222345/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222345",
+      "hashes": {
+        "score": "85d364042d1207d3201e786261977959ff293f49c134575d336bc0a36ea3d7c1"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222345__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222373/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222373",
+      "hashes": {
+        "score": "5d8b5b5a77186fcfb87574a1c8da5d09f3a209e6cf6cbecca63ffedda467e9a9"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222373__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222428/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222428",
+      "hashes": {
+        "score": "fb6d3812abc1d3d29d71a22a809b6a6133648be3d66958c61896b426cc4e8393"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222428__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222492/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222492",
+      "hashes": {
+        "score": "aed564798b13e3191f9f7e02205b353cbebc4511688321d03f743cefffe2bc61"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222492__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222506/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222506",
+      "hashes": {
+        "score": "777860fb1f4956b3fb76aab21de2a214619736a233a841a034618c8bb608929f"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222506__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222545/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222545",
+      "hashes": {
+        "score": "5cdc6c632e84b8efa72445a7fa533277fbe679a6efec8463bc0e9da6c7e03e77"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222545__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222547/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222547",
+      "hashes": {
+        "score": "404451fb017b71560f23ed5ce18e75cf1ab52834859d450b738478ff275517db"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222547__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222567/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222567",
+      "hashes": {
+        "score": "5ff3a2df1663b00d7844e9c762a3fece669ee21e6b8bd42eac2b6ecd7ce7d1c1"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222567__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222589/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222589",
+      "hashes": {
+        "score": "99d14e2b69b31e201acb17de1f032f38786af17140e283dfac623de6d28b0b3a"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222589__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222688/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track222688",
+      "hashes": {
+        "score": "bb9964c4310dd6ca189e1fca25cf0f18d6fa98eab0ef0eceffc78eef48d99a58"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track222688__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222714/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track222714",
+      "hashes": {
+        "score": "e12351aafac8986c5acfc40c963d54fd490d23a126d39aa49d2e4b41bda7fdc1"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track222714__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222781/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222781",
+      "hashes": {
+        "score": "c549469b6778678cfd0a471b13572b9e4cc683827bd9c52ecc9d8258e8a4565b"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222781__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222845/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track222845",
+      "hashes": {
+        "score": "fc1fc0437c2b620ed6f6e98c13e75f576d0d703945a7365aa93660dc48d7d84e"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track222845__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222861/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222861",
+      "hashes": {
+        "score": "259fe2bfd464265f860cdac400ac1489d5d395f9371e257fbec730482c64fd56"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222861__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222887/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222887",
+      "hashes": {
+        "score": "ef24b5b5a651b63b7a967e7debcb98909a972fadc7f82285088401ea1a9488d1"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222887__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222911/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track222911",
+      "hashes": {
+        "score": "f4d081987cb1eebdab7250beeed34d6936659f15bc09f2efa892f048ecfe0351"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track222911__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222924/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track222924",
+      "hashes": {
+        "score": "77f912cd9364c25b2b37ce0267bf95454d5209e297b1c4e960acc765d3bd916c"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track222924__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222926/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222926",
+      "hashes": {
+        "score": "941ea9365456a41c6612ff190cc20cae0cebde4069a4764fb6ae6cf42fd2db43"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222926__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track222970/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track222970",
+      "hashes": {
+        "score": "eb9eb5eacaebf1af5a77fa62bed0a6bddc0ded296767a5288175beddc144a369"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track222970__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223018/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223018",
+      "hashes": {
+        "score": "7ce7eef6c109a81cbd78f5e4dd21eabacad8db39e487af65372ff0d8aa4aea9e"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223018__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223044/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223044",
+      "hashes": {
+        "score": "acf1b6c394f1b9d482ff7efe5c0aa3857b6ecd90827ddf97cbb5254fb98022e7"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223044__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223078/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223078",
+      "hashes": {
+        "score": "3fd91f942cedff7734d25eef9d08c1dcdb0b179993410754ff653add3c125bcd"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223078__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223079/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223079",
+      "hashes": {
+        "score": "817ff2fee7c40b481b6596c2906f30f3e54f6feb74dcf1d54dd123b0193e4381"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223079__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223093/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223093",
+      "hashes": {
+        "score": "00a3637dd12ac5304720f06fe8d0929d3def58c2798d3834924c13a9c50a5d2f"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223093__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223095/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223095",
+      "hashes": {
+        "score": "a81aeb7ef6915885afeb2129c19c7d521ca40c1f6d83016d881dbcde22f4db60"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223095__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223102/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223102",
+      "hashes": {
+        "score": "80f876e87330ecb1c834a95acdc8f0036aaf5e4ffe5f236bb2efac490cb9d0ce"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223102__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223149/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223149",
+      "hashes": {
+        "score": "92c9d6f74b8e499c3f2c52a660447d431a60335a0f85f8f3d54d9ca20501e832"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223149__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223176/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223176",
+      "hashes": {
+        "score": "fb1f0316df307f943a41216aa79ff42d535cc26666de2df5b1e8853519539fcf"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223176__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223182/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223182",
+      "hashes": {
+        "score": "1a935d9670421954cf4c0294b4ba7f4448241404057f8f3a7c660717c5a6e8e6"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223182__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223188/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223188",
+      "hashes": {
+        "score": "09a60a82ca274b987c2ad05f2c6763e7d7b04df5f5dbb31701b52bdd59f1e4b8"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223188__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223245/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223245",
+      "hashes": {
+        "score": "80112ca636e66bf62845dc496756131d7c71b7d898ae629443dd1b7f816f3830"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223245__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223258/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223258",
+      "hashes": {
+        "score": "7ff1803685c96de99c5ddf8476d870c9bbedddc3a9564de002e75740c480791d"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223258__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223302/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223302",
+      "hashes": {
+        "score": "24a7ce7dd441e50a1be1ae15b5151d3b32d372b9eb58606beee988a0ce271643"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223302__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223327/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223327",
+      "hashes": {
+        "score": "77bf7a68bbf6d967aad43067b0007151bfb9fc53c511315152c217b4f7c1cbd9"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223327__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223425/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223425",
+      "hashes": {
+        "score": "d211b4ce2273a2103566d44c06ceecb0d2a1d42ebcc9c3fb257651d7ce1ddb40"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223425__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223441/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223441",
+      "hashes": {
+        "score": "3dbc2a3412959d86548a733a671d005ea52690d8b181754dc7611773af821981"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223441__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223449/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223449",
+      "hashes": {
+        "score": "82df3d661652e1bd340a7ee80da5c229951e5c226d4eb6b1a6bf9efba089211f"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223449__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223492/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223492",
+      "hashes": {
+        "score": "690328465c893e2612256c3a8353693914552b102eb0fb73963177321593296c"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223492__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223493/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223493",
+      "hashes": {
+        "score": "7dbfbd6597c98314ce12ab1981c15ad26e39a357987fd85e75bc0acf7627a5c6"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223493__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223518/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223518",
+      "hashes": {
+        "score": "44cd0bcf177861aa60a427c31a98194c6a50d639ef6763ef7b8fa435367629cc"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223518__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223532/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223532",
+      "hashes": {
+        "score": "0ebe371b7e70e0af36751337429cf8d7b19ce2be34aa9c6b81aa1c057346ad11"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223532__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223536/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223536",
+      "hashes": {
+        "score": "f1543a0cbe5105676091c7bf82e1cc8dee944124db8d13340d09b6550e8e3b37"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223536__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223571/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223571",
+      "hashes": {
+        "score": "7a3ad866de66f6b32c33a48aeadae26edd69ef39ad507793daa6dd136f3d4437"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223571__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223650/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223650",
+      "hashes": {
+        "score": "e722e80875083c7f395101401eeaa1062f6f4b54a50eb95dd49e14c385b9c83a"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223650__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223694/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223694",
+      "hashes": {
+        "score": "ec018cf031de168053a2ed4e88f2921db59b248ad70df28139952863d30158f8"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223694__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223696/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223696",
+      "hashes": {
+        "score": "907fb9d232d3ad6c04e29ea7cfe2fce45067db7ba0a019edb9cbaf9c74420366"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223696__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223710/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223710",
+      "hashes": {
+        "score": "66f540d7d12f780298ad2f3b3274793fce810430f589935c097b050b28203ecd"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223710__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223721/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223721",
+      "hashes": {
+        "score": "9bb009f512f61ae66e8328eb66f702579f7b24ff3fa50793d9545ff7de247eda"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223721__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223724/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223724",
+      "hashes": {
+        "score": "60ee1dcd2152323d8aa5faca106803b13cdef30feee26d3b6aaf1899abc4a17f"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223724__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223727/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223727",
+      "hashes": {
+        "score": "50834396e45e4feecc2d7b6dae5a7da81a12145a1c43719d655b2c607849020a"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223727__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223771/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223771",
+      "hashes": {
+        "score": "c96dcf6607f3eccd94f73f2e6b837c121b7a6df5ea6e3d6c468726a398675c97"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223771__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223807/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223807",
+      "hashes": {
+        "score": "05e58b8e24409d426afc6451cfdda65b99ad4e56592bcbb0276f325c008f98b7"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223807__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223823/stems_midi/4_tuba.mid"
+      },
+      "group": "brass_track223823",
+      "hashes": {
+        "score": "871422ac359aac635805ca1734ee24a736c55ccb91065a64a54fbb62309aee43"
+      },
+      "instrument": "tuba",
+      "track_id": "test__brass_track223823__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223903/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223903",
+      "hashes": {
+        "score": "bde2d0cceb15868ba10d1c951f121a99242bc426d680e2a8e33e0e3953a090ed"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223903__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223920/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223920",
+      "hashes": {
+        "score": "367a24a6251c0d1a64a0e3ae558e1b29f87beee92bd497135bdc90e7c708a137"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223920__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223927/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223927",
+      "hashes": {
+        "score": "396dbb36d764a331f3fbfe7900238c0185f4d9aa69ce43f4e64d907df5ab1b39"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223927__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223949/stems_midi/1_trumpet.mid"
+      },
+      "group": "brass_track223949",
+      "hashes": {
+        "score": "358a4006f529191ee0eff1fa4efe0a11f92e09371d38ddb948800eff60aae7a0"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__brass_track223949__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223950/stems_midi/2_horn.mid"
+      },
+      "group": "brass_track223950",
+      "hashes": {
+        "score": "b7979f1790393bdea6805db15e51fb4c2968f2f46c6f6c86f2301832bec4123c"
+      },
+      "instrument": "horn",
+      "track_id": "test__brass_track223950__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/brass_track223988/stems_midi/3_trombone.mid"
+      },
+      "group": "brass_track223988",
+      "hashes": {
+        "score": "aa1ad4dc4d9c6d1f3389c9a0a091db8a8092248a7f0bea80cb7ea5a32f0be7c8"
+      },
+      "instrument": "trombone",
+      "track_id": "test__brass_track223988__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234004/stems_midi/3_horn.mid"
+      },
+      "group": "random_track234004",
+      "hashes": {
+        "score": "d253ec668b345405e9a457746930abbd14968994387a614fdeae47f0c6689828"
+      },
+      "instrument": "horn",
+      "track_id": "test__random_track234004__3_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234005/stems_midi/2_saxophone.mid"
+      },
+      "group": "random_track234005",
+      "hashes": {
+        "score": "3ba551b84af9bdab53ef34161bf7f9c5b4f1be0eca7b4ccb71c3f71842a2701b"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234005__2_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234017/stems_midi/3_trombone.mid"
+      },
+      "group": "random_track234017",
+      "hashes": {
+        "score": "0765ddbe2da6f28f3ee726f73192fcb3dc8da92748f113af902549fbf4d854ab"
+      },
+      "instrument": "trombone",
+      "track_id": "test__random_track234017__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234028/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234028",
+      "hashes": {
+        "score": "2c8167c75be5a201c1628a6a164703effb5f8b4277f21c95b0c1d61af1e6eb32"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234028__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234031/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234031",
+      "hashes": {
+        "score": "4bf146c613791a7adf17e30c283b1b5d96f828d06d6aaacb2736f77143707625"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234031__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234043/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234043",
+      "hashes": {
+        "score": "47959ab4a0259a19901a118e9b842c7415e565c6ea660cd1a452c3c22b0fc583"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234043__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234086/stems_midi/2_clarinet.mid"
+      },
+      "group": "random_track234086",
+      "hashes": {
+        "score": "7c56d6f96a1d3d418ae276f230d19e150b362f48753d916cadb48f3f919ee89e"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234086__2_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234183/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234183",
+      "hashes": {
+        "score": "bd57469e7e6c9cc1fdd02d6573bb1264c34b4f4434acb7a8ef5ddcc66ea29f20"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234183__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/1_clarinet.mid"
+      },
+      "group": "random_track234215",
+      "hashes": {
+        "score": "3119dca0508b02365b063b90a43c57fd7e0660d80d1945eaada275ad07631276"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234215__1_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234215/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234215",
+      "hashes": {
+        "score": "8afcb6c25cdbf82dab6b8511dd333ba4e8eb4bc0e1fce10a2602a803ba89638b"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234215__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234254/stems_midi/4_cello.mid"
+      },
+      "group": "random_track234254",
+      "hashes": {
+        "score": "b4bbf459f52b9fdd5065c1c0a40a67893974238d760700214d723dba4b633541"
+      },
+      "instrument": "cello",
+      "track_id": "test__random_track234254__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234304/stems_midi/1_trumpet.mid"
+      },
+      "group": "random_track234304",
+      "hashes": {
+        "score": "3d59ba619141599796c677f1e268cf9159245d13241c439eaa51c77e2d8388de"
+      },
+      "instrument": "trumpet",
+      "track_id": "test__random_track234304__1_trumpet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234311/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234311",
+      "hashes": {
+        "score": "6e6cba1e3b09ebbe8c2c7ee6fe806089af7386ee05c92b8e6698490a8acf1a9c"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234311__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234353/stems_midi/2_flute.mid"
+      },
+      "group": "random_track234353",
+      "hashes": {
+        "score": "2d3101eae8f5f717d964d55e46a83243688d016a436d1151c7189ba18eee9106"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track234353__2_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234394/stems_midi/2_clarinet.mid"
+      },
+      "group": "random_track234394",
+      "hashes": {
+        "score": "07e79b193211f920ab5bcd2d1733707b80bb42f50800cae8f98399abdd4dbccf"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234394__2_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234424/stems_midi/3_horn.mid"
+      },
+      "group": "random_track234424",
+      "hashes": {
+        "score": "718fbc19622991b18ab1e3b51ba613bc778a4cec3dd989990afb9e9ab3807a25"
+      },
+      "instrument": "horn",
+      "track_id": "test__random_track234424__3_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234460/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234460",
+      "hashes": {
+        "score": "8644477e7253a5d0771a2b9598c46abe5b1c65fda8020da63b29e810ba0298f1"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234460__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234477/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234477",
+      "hashes": {
+        "score": "b16f59cd66a481cd23b48f60ab7088decc79744e91e87cb44a05cada943a7a1a"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234477__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234488/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track234488",
+      "hashes": {
+        "score": "206eb0c898224e9f0d3e9ace957b04bd769ad83b2183faaffa2a864119219324"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234488__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234497/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234497",
+      "hashes": {
+        "score": "8dc6a3611fac4bdf1f95696f0cc302f0f33fd005b209aaca8a77260c00b8dfcb"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234497__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234522/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track234522",
+      "hashes": {
+        "score": "934ff0d344494346a9fdca10c3114146402666e067022a721ac31be71e91c499"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234522__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234528/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234528",
+      "hashes": {
+        "score": "aea085d6ecb6a8900530cd40858fba4800fe562e6163975961fbcacead69d091"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234528__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234535/stems_midi/2_flute.mid"
+      },
+      "group": "random_track234535",
+      "hashes": {
+        "score": "6a7bac5172b87135604909c750536cb8421f960c511251880b1cf2805cd26e0b"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track234535__2_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/3_trombone.mid"
+      },
+      "group": "random_track234537",
+      "hashes": {
+        "score": "adb58429bdbcbb7c2fc158acbd97ad4fedc5e6823483c6d9f7ac972c4935b719"
+      },
+      "instrument": "trombone",
+      "track_id": "test__random_track234537__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234537/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234537",
+      "hashes": {
+        "score": "7c5421624bd9c3897420da26ab0439969e43f87ad33abe8fe172fb2b2d00c96c"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234537__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234551/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track234551",
+      "hashes": {
+        "score": "91c0d930810a738de50e9aaf82f04288f5d2b9300adcd2fc73d712711aa3333b"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234551__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234589/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234589",
+      "hashes": {
+        "score": "0f825fd44957845d90eb890c5fe4e856944a3beb65be00cf736449fb38a21c0f"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234589__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234620/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234620",
+      "hashes": {
+        "score": "f28ea12c949ce56df1cfa0b222a1f6ce101e1bd71cedc5d10f2b88da3369358e"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234620__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234626/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track234626",
+      "hashes": {
+        "score": "1e15e3ee6d029ac07dea84b5406245498126c6540dc844d74521df75e8cac07a"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track234626__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234629/stems_midi/2_flute.mid"
+      },
+      "group": "random_track234629",
+      "hashes": {
+        "score": "b2985da97e32aa9ed70039b9d52c0966bf4a02a3fe1d4a9bf5d2a554ef1dab93"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track234629__2_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234701/stems_midi/2_horn.mid"
+      },
+      "group": "random_track234701",
+      "hashes": {
+        "score": "d5a253aa6fb420be939cad3e7a293eee41a8e661751275ba676533f13b4f3752"
+      },
+      "instrument": "horn",
+      "track_id": "test__random_track234701__2_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234711/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234711",
+      "hashes": {
+        "score": "145071ea1353f646b324f99e6d29afa46c402b4e55618d01c6a32f810dc25796"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234711__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234715/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234715",
+      "hashes": {
+        "score": "055eec9574132d4dab325c5e1061a03d2611a24f8db8dea1c9fc29eea5c3085e"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234715__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234745/stems_midi/2_viola.mid"
+      },
+      "group": "random_track234745",
+      "hashes": {
+        "score": "88429801f6b6253327b6d703d43848940284a4197f3afa34cf703506a6a07126"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track234745__2_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234762/stems_midi/1_flute.mid"
+      },
+      "group": "random_track234762",
+      "hashes": {
+        "score": "dcb3a028393d1e32c708b04719d47b39450150450d7f31918f442b07b2f8ef33"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track234762__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234793/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234793",
+      "hashes": {
+        "score": "9a4480e14e9a4941b8c0915d9170c18868f861b2e22ee870c23e2b426bf38450"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234793__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234837/stems_midi/2_saxophone.mid"
+      },
+      "group": "random_track234837",
+      "hashes": {
+        "score": "52f0b8cb69334084c107f174b7a2c7d8470135ff0b4384a8ecbfeef366157f9c"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234837__2_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234845/stems_midi/2_viola.mid"
+      },
+      "group": "random_track234845",
+      "hashes": {
+        "score": "3613806fafd10a05ddd77cc4879abf64cea1df79ced03195572016469c4d9f08"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track234845__2_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234855/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track234855",
+      "hashes": {
+        "score": "88c2fd7c6e3397b8d9239730a21665a904b069ca66ba3461438468dc6c5e73c5"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234855__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234858/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234858",
+      "hashes": {
+        "score": "23c061f64f6bb5037c83662efb0c477c915a7153a0ab81753dd72e64ae191ee0"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234858__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234885/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track234885",
+      "hashes": {
+        "score": "efd52d15ee50416691aea93844ed7463ecd9aaaabedf3f1f81dace05fb94d305"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track234885__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234894/stems_midi/2_saxophone.mid"
+      },
+      "group": "random_track234894",
+      "hashes": {
+        "score": "0dbbfe81b3d7b161cc331d8fce1bfed011faee2a5420b55cd9244b395974e5f3"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234894__2_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234897/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track234897",
+      "hashes": {
+        "score": "f681c0e892032492531d73ce505ea3be382ed48c2c3c0a7b79f5bcaf58c519fa"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track234897__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234926/stems_midi/3_trombone.mid"
+      },
+      "group": "random_track234926",
+      "hashes": {
+        "score": "2b9ce3f2800633d73ea4f146a53d0bfba648a70130c37f6b64ce18efa72093a8"
+      },
+      "instrument": "trombone",
+      "track_id": "test__random_track234926__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234933/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track234933",
+      "hashes": {
+        "score": "3f32d4c1680e661e652ad7939d4fd1bfb1284fdd28b1c88aaa16b7f2ab79c942"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track234933__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234945/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234945",
+      "hashes": {
+        "score": "9315f251e73bee779d05a570bee0aa530fc24846730ce34bbde93888cad8454f"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234945__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track234955/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track234955",
+      "hashes": {
+        "score": "af1caf32e06dece872cd62bfd03717037568c879d1f60398ccaf3c46632de8ef"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track234955__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235046/stems_midi/2_viola.mid"
+      },
+      "group": "random_track235046",
+      "hashes": {
+        "score": "af5d075c339f707dd3a163919ccb49f55020842755ebdf3152e9282374e8037c"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track235046__2_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235052/stems_midi/2_oboe.mid"
+      },
+      "group": "random_track235052",
+      "hashes": {
+        "score": "af54d1ca7d9d6f49bb03b41627cbf284da533d3cfa7b0d59bb2840f3a0faeac1"
+      },
+      "instrument": "oboe",
+      "track_id": "test__random_track235052__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235057/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235057",
+      "hashes": {
+        "score": "f0dc83e6797ef000d05d564cd20d84b1ccc6f73720301dbf88e49bdca4b4f58a"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235057__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235127/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235127",
+      "hashes": {
+        "score": "9634daacdc788f403cc264a52656228a06d23697dc6771bf07694ce507e55801"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235127__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235154/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235154",
+      "hashes": {
+        "score": "2943239832570fb9a67908e57b01a4dbd05b2f3ced905f01e599ecc3cfc8640a"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235154__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235167/stems_midi/2_saxophone.mid"
+      },
+      "group": "random_track235167",
+      "hashes": {
+        "score": "ffc48209adccbe680ff5c9efc581fbfded925330746d6f249873b057de025849"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235167__2_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235169/stems_midi/3_trombone.mid"
+      },
+      "group": "random_track235169",
+      "hashes": {
+        "score": "1d3c9e02af99024f4c921d2c0832f4a2c7526fbab8b62fe2a6ca2f1746405fb0"
+      },
+      "instrument": "trombone",
+      "track_id": "test__random_track235169__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235221/stems_midi/2_viola.mid"
+      },
+      "group": "random_track235221",
+      "hashes": {
+        "score": "8e46aa0e6b440018db7ddab2b18f0162dc1df7cc9b10859817c513a1ad218147"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track235221__2_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235253/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235253",
+      "hashes": {
+        "score": "cc51d8cedd96363e368d38c14a09dc722d7441091ca8f4a9a296aa30431a0cc8"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235253__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235273/stems_midi/1_flute.mid"
+      },
+      "group": "random_track235273",
+      "hashes": {
+        "score": "a9ce7e082f92d0a90380176ff112cea9e555ef24bf22cbbd88ff38ad4c558fe5"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track235273__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235303/stems_midi/4_cello.mid"
+      },
+      "group": "random_track235303",
+      "hashes": {
+        "score": "c0234f54f6598efd891e0f800fa0685cb807749f7f70eb1a0a925a5ce6e4e8d9"
+      },
+      "instrument": "cello",
+      "track_id": "test__random_track235303__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235324/stems_midi/3_horn.mid"
+      },
+      "group": "random_track235324",
+      "hashes": {
+        "score": "bec195fc8a8dac56bac49024ad36f8e2b57ab423e9fb412b9d1aaa4cb5ed1ac4"
+      },
+      "instrument": "horn",
+      "track_id": "test__random_track235324__3_horn"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235326/stems_midi/4_tuba.mid"
+      },
+      "group": "random_track235326",
+      "hashes": {
+        "score": "54374c2ae9386e31f7d8934575d60f3667accde9fd33965c02475b6c00ed7061"
+      },
+      "instrument": "tuba",
+      "track_id": "test__random_track235326__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235362/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235362",
+      "hashes": {
+        "score": "8c2453e94788ea4c2fcd4a854bf1ae57745c8b6bd5bbf7a7a4221b5098aa136a"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235362__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235379/stems_midi/3_cello.mid"
+      },
+      "group": "random_track235379",
+      "hashes": {
+        "score": "e037f3a43a92677ebd29934cd9cf44e4293b89dba8d6319c0887215bc7349256"
+      },
+      "instrument": "cello",
+      "track_id": "test__random_track235379__3_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235432/stems_midi/3_trombone.mid"
+      },
+      "group": "random_track235432",
+      "hashes": {
+        "score": "0db0573ffbc869445e1eb19c35d889734c8c3363d53dac1022b3056dce527044"
+      },
+      "instrument": "trombone",
+      "track_id": "test__random_track235432__3_trombone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235480",
+      "hashes": {
+        "score": "cf45379187bd6e3377f27148a15f594072cfc98c58ace7311ada6be0d8393733"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235480__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235480/stems_midi/4_cello.mid"
+      },
+      "group": "random_track235480",
+      "hashes": {
+        "score": "460cafe5133abc431534b653636697797aff634dd5d4d3dbe04b287f12c73438"
+      },
+      "instrument": "cello",
+      "track_id": "test__random_track235480__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235499/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track235499",
+      "hashes": {
+        "score": "125c004da2acd04f9e3bd7db360e06ba944580ded24f2e9f52e5ac5916062938"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track235499__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235553/stems_midi/1_flute.mid"
+      },
+      "group": "random_track235553",
+      "hashes": {
+        "score": "3b8708811ecfd5e689f3bf151e127ef15e0196fdfef1e2789613e7d34b857a36"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track235553__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235559/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235559",
+      "hashes": {
+        "score": "adeb8c9a348504aa7d3bf4b8cbb1e14eeac191adec9e6ec1f634b1a944d857d1"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235559__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235572/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235572",
+      "hashes": {
+        "score": "d381fc7482a7af9990732208f0f9f1f147e892177b8ac129806c7fa43274edaa"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235572__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235645/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235645",
+      "hashes": {
+        "score": "90504de57ac1d766eb7f0f702e80bdccaf186bc859454ee40767ce08ca12efe9"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235645__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235676/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235676",
+      "hashes": {
+        "score": "f278c3c62f3a62f8c0e1ebb1f3ab231825d398da7c7827296f28059982f68dd9"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235676__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235678/stems_midi/3_viola.mid"
+      },
+      "group": "random_track235678",
+      "hashes": {
+        "score": "bde4d15d8624fcada61d902826f860b6816d17ab323bdf13337e584283736b87"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track235678__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235691/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235691",
+      "hashes": {
+        "score": "0bd4c52d2e7f539322cf0254957e99f984a01b836275542393da1503f5bed387"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235691__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235737/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track235737",
+      "hashes": {
+        "score": "64644f802ffcd6e87fd880fcf3dc6ec065136db342af897bdd0f1a574d2c0e93"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track235737__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235829/stems_midi/2_flute.mid"
+      },
+      "group": "random_track235829",
+      "hashes": {
+        "score": "75518d13d80fa8adc301611702817c093a7c78b96a0b1df40ad63d94de079fe3"
+      },
+      "instrument": "flute",
+      "track_id": "test__random_track235829__2_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235835/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track235835",
+      "hashes": {
+        "score": "b0173dfdb06994e91981254b972d8793e079ba794cc2fdcdfc71b778a022a345"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track235835__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235843/stems_midi/4_double bass.mid"
+      },
+      "group": "random_track235843",
+      "hashes": {
+        "score": "1eb077c982947a1d614640e92ccddd333808b301bbb8d67cf03fbd4cefeadad4"
+      },
+      "instrument": "double_bass",
+      "track_id": "test__random_track235843__4_double bass"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235844/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235844",
+      "hashes": {
+        "score": "f96807d7c4c9c8d636f5a748c855cd10f036fca91d2c5623d196e28b2b12bb3d"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235844__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235859/stems_midi/3_cello.mid"
+      },
+      "group": "random_track235859",
+      "hashes": {
+        "score": "9785d3cbda6182af9fd6693b6ef28076ee876603425bb35743c6a6ed8aaf10dd"
+      },
+      "instrument": "cello",
+      "track_id": "test__random_track235859__3_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235869/stems_midi/4_tuba.mid"
+      },
+      "group": "random_track235869",
+      "hashes": {
+        "score": "f8faaebb1ad66ef6e5115ba157a0fce83596e020f9fa66d4b8d921992a861be7"
+      },
+      "instrument": "tuba",
+      "track_id": "test__random_track235869__4_tuba"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235874/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track235874",
+      "hashes": {
+        "score": "1eeb4cdf4c616d76f5056368eb9bfbf047b3df83fd9f906617866a81d7723994"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track235874__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235878/stems_midi/2_clarinet.mid"
+      },
+      "group": "random_track235878",
+      "hashes": {
+        "score": "2ce7517d68a18c4ba80768291a2d6c0673bab8fca7e580afb1771dffa321a2f3"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track235878__2_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235886/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235886",
+      "hashes": {
+        "score": "903af7941c414213890151089a491a2e15ed31f58d422ecf8e873b1c49389e77"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235886__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235904/stems_midi/3_clarinet.mid"
+      },
+      "group": "random_track235904",
+      "hashes": {
+        "score": "70d1c48875d994d09090683762f741fc31bea3c051ac4f309443506f53613bd3"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__random_track235904__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235915/stems_midi/3_saxophone.mid"
+      },
+      "group": "random_track235915",
+      "hashes": {
+        "score": "54eb1bc92c662017b715b08f65b1db8c674ebb874f7a9346e5c6dea10fcfcb38"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235915__3_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235928/stems_midi/1_oboe.mid"
+      },
+      "group": "random_track235928",
+      "hashes": {
+        "score": "529b2bb018fdfd7cb74d1a3e026e482629e8680321d141d775838fbe26c9387a"
+      },
+      "instrument": "oboe",
+      "track_id": "test__random_track235928__1_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235941/stems_midi/4_bassoon.mid"
+      },
+      "group": "random_track235941",
+      "hashes": {
+        "score": "4ef2c434de95f348d4d6edbedd20791fd5fe0acee705c15972cfa023638fbc8e"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__random_track235941__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235946/stems_midi/2_saxophone.mid"
+      },
+      "group": "random_track235946",
+      "hashes": {
+        "score": "cdd424170ccd5270ef0605aa02d1ec8e51a59c58b86e020faa54b2061e1e2ae3"
+      },
+      "instrument": "saxophone",
+      "track_id": "test__random_track235946__2_saxophone"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/2_oboe.mid"
+      },
+      "group": "random_track235959",
+      "hashes": {
+        "score": "3fcea7b779242fa11f5e44b8c4ed3a9bc2efa14c4c46d558765521a0c6e4a4ab"
+      },
+      "instrument": "oboe",
+      "track_id": "test__random_track235959__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/random_track235959/stems_midi/3_viola.mid"
+      },
+      "group": "random_track235959",
+      "hashes": {
+        "score": "66fa0434ae5eedaf9aaa76d2880204a1840102c291fb848bafbab952a6c2df05"
+      },
+      "instrument": "viola",
+      "track_id": "test__random_track235959__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216031/stems_midi/1_violin.mid"
+      },
+      "group": "string_track216031",
+      "hashes": {
+        "score": "bc45fdab2a64aaa4089a7930d1a871586d1ce1a32be169ce8cb428e25c12745c"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216031__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216042/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216042",
+      "hashes": {
+        "score": "455244a93a872b21dc1453b9bc2ce23b5b1030c4a7a1d787a5279875056586fb"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216042__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216049/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216049",
+      "hashes": {
+        "score": "7ef5f4f6af55ad8674ba8bd0079c9d736a05e93aa21df04a7a86aaf99037b490"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216049__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216108/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216108",
+      "hashes": {
+        "score": "96a239ad3938a50a94aa48a5ec51811e6ec0ffec5329f9b17a36434b201b4ce4"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216108__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216119/stems_midi/1_violin.mid"
+      },
+      "group": "string_track216119",
+      "hashes": {
+        "score": "665813de1c7908403c5d1c3bc93854238f810a793a47fcfdcf2ac3ca7a4f768e"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216119__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216127/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216127",
+      "hashes": {
+        "score": "f296fbad7ac871feb33e4ae98bc5266372d461c8f20e1a9d8c5301da1689824a"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216127__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216129/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216129",
+      "hashes": {
+        "score": "6934defcbfb4f7da67a84ea295ba9482b3c957f193cc72a48e8e2933a3420ae0"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216129__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216134/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216134",
+      "hashes": {
+        "score": "47ca4100711c75d73c850c4eb1b45b8f67bdb08459573583c0d184ba5d0cbddf"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216134__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216152/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216152",
+      "hashes": {
+        "score": "4b2213e216eef2f60d1e11cecbcfdbe4c672b8aed4d71450b68c0efd15c1a7c7"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216152__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216168/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216168",
+      "hashes": {
+        "score": "521561280921aa10948b61a24d54d0ed6f640e047deb2bc1ba51adbeda668588"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216168__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216192/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216192",
+      "hashes": {
+        "score": "e623e783c67ffc9e4b8828b358ecf142415bfcf5fec2cf1f92da340d2ac5fb44"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216192__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216227/stems_midi/1_violin.mid"
+      },
+      "group": "string_track216227",
+      "hashes": {
+        "score": "c0c8b831ab0cf1f80b1603c9c473608cb2182c25e80721c824d7204ed1a91190"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216227__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216315/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216315",
+      "hashes": {
+        "score": "8ee0eb18bcc60600002cc32fcaaee61b7e866e85fc544a8482f318c62be17ed1"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216315__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216456/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216456",
+      "hashes": {
+        "score": "38daaf79cded83fa1c5be0aeed25a7964443cb792a8ed81e43c38c0af6cb0208"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216456__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216482/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216482",
+      "hashes": {
+        "score": "96f05a393979fc1ebfa0643d1f2d64a2bc7a638fcabccf94c6aea3f952e5a49e"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216482__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216484/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216484",
+      "hashes": {
+        "score": "ae6f38353603516f08cb8172fca9d422501e53c07d4cf4d04e59e03a52c38d6b"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216484__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216525/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216525",
+      "hashes": {
+        "score": "aa9fff7a35d0833d28eabd56e59a445a50b8f2a002256a60ffb395dd9b9d002d"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216525__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216578/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216578",
+      "hashes": {
+        "score": "a2e7d849516abcc7f627f0b967f9e9d771b02663e86ab02f584b38488f262404"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216578__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216622/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216622",
+      "hashes": {
+        "score": "cf3e2a9515bd2a0f617f7ec06bd4282bc2fa9eac6234d1c3d092da3a7dca765d"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216622__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216722/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216722",
+      "hashes": {
+        "score": "f7408172af8351bc007dbb385215658de251afaf29da3db44b5425c64af84206"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216722__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216735/stems_midi/1_violin.mid"
+      },
+      "group": "string_track216735",
+      "hashes": {
+        "score": "affeb4b386bacd63c64c123fa487fd188c9a987b5238734ed13a2c2f3913115d"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216735__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216742/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216742",
+      "hashes": {
+        "score": "a198d06a45f5de67525dd0779822b9c0b41c71d49a1490bf1618bf2355c63253"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216742__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216812/stems_midi/1_violin.mid"
+      },
+      "group": "string_track216812",
+      "hashes": {
+        "score": "f25770c603435c7b6e7ae5371e04dff61f68a815c9eb37d044c02bff5dc3784c"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216812__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216825/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216825",
+      "hashes": {
+        "score": "1a154bc6a2fac2dbf9b7eca9cfd23c20153fcb20c84ca14e7260b735f4aff46c"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216825__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216860/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216860",
+      "hashes": {
+        "score": "6784dc814fa8ebb2a62546450ce4e51e2468669bc09a5d4ddd8b66da8d76a6f4"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216860__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216861/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216861",
+      "hashes": {
+        "score": "024f3bf064fe2b20721cdebf15ffc0145068418c82169060f426114a29bd91d0"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216861__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216876/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216876",
+      "hashes": {
+        "score": "7a7dcdd3cca0029368f86228c6a40de9ef89cacc18732415688b6fd2d478d906"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216876__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216892/stems_midi/3_viola.mid"
+      },
+      "group": "string_track216892",
+      "hashes": {
+        "score": "fe5936437cd99480bbe28c55f6d39e4eaac0c5ad25e1bbd15f3541df1a82f8b0"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track216892__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216923/stems_midi/2_violin.mid"
+      },
+      "group": "string_track216923",
+      "hashes": {
+        "score": "7a54bc4ca42b51daac3effb5b9ba6d7bd9e59960d8afce15e7f8b621e3a60c09"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track216923__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track216994/stems_midi/4_cello.mid"
+      },
+      "group": "string_track216994",
+      "hashes": {
+        "score": "938cc44fa3d98e3ca334f3f4d775d19bcc029773b0467806465402e1d8b032c6"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track216994__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217262/stems_midi/2_violin.mid"
+      },
+      "group": "string_track217262",
+      "hashes": {
+        "score": "2735cd843dfb3813a44078f6417c7fa38bf0109892ae1d3cdb4706cf2edf7ca7"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217262__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217297/stems_midi/3_viola.mid"
+      },
+      "group": "string_track217297",
+      "hashes": {
+        "score": "47725b67fabe9c7c2366723a8cef47c5acb2053be2416f3604ada23dcbceccd3"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track217297__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217302/stems_midi/1_violin.mid"
+      },
+      "group": "string_track217302",
+      "hashes": {
+        "score": "930f1ccd0eaaf0e2c856a471e3cd1fd44995cd8a6d406b2862fc408c8bdd962e"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217302__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217326/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217326",
+      "hashes": {
+        "score": "0d6420ff83de00ddbb4f629a98212a25e79e71293d568b98c75ca4289535f839"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217326__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217333/stems_midi/1_violin.mid"
+      },
+      "group": "string_track217333",
+      "hashes": {
+        "score": "57de32963195ff72863b7a9bc5f234a6033df8fe4d33891a7c7ae3a566066d1b"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217333__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217370/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217370",
+      "hashes": {
+        "score": "8e3d4dd355f74dc7c287a504658822485ec384f4a90b07c406746cede2c809f6"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217370__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217449/stems_midi/3_viola.mid"
+      },
+      "group": "string_track217449",
+      "hashes": {
+        "score": "4ba56ef841b8500836c56f6a2e1865c6d3f79078a4c8679d97bf09b8a156723b"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track217449__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217573/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217573",
+      "hashes": {
+        "score": "9f43042687cf39a2159fb0ceeb4487a3f3cea4a1d1ee15172238eff3c3adde40"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217573__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217574/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217574",
+      "hashes": {
+        "score": "963a09588eacff42837df9a47ecea41944afcee3d604977ac7cd0b03e52861db"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217574__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217671/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217671",
+      "hashes": {
+        "score": "3bd0e7eff977fd6d201b69a3d6c82b5f26e1772a811c3888ab0ebcb60e9352c2"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217671__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217679/stems_midi/2_violin.mid"
+      },
+      "group": "string_track217679",
+      "hashes": {
+        "score": "3fffaf5108a96ac512e1da5cabdfd235c192e64b55262e7f4736ae30e0331559"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217679__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217702/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217702",
+      "hashes": {
+        "score": "29cc13c86ec159c0a63042d603c5abde9f47fbd09743653fab414fd6fcc28731"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217702__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217706/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217706",
+      "hashes": {
+        "score": "f912e7a007b383cee7639dc705f3485e144291d289d60105329e9fd9c050bd28"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217706__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217710/stems_midi/3_viola.mid"
+      },
+      "group": "string_track217710",
+      "hashes": {
+        "score": "72e10c5f91bb203315f641ccb1d54817820e9737303b4d94aba0fe4b49d8c3e4"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track217710__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217832/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217832",
+      "hashes": {
+        "score": "977e2012c65da445bc0baf84960f198d49d2b85b9fdf1715079eee3bb134cd27"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217832__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217837/stems_midi/4_cello.mid"
+      },
+      "group": "string_track217837",
+      "hashes": {
+        "score": "b3dd3a10ca88187c41dbb67c8bf2d00384b6e182f8401db1c2c1200bc4a21677"
+      },
+      "instrument": "cello",
+      "track_id": "test__string_track217837__4_cello"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217907/stems_midi/1_violin.mid"
+      },
+      "group": "string_track217907",
+      "hashes": {
+        "score": "c7ab8d3b5b58e3a9f32d7de2ac4ad1d5cff1799567c3775194831e1dbbfffa54"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217907__1_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217933/stems_midi/2_violin.mid"
+      },
+      "group": "string_track217933",
+      "hashes": {
+        "score": "1902886a2fdc8745f247cfaba5d8644556a06dd97029ac7859f8a4156b0813cf"
+      },
+      "instrument": "violin",
+      "track_id": "test__string_track217933__2_violin"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/string_track217945/stems_midi/3_viola.mid"
+      },
+      "group": "string_track217945",
+      "hashes": {
+        "score": "f60db8d28c736aae49abb9ea416698286569edac77f286efcadd7839c8e68c49"
+      },
+      "instrument": "viola",
+      "track_id": "test__string_track217945__3_viola"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228039/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track228039",
+      "hashes": {
+        "score": "857963e5b9572959ab10b7140a2f4d0b460603143a0b8d162f875e4901da6f02"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track228039__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228087/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228087",
+      "hashes": {
+        "score": "a8b61da55f2374710c0b8992b47e4628dc84018226150bd18d69b0c6d925fa0c"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228087__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228141/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228141",
+      "hashes": {
+        "score": "6e8193acfe30f884cb8bc199df61adc55e2dabf8aa3937384aa790fd937afcf8"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228141__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228214/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228214",
+      "hashes": {
+        "score": "c140aecc6188399b8091a20d76d00f0161604a40da3a072c340aa10c93f2bd92"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228214__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228242/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track228242",
+      "hashes": {
+        "score": "7c4d825b0fc87385723fd45e9710338028a1c1bbcf896e7e9a77c2ddbb81ae15"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track228242__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228257/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228257",
+      "hashes": {
+        "score": "5ae5404af265cec0eaed6aa8e4688b6fbe086bc6f7a52707c2e4445eb5fa799e"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228257__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228275/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228275",
+      "hashes": {
+        "score": "3370efb0a811858fcd3b722383086ba0e58d6e47123ffa1607570c0420fca2ec"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228275__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228361/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228361",
+      "hashes": {
+        "score": "639328feb0ef01421ac5f63c3a549b770207b7116b451a14784a41372410ee69"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228361__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228429/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track228429",
+      "hashes": {
+        "score": "4de40f73826fc111bcd077c283116e361727b7766c5a6bc5653cb8a2a326da5d"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track228429__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228561/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228561",
+      "hashes": {
+        "score": "656a432afb49fcb433de879d6b530b1cea55b46e1224b2037efcb0419091b9b0"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228561__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228586/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track228586",
+      "hashes": {
+        "score": "3d8ebd6070836da5877e26f2f2536756a17f02229f810ab30aa9da32c0cd028d"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track228586__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228635/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228635",
+      "hashes": {
+        "score": "511cddb4ca563214c2ed52f5d8c6ddaf5946ea8101794b0a2e7861e0fc5f23fe"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228635__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228699/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228699",
+      "hashes": {
+        "score": "5f9baa0513761d600e6149a10397f58e0f163b17b2790ceea75b99be390f7884"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228699__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228702/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track228702",
+      "hashes": {
+        "score": "cf3eeb0bbe982440377373292710b80bbcfe100528d86e0c494da00506fd7cbd"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track228702__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228737/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track228737",
+      "hashes": {
+        "score": "04eea5389023bfe49b40b25cc4b1992895e946fe66e49f05c96eacd9450eb502"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track228737__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228799/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228799",
+      "hashes": {
+        "score": "fb3fa56f1746a27f3c82c58916f3e67e3006ab4143de641d239c11620f865380"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228799__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228829/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228829",
+      "hashes": {
+        "score": "a5b43e030488b3f48dfc7a451b2aa15ca15b72f71a73e00c291d652f3e089128"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228829__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228830/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228830",
+      "hashes": {
+        "score": "5da6c52b3a00e939aebe4c3cadfb911034903838d7fbb677a340852453604d62"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228830__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228857/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228857",
+      "hashes": {
+        "score": "425b0af5f20306de28b13e8c8b78f67cb946a118c6a0fd342d79239d78c46062"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228857__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228859/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track228859",
+      "hashes": {
+        "score": "10034a0f1d10d81721ded9246c05421847c571792e2727720b2a0a4646b919f4"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track228859__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228860/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track228860",
+      "hashes": {
+        "score": "90d2487dbab82f6c24529f4cff45282047d6a60f2cdba4a4c1375b6bc6a84a13"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track228860__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228864/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track228864",
+      "hashes": {
+        "score": "c4189185f2c35739060a6633f813ea35d5e38c07b955b3f2c07290a42b478242"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track228864__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228883/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228883",
+      "hashes": {
+        "score": "abe7e4af49624cac71ac3039bf7db082bc0ee6bb90e92bb8dd09577875f08ed3"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228883__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228948/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228948",
+      "hashes": {
+        "score": "ad91d42f17e895af08e029043278719e25ed74df45860d466ee3b5959829a406"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228948__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228951/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track228951",
+      "hashes": {
+        "score": "8e1b027414b8ec21c9db5d1aba8e6308a37a5663b31226325774a992208d051a"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track228951__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track228997/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track228997",
+      "hashes": {
+        "score": "5138c3be44c65662a93ea5051991def610c2a14aebcf5aba0264531e26a60d26"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track228997__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229042/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229042",
+      "hashes": {
+        "score": "95f60af3d994093304434d47a3d7e98dc06b57721b826a718431a04f4212a27c"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229042__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229091/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229091",
+      "hashes": {
+        "score": "f2739e3ee27fbd8b820da591161d7a3081f8eca95bca86d9b454ac8b259e76c8"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229091__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229093/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track229093",
+      "hashes": {
+        "score": "12b6f531b5edbc098a66b5946c94b957a3f2cba37fdd0858c66fca48e32ea1be"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track229093__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229135/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track229135",
+      "hashes": {
+        "score": "c44a7530e1e5e03586734cdefba360441487ff962b76fc332d58a23dab08d6b0"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track229135__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229162/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229162",
+      "hashes": {
+        "score": "334f64b782a1de1d0ec8956c9899766ed328e384179fa5b67602be84be6d33b2"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229162__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229194/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track229194",
+      "hashes": {
+        "score": "7c6965467e2eb1f949c0145796b70e37f9a065ce59a50c2f1452532772dd4fad"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track229194__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229219/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229219",
+      "hashes": {
+        "score": "ef477d5bcfbb6c71b1b29f142d6bf89d73137b4c5a2620eccfa9e4ba155e9909"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229219__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229285/stems_midi/1_flute.mid"
+      },
+      "group": "woodwind_track229285",
+      "hashes": {
+        "score": "47651f8fe96712ca64aa3be378effcd11a1766b22d5d3b519e64e24a19f49985"
+      },
+      "instrument": "flute",
+      "track_id": "test__woodwind_track229285__1_flute"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229312/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track229312",
+      "hashes": {
+        "score": "e547c2512c98f117a414ee5e34f096e7562bed8cad7c971293a30141a89652af"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track229312__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229394/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track229394",
+      "hashes": {
+        "score": "a7c77420dfa5e9fa6ca03a5b98eac023be48a954f1d8301c1568cf19b6a02625"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track229394__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229437/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229437",
+      "hashes": {
+        "score": "ee62072c99deb9441183df422c5e1d16c9d6da078e844a95cf3fcceaeb58d42d"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229437__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229498/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229498",
+      "hashes": {
+        "score": "4728a8480043076ab3cb4a82a7c0be87a5add189e08131d3a8d7acdfb6bcc447"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229498__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229522/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track229522",
+      "hashes": {
+        "score": "e06d3ea2a69a4a614631e180a2b2348bf65d2be96e9738cb3e0b01672098ead5"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track229522__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229587/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229587",
+      "hashes": {
+        "score": "5d6e0be27c85820a74b83ace9bb2280e7a1e450eac258e78627102463120e996"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229587__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229623/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229623",
+      "hashes": {
+        "score": "762db66be75a8e8df82b90bdfbcaa36aeac109a8ca6a4894f84da57ef9544cac"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229623__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229648/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229648",
+      "hashes": {
+        "score": "4c05ea520798f56c444f5b6594ac02519fcd4ef05ff89c282eb1d428862a0152"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229648__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229675/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229675",
+      "hashes": {
+        "score": "1983b4ca12eb86a2b3b3eec078dec2749e045d27d56e159ca2cbe132ea41040d"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229675__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229698/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229698",
+      "hashes": {
+        "score": "a39383ca635ab6fce4ed9735022fc5d20d3863b812a729de65357264176c671d"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229698__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229719/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229719",
+      "hashes": {
+        "score": "8728f5da26ac06b9569bf9dc226704e8660256fb2338fbb92c8d5747b800e913"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229719__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229761/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229761",
+      "hashes": {
+        "score": "aa032914dccbf2cd7945dbcea63d509de18a34f74cfdc94b412a609d25ae8bcc"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229761__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229793/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229793",
+      "hashes": {
+        "score": "f65f4a2f6ce2f3e65b3ca312a852db73e4057300176486015980b46b38760b71"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229793__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229821/stems_midi/3_clarinet.mid"
+      },
+      "group": "woodwind_track229821",
+      "hashes": {
+        "score": "e0492a16d6bc2851de39ba55ebdf737b065979f943340ec06a8f9c24440e94b0"
+      },
+      "instrument": "clarinet",
+      "track_id": "test__woodwind_track229821__3_clarinet"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229876/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229876",
+      "hashes": {
+        "score": "9444a51020f09551f657e40edfcefbc20c84ebb202956f32ad58c82d4431d54a"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229876__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229912/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229912",
+      "hashes": {
+        "score": "98f6ac44d18d161d4a3e2dffb44b1f77a33d8e3d58b37019b9b3b564e4c7f892"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229912__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229944/stems_midi/2_oboe.mid"
+      },
+      "group": "woodwind_track229944",
+      "hashes": {
+        "score": "d0516cdfbfb974eaf57dfbad2ba5a922577344986153a013ccc17c8e90aaa803"
+      },
+      "instrument": "oboe",
+      "track_id": "test__woodwind_track229944__2_oboe"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229950/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229950",
+      "hashes": {
+        "score": "fac8956a11c746e0c00a34a05c2fd6dbd16980cdc3482a0e2a8801e3a2f016ad"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229950__4_bassoon"
+    },
+    {
+      "files": {
+        "score": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny/materialized/test/woodwind_track229974/stems_midi/4_bassoon.mid"
+      },
+      "group": "woodwind_track229974",
+      "hashes": {
+        "score": "03d27c7f854bb0b69205f9c89c19adc0b2e3f57a56021e602549e893b6842406"
+      },
+      "instrument": "bassoon",
+      "track_id": "test__woodwind_track229974__4_bassoon"
+    }
+  ],
+  "provenance": {
+    "selection_policy": "seeded_per_instrument_v1"
+  },
+  "selection": {
+    "dataset": "E2",
+    "per_instrument": 20,
+    "root": "/Users/sarah/Desktop/shasha/Attune/benchmarks/datasets/cocochorales_tiny",
+    "seed": 0,
+    "split": "test"
+  }
+}

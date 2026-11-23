@@ -1,0 +1,21 @@
+{
+  "mode": "Streaming",
+  "methods": [
+    "attune",
+    "pyin_framewise",
+    "praat",
+    "swiftf0",
+    "spice",
+    "mcleod",
+    "crepe_tiny"
+  ],
+  "seed": 0,
+  "resamples": 9999,
+  "scoring_version": "frame_counts_10ms_v1",
+  "source_groups": {},
+  "inputs": [
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/evaluation_holdout/604c99165c3537a3/pitch/native_feedback_bach10-original/production_defaults/rows.csv",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/evaluation_holdout/604c99165c3537a3/pitch/native_feedback_urmp/production_defaults/rows.csv",
+    "/Users/sarah/Desktop/shasha/Attune/benchmarks/results/evaluation_holdout/604c99165c3537a3/pitch/native_feedback_coco/production_defaults/rows.csv"
+  ]
+}

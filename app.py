@@ -34,6 +34,7 @@ from app_logic.user.ds.Recording import Recording
 from app_logic.midi.ScoreData import ScoreData
 from app_logic.midi.MidiSynth import MidiSynth
 from app_logic.JsonHandler import JsonHandler
+from app_logic.AppResources import ROOT, demo_directory
 
 # the two center "mode" tabs, each in its own file
 from perform import PerformTab
@@ -63,7 +64,7 @@ class Attune(QMainWindow):
         # bounded so a score switch does not spawn one worker per file.
         self._pitch_detection_semaphore = threading.BoundedSemaphore(2)
 
-        self.DEMO_FOLDER_PATH = str(Path(__file__).resolve().parent / "resources" / "demo")
+        self.DEMO_FOLDER_PATH = str(demo_directory())
 
         # shared transport engines. The synth + wall clock are shared by both
         # tabs; each tab builds its OWN MidiPlayer on them (in attach_timekeeping)
@@ -72,7 +73,7 @@ class Attune(QMainWindow):
         # rate as the count-in, and live pitch dots land within a tick (~33 ms)
         # of detection instead of sitting invisible for up to 100 ms at 10 Hz.
         self.wall_clock = WallClock(hz=30)
-        self.SOUNDFONT = "resources/MuseScore_General.sf3"
+        self.SOUNDFONT = str(ROOT / "resources" / "MuseScore_General.sf3")
         self.midi_synth = MidiSynth(self.SOUNDFONT)
         # the metronome count-in is shared by both tabs
         self.is_counting_in = False
